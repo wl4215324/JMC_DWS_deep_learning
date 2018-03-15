@@ -22,7 +22,9 @@ C_SRCS += \
 ../src/gpio_operation.c \
 ../src/watchdog.c \
 ../src/single_daemon_running.c \
-../src/xml_operation.c
+../src/xml_operation.c \
+../src/bootloader.c \
+../src/kfifo.c
 
 OBJS += \
 ./src/app_main.o \
@@ -35,7 +37,9 @@ OBJS += \
 ./src/gpio_operation.o \
 ./src/watchdog.o \
 ./src/single_daemon_running.o \
-./src/xml_operation.o
+./src/xml_operation.o \
+./src/bootloader.o \
+./src/kfifo.o
 
 CPP_DEPS += \
 ./src/app_main.d \
@@ -50,7 +54,9 @@ C_DEPS += \
 ./src/gpio_operation.d \
 ./src/watchdog.d \
 ./src/single_daemon_running.d \
-./src/xml_operation.d
+./src/xml_operation.d \
+./src/bootloader.d \
+./src/kfifo.d
 
 
 # Each subdirectory must supply rules for building sources it contributes

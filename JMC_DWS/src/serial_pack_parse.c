@@ -674,7 +674,7 @@ static int D5_message_process(unsigned char* recv_buf, int recv_buf_len,\
 		unsigned char* send_buf, int* send_buf_len)
 {
 	if(( D5_MESSAGE != *(recv_buf+MESSAGE_TYPE_ID) ) || \
-			( (recv_buf_len-2) != MAKE_WORD(*(recv_buf+MESSAGE_LEN_INDEX), *(recv_buf+MESSAGE_LEN_INDEX+1)) ))
+			( (recv_buf_len-2) != MAKE_WORD(*(recv_buf+MESSAGE_LEN_INDEX), *(recv_buf+MESSAGE_LEN_INDEX+1))))
 	{
 		return -1;
 	}
@@ -1005,8 +1005,9 @@ void* serial_commu_app(void* argv)
 	fd_set rfds;
 	int recv_length, spec_recv_len;
 	int send_buf_len;
+	unsigned char dws_mesg_array[8] = {0};
 	struct timeval tv = {
-			.tv_sec = 1,
+			.tv_sec = 3,
 			.tv_usec = 300000,
 	};
 
@@ -1033,7 +1034,14 @@ void* serial_commu_app(void* argv)
 
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 			    {
-				    if(send_buf_len > 0)
+			    	/*get dws warning message from cache fifo*/
+			    	if(kfifo_len(dws_warn_fifo) > 0)
+			    	{
+			    		kfifo_get(dws_warn_fifo, dws_mesg_array, sizeof(dws_mesg_array));
+			    		pack_serial_send_message(D2_MESSAGE, dws_mesg_array, serial_send_buf, &send_buf_len);
+			    	}
+
+			    	if(send_buf_len > 0)
 				    {
 						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 						{

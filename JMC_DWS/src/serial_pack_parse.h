@@ -21,6 +21,7 @@
 #include "gpio_operation.h"
 #include "software_version.h"
 #include "watchdog.h"
+#include "kfifo.h"
 
 
 #define MAKE_WORD(hig_byte, low_byte) (unsigned short) (((hig_byte&0x00FF)<<8) |(low_byte&0x00ff))

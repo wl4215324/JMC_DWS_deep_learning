@@ -8,7 +8,32 @@
 #include "bootloader.h"
 #include "serial_pack_parse.h"
 
+Seed seed = {
+		.level_one = 0,
+		.level_FBL = 0
+};
 
+SecretKey secret_key = {
+		.level_one = 0,
+		.level_FBL = 0
+};
+
+
+struct list_head driver_file_list;
+struct list_head app_file_list;
+
+
+void init_bootloader()
+{
+	INIT_LIST_HEAD(&driver_file_list);
+	INIT_LIST_HEAD(&app_file_list);
+}
+
+
+
+/*
+ *
+ */
 int routine_ctrl(const unsigned char* can_mesg, unsigned short mesg_len, \
 		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
 {
@@ -23,8 +48,7 @@ int routine_ctrl(const unsigned char* can_mesg, unsigned short mesg_len, \
 	switch(*(can_mesg+1))
 	{
 	case 0x01:  //start routine
-
-		/* check programming integrity  0x31 0x01 0x02 0x02*/
+		/* check programming integrity  0x31 0x01 0x02 0x02 */
 		if(((0x02 == *(can_mesg+2)) && (0x02 == *(can_mesg+3))))
 		{
 			*reply_mesg = 0x71;
@@ -133,30 +157,268 @@ int read_dat_by_id(const unsigned char* can_mesg, unsigned short mesg_len, \
 
 
 
-void bootloader_can_message_procession(const unsigned char* can_mesg, unsigned short mesg_len, \
+/*
+ *  The following function is used to deal with diagnostic session type
+ */
+int diagnose_session_ctrl(const unsigned char* can_mesg, unsigned short mesg_len, \
+		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
+{
+	if((DIAG_SESS_CTRL  == *can_mesg) && (mesg_len >= 2))
+	{
+		*reply_mesg = 0x50;  //positive response code
+		*reply_mesg_len += 1;
+
+		switch(*(can_mesg+1))
+		{
+		case 0x01:  //default session request
+			*(reply_mesg+1) = 0x01;
+			*reply_mesg_len += 1;
+			memset(reply_mesg+2, 0, 4);
+			*reply_mesg_len += 4;
+			break;
+
+		case 0x02:  //programming session request
+			*(reply_mesg+1) = 0x02;
+			*reply_mesg_len += 1;
+			memset(reply_mesg+2, 0, 4);
+			*reply_mesg_len += 4;
+			break;
+
+		case 0x03:  //extended diagnostic session  request
+			*(reply_mesg+1) = 0x03;
+			*reply_mesg_len += 1;
+			memset(reply_mesg+2, 0, 4);
+			*reply_mesg_len += 4;
+			break;
+
+		default:  // other type's request
+			*reply_mesg = 0x7F;  //negative response
+			*(reply_mesg+1) = 0x10;
+			*(reply_mesg+2) = 0x12;
+			*reply_mesg_len += 2;
+			break;
+		}
+
+		return 0;
+	}
+	else
+	{
+		*reply_mesg = 0x7F;  //negative response request
+		*(reply_mesg+1) = 0x10;
+		*(reply_mesg+2) = 0x12;
+		*reply_mesg_len = 3;
+
+		return -1;
+	}
+}
+
+
+/*
+ *
+ */
+int control_DTC_setting(const unsigned char* can_mesg, unsigned short mesg_len, \
+		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
+{
+	if((CONTROL_DTC_SETTING == *can_mesg) && (mesg_len >= 2))
+	{
+		if((0x01 == *(can_mesg+1)) || (0x02 == *(can_mesg+1)))  //0x01: "on", 0x02: "off"
+		{
+			*reply_mesg = 0xC5;
+			*(reply_mesg+1) = *(can_mesg+1);
+			*reply_mesg_len += 2;
+		}
+		else
+		{
+			*reply_mesg = 0x7F;
+			*(reply_mesg+1) = 0x85;
+			*(reply_mesg+2) = 0x12;  //not supported sub function
+			*reply_mesg_len += 3;
+		}
+
+		return 0;
+	}
+	else
+	{
+		*reply_mesg = 0x7F;
+		*(reply_mesg+1) = 0x85;
+		*(reply_mesg+2) = 0x13;  //not supported sub function
+		*reply_mesg_len += 3;
+		return -1;
+	}
+}
+
+
+/*
+ * The following function is used to deal with secure access
+ */
+int secure_access(const unsigned char* can_mesg, unsigned short mesg_len, \
+		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
+{
+	unsigned int temp_key = 0;
+
+	if((SECURE_ACCESS == *can_mesg) && (mesg_len >= 2))
+	{
+		switch(*(can_mesg+1))
+		{
+		case 0x01:  //request seed to reach security level: unlocked(level 1)
+			*reply_mesg = 0x67;
+			*(reply_mesg+1) = 0x01;
+			*(reply_mesg+2) = (seed.level_one&0xF000)>>24;
+			*(reply_mesg+3) = (seed.level_one&0x0F00)>>16;
+			*(reply_mesg+4) = (seed.level_one&0x00F0)>>8;
+			*(reply_mesg+5) = seed.level_one&0x000F;
+			*reply_mesg_len += 6;
+			break;
+
+		case 0x02:  //request key to reach security level: unlocked(level 1)
+			temp_key = (*(can_mesg+2)<<24|*(can_mesg+3)<<16|*(can_mesg+4)<<8|*(can_mesg+5));
+			*reply_mesg = 0x67;
+			*(reply_mesg+1) = 0x02;
+			*reply_mesg_len += 2;
+			break;
+
+		case 0x09:  //request seed to reach security level: unlocked(flash, level FBL)
+			*reply_mesg = 0x67;
+			*(reply_mesg+1) = 0x02;
+			*(reply_mesg+2) = (seed.level_FBL&0xF000)>>24;
+			*(reply_mesg+3) = (seed.level_FBL&0x0F00)>>16;
+			*(reply_mesg+4) = (seed.level_FBL&0x00F0)>>8;
+			*(reply_mesg+5) = seed.level_FBL&0x000F;
+			*reply_mesg_len += 6;
+			break;
+
+		case 0x0A:  //request key to reach security level: unlocked(flash, level FBL)
+			temp_key = (*(can_mesg+2)<<24|*(can_mesg+3)<<16|*(can_mesg+4)<<8|*(can_mesg+5));
+			*reply_mesg = 0x67;
+			*(reply_mesg+1) = 0x0A;
+			*reply_mesg_len += 2;
+			break;
+
+		default:
+			*reply_mesg = 0x7F;
+			*(reply_mesg+1) = 0x27;
+			*(reply_mesg+2) = 0x12;  //not supported sub function
+			*reply_mesg_len += 3;
+			break;
+		}
+
+		return 0;
+	}
+	else  //negative response
+	{
+		*reply_mesg = 0x7F;
+		*(reply_mesg+1) = 0x27;
+		*(reply_mesg+2) = 0x13;  //length or format error
+		*reply_mesg_len += 3;
+
+		return 0;
+	}
+
+	return -1;
+}
+
+/*
+ * The following function is used to deal with request download(0x34)
+ */
+int request_download(const unsigned char* can_mesg, unsigned short mesg_len, \
+		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
+{
+	LogicBlock *tmp = NULL;
+
+
+	/*if receiving can message is downloading request */
+	if((0x34 == *can_mesg) && (0x00 == *(can_mesg+1)) && (0x44 == *(can_mesg+2)) \
+			&& (mesg_len >= 11))
+	{
+		if(!list_empty(&driver_file_list))  //if driver file list is empty
+		{
+			tmp = (LogicBlock*)malloc(sizeof(LogicBlock));  //create driver file logic block
+
+			if(NULL == tmp)  //create memory for driver file logic block error
+			{
+				*reply_mesg = 0x7F;  //negative response
+				*(reply_mesg+1) = 0x34;
+				*(reply_mesg+2) = 0x70; //negative response code
+				*reply_mesg_len = 3;
+				return -1;
+			}
+			else  //create memory for driver file logic block successfully
+			{
+				tmp->file_type = 0;  //type code for driver file
+				tmp->MaxNumOfBlockLeng = MAX_NUMBER_OF_BLOCK_LENG;
+				tmp->block_index = 0;
+				tmp->block_state = RequestDownload;
+				tmp->crc32_cal = 0;
+				memset(&tmp->finger_print, 0, sizeof(FingerPrint));
+				tmp->mem_addr = 0;
+				tmp->mem_size = 0;
+				INIT_LIST_HEAD(&tmp->segment_list_head);
+				list_add_tail(&tmp->block_list, &driver_file_list);
+
+				*reply_mesg = 0x34;  //positive response
+				*(reply_mesg+1) = 0x00;  //length format identifier
+				*(reply_mesg+2) = ((MAX_NUMBER_OF_BLOCK_LENG & 0xf0)>>8);  //high byte for max number of block length
+				*(reply_mesg+3) = MAX_NUMBER_OF_BLOCK_LENG & 0x0f;  //low byte for max number of block length
+				*reply_mesg_len = 4;
+				return 0;
+			}
+		}
+		else  //if driver file file is not empty
+		{
+			if(!list_empty(&app_file_list))  //if application file list is empty
+			{
+
+			}
+			else
+			{
+				//(app_file_list.prev->prev
+				//list_entry(app_file_list.prev, , );
+			}
+		}
+	}
+	else /*if receiving can message did not match downloading request format*/
+	{
+		*reply_mesg = 0x7F;  //negative response
+		*(reply_mesg+1) = 0x34;
+		*(reply_mesg+2) = 0x13; //negative response code
+		*reply_mesg_len = 3;
+		return -1;
+	}
+
+	return -1;
+}
+
+/*
+ * the following function is used to receive boot loader messages from CAN bus, and then perform some
+ * actions guided by CAN message, finally reply CAN messages to diagnostic apparatus.
+ *
+ */
+void bootloader_can_message_processing(const unsigned char* can_mesg, unsigned short mesg_len, \
 		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
 {
 	switch(*can_mesg)
 	{
-	case DIAG_SESS_CTRL:
+	case DIAG_SESS_CTRL:  //for diagnostic session control
+		diagnose_session_ctrl(can_mesg, mesg_len, reply_mesg, reply_mesg_len);
 		break;
 
-	case ECU_RESET:
+	case ECU_RESET:  //for ECU reset
 		break;
 
-	case CLEAR_DIAG_INFO:
+	case CLEAR_DIAG_INFO:  //for clear diagnostic information
 		break;
 
-	case READ_DTC_INFO:
+	case READ_DTC_INFO:  //for read DTC information
 		break;
 
-	case READ_DAT_BY_ID:
+	case READ_DAT_BY_ID:  //for read data by ID
 		break;
 
 	case READ_MEM_BY_ADDR:
 		break;
 
 	case SECURE_ACCESS:
+		secure_access(can_mesg, mesg_len, reply_mesg, reply_mesg_len);
 		break;
 
 	case COMMUN_CTRL:
@@ -179,6 +441,7 @@ void bootloader_can_message_procession(const unsigned char* can_mesg, unsigned s
 		break;
 
 	case REQUEST_DOWNLOAD:
+		request_download(can_mesg, mesg_len, reply_mesg, reply_mesg_len);
 		break;
 
 	case TRANSFER_DATA:
@@ -190,6 +453,9 @@ void bootloader_can_message_procession(const unsigned char* can_mesg, unsigned s
 	case WRITE_MEM_BY_ID:
 		break;
 
+	case CONTROL_DTC_SETTING:
+		control_DTC_setting(can_mesg, mesg_len, reply_mesg, reply_mesg_len);
+		break;
 	}
 }
 

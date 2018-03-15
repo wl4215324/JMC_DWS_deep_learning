@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "list.h"
 
 #define MINORBITS   16
 #define MINORMASK   ((1U << MINORBITS) - 1)
@@ -36,11 +37,13 @@
 #define  TRANSFER_DATA     0x36
 #define  REQ_TRANSFER_DAT_EXIT  0x37
 #define  WRITE_MEM_BY_ID   0x3D
+#define  CONTROL_DTC_SETTING  0x85
+
+#define  MAX_NUMBER_OF_BLOCK_LENG  0x100
 
 struct BootloaderData{
 	unsigned int state;
 	unsigned char *precv_frame;
-
 };
 
 typedef enum {
@@ -48,6 +51,7 @@ typedef enum {
 	being_programming,
 	after_programming
 } BootloaderState;
+
 
 typedef enum {
 	DiagnosticSessionControl = 0,
@@ -57,24 +61,89 @@ typedef enum {
 	ReadDataByIdentifier
 } PreProgramSubstate;
 
-
+/*
 typedef enum {
-	DiagnosticSessionControl = 0,
+	ExtendedSession = 0,
 	SafeAcess,
 	DriverLoading,
-	FingerPrint,
+	ReadFingerPrint,
     EraseMemory,
     Downloading,
     IntegrityCheck,
     DependencyCheck,
     ResetECU
 } BeingProgramSubstate;
+*/
 
+/*
 typedef enum {
 	DiagnosticSessionControl = 0,
 
 } AfterProgramSubstate;
+*/
 
 
+typedef struct {
+	unsigned int level_one;
+	unsigned int level_FBL;
+} Seed;
+
+typedef struct {
+	unsigned int level_one;
+	unsigned int level_FBL;
+} SecretKey;
+
+
+/* data segment */
+typedef struct {
+	struct list_head segment_list;
+	unsigned char block_index;
+    short segment_len;
+    char *data;
+} DataSegment;
+
+/* finger print of one logic block */
+typedef struct{
+
+	unsigned char block_index;
+	unsigned char YY;
+	unsigned char MM;
+	char serial_num[6];
+
+} FingerPrint;
+
+
+
+/* logic block creation process-state */
+typedef enum {
+	WriteFingerPrint = 1,
+	EraseMemory,
+	RequestDownload,
+	DownloadData,
+    FinishDownload,
+    CheckIntegrity
+}LogicBlockState;
+
+
+/* logic block */
+typedef struct {
+	struct list_head block_list;
+	unsigned char file_type;  //0:driver file, 1: application file
+	LogicBlockState block_state;
+	unsigned char block_index;
+	unsigned int mem_addr;
+	unsigned int mem_size;
+	unsigned int crc32_cal;
+	struct list_head segment_list_head;
+	FingerPrint finger_print;
+	unsigned short MaxNumOfBlockLeng;
+
+} LogicBlock;
+
+
+
+
+extern void bootloader_can_message_processing(const unsigned char* can_mesg, unsigned short mesg_len, \
+		unsigned char* reply_mesg, unsigned short* reply_mesg_len);
 
 #endif /* BOOTLOADER_H_ */

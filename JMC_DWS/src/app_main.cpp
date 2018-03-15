@@ -19,6 +19,7 @@ extern "C"
 #include "watchdog.h"
 #include "single_daemon_running.h"
 #include "xml_operation.h"
+#include "kfifo.h"
 }
 
 using namespace std;
@@ -260,6 +261,7 @@ static int hardware_init()
 	}
 
 	tcflush(fd, TCIOFLUSH);
+
     /*
 	if(open_watchdog() < 0)
 	{
@@ -280,15 +282,21 @@ static int hardware_init()
 		return -1;
 	}
 
+	/* create cache fifo for DDWS warning message */
+	dws_warn_fifo = kfifo_alloc(DWS_WARNING_FIFO_SIZE);
+	if(!dws_warn_fifo)
+	{
+		perror("create cache fifo for DDWS warning message error:");
+		return -1;
+	}
+
 	return 1;
 }
-
 
 
 int main(int argc, char** argv)
 {
 	//daemon(0, 0);
-
 	if(hardware_init() < 0)
 	{
 		return -1;

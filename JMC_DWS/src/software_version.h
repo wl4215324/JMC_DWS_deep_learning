@@ -12,7 +12,9 @@
  * Software version is composed with one byte, top four bits are major version, other end four bits are minor version,
  * which are showed with BCD codes.
  *
- * Version 1.0:
+ * Version 1.0
+ * Date: 2017/
+ *
  *
  *
  * Version 1.1: 2018/02/07 10:30 am
@@ -21,7 +23,7 @@
  *           (2): Modify frame rate of DDWS algorithm, which is set as 6 fps.
  *
  * Version 1.2: 2018/02/07 20:30 pm
- *           (1): DDWS algorithm modified by Xiaming, which made shelter time close to 10 seconds.
+ *           (1): DDWS algorithm modified by Xiaming, which made cover time close to 10 seconds.
  *
  */
 

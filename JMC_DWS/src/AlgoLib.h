@@ -17,6 +17,11 @@
 //		1.修改日期2018/02/05: 江铃定制版，更新了睁眼／打哈欠检测
 //		2.修改日期2018/02/05: 江铃定制版，调整了打哈欠检测的限制
 //		3.修改日期2018/02/05: 江铃定制版，调整了闭眼检测的限制
+//一体机V2.2：
+//		1.修改日期2018/02/07: 江铃定制版，放宽了打哈欠检测
+//		2.修改日期2018/02/07: 江铃定制版，离岗时的算法处理帧率是有人脸目标情况下的1.3倍(原2倍)
+//一体机V2.3：
+//		1.修改日期2018/03/03: 江铃定制版，修改了一二级闭眼报警和闭眼时长输出的逻辑
 
 #ifndef _ALGOLIB_H_
 #define _ALGOLIB_H_
@@ -26,7 +31,7 @@
 #define Uint16 unsigned short
 #define Uint8 unsigned char
 
-#define VER_ARITH    0x0201
+#define VER_ARITH    0x0203
 
 /***************************
        Resizer
@@ -60,7 +65,7 @@ typedef struct _ARITH_INPUT
 	Uint8 	 framesPerSecond;		// 算法每秒处理帧数
 }ARITH_INPUT;
 
-#define XIAOMING_ARITH_INPUT_DEFAULT {1, 1, 1, 3, 2, 3, 10, 4, 1, 1, 0, 6}
+#define XIAOMING_ARITH_INPUT_DEFAULT  {1, 1, 1, 3, 2, 3, 10, 4, 1, 1, 0, 7}
 
 typedef struct _ARITH_OUTPUT
 {
@@ -72,8 +77,6 @@ typedef struct _ARITH_OUTPUT
 	Uint8    telephoneCallFlag;		// 打电话手势标识:0未检测到，1检测到打电话手势
 	Uint8    eyeCloseEventTime;		// 闭眼持续时间，单位：帧数
 }ARITH_OUTPUT;
-
-
 
 
 /**************************************
