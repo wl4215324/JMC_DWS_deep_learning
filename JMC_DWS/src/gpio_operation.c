@@ -18,7 +18,6 @@ void* vibrate_motor(void* argv)
 
 	while(true)
 	{
-#if 0
 		motor_pwm_period = config_param.motor_pwm_period;
 		motor_pwm_duty = config_param.motor_pwm_duty;
 
@@ -44,7 +43,7 @@ void* vibrate_motor(void* argv)
 				if(0 == serial_input_var.small_lamp)  //if small light went out
 				{
 					/* camera led lamp working under maximum power mode */
-					set_led_brightness(90);
+					set_led_brightness(95);
 				}
 				else if(1 == serial_input_var.small_lamp)  //if small light turn on
 				{
@@ -135,9 +134,7 @@ void* vibrate_motor(void* argv)
 
 		//milliseconds_sleep(100);
 		milliseconds_sleep(125);
-#endif
-		set_led_brightness(100);
-		milliseconds_sleep(1000);
+
 	}
 
 	pthread_exit(NULL);

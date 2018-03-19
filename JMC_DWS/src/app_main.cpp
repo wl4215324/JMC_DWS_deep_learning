@@ -215,6 +215,7 @@ static void process_cmd(int argc, char** argv)
 }
 
 
+
 /* initialize hardware resources to be used */
 static int hardware_init()
 {

@@ -19,6 +19,7 @@ SerialInputVar serial_input_var = {
 		.small_lamp = 0,
 	    .DDWS_switch = 0,
 	    .OK_switch = 0,
+	    .MP5_DDWS_switch = 0,
 };
 
 SerialOutputVar serial_output_var = {0, 0, 0,}, serial_output_var_test;
@@ -389,6 +390,19 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 	{
 		serial_input_var.engine_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+4, 24, 16);
 		printf("engine_speed is: %4X\n", serial_input_var.engine_speed);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable MP5_DDWS_switch from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX), *(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+2), *(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+3)) == \
+			MESSAGE_ID_OF_DDWS_SWITCH_MP5)
+	{
+		serial_input_var.MP5_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, 20, 2);
+		printf("engine_speed is: %4X\n", serial_input_var.MP5_DDWS_switch);
 	}
 	else
 	{
@@ -1016,8 +1030,9 @@ void* serial_commu_app(void* argv)
 		FD_ZERO(&rfds);
 		FD_SET(fd, &rfds);
 
-		if(select(fd + 1, &rfds, NULL, NULL, &tv) > 0)
+		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
 		{
+			/*read serial data from rs232 */
 			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
 			{
 				retry_cnt = 0;
@@ -1032,6 +1047,7 @@ void* serial_commu_app(void* argv)
 
 			    puts("\n");
 
+			    /* parse receiving serial data */
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 			    {
 			    	/*get dws warning message from cache fifo*/

@@ -99,6 +99,9 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_ID_OF_ENGINE_SPEED  0x0CF00400
 #define MESSAGE_ID_OF_ENGINE_SPEED_INDEX  92
 
+#define MESSAGE_ID_OF_DDWS_SWITCH_MP5  0x18FF504C
+#define MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX  104
+
 /*
  * configuration variables message ID of CAN communication
  */
@@ -134,6 +137,7 @@ typedef struct {
 	unsigned short small_lamp;
     unsigned short DDWS_switch;
     unsigned short OK_switch;
+    unsigned short MP5_DDWS_switch;
 } SerialInputVar;
 
 

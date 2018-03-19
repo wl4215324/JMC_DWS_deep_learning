@@ -27,7 +27,7 @@ src/xml_operation.d: ../src/xml_operation.c ../src/xml_operation.h \
  /home/tony/Public/adas/Include/linux/ioctl.h \
  /home/tony/Public/adas/Include/linux/types.h \
  /home/tony/Public/adas/Include/linux/posix_types.h \
- /home/tony/Public/adas/Include/linux/stddef.h
+ /home/tony/Public/adas/Include/linux/stddef.h ../src/kfifo.h
 
 ../src/xml_operation.h:
 
@@ -96,3 +96,5 @@ src/xml_operation.d: ../src/xml_operation.c ../src/xml_operation.h \
 /home/tony/Public/adas/Include/linux/posix_types.h:
 
 /home/tony/Public/adas/Include/linux/stddef.h:
+
+../src/kfifo.h:

@@ -6,8 +6,9 @@ src/serial_pack_parse.d: ../src/serial_pack_parse.c \
  /home/tony/Public/adas/Include/linux/ioctl.h \
  /home/tony/Public/adas/Include/linux/types.h \
  /home/tony/Public/adas/Include/linux/posix_types.h \
- /home/tony/Public/adas/Include/linux/stddef.h ../src/user_timer.h \
- ../src/timerscfg.h ../src/applicfg.h ../src/xml_operation.h \
+ /home/tony/Public/adas/Include/linux/stddef.h ../src/kfifo.h \
+ ../src/user_timer.h ../src/timerscfg.h ../src/applicfg.h \
+ ../src/xml_operation.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/parser.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlversion.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlexports.h \
@@ -53,6 +54,8 @@ src/serial_pack_parse.d: ../src/serial_pack_parse.c \
 /home/tony/Public/adas/Include/linux/posix_types.h:
 
 /home/tony/Public/adas/Include/linux/stddef.h:
+
+../src/kfifo.h:
 
 ../src/user_timer.h:
 
