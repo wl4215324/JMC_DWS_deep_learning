@@ -9,7 +9,7 @@ src/v4l2_tvin.d: ../src/v4l2_tvin.cpp ../src/v4l2_capture_output.hpp \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/software_version.h ../src/watchdog.h \
  /home/tony/Public/adas/Include/linux/watchdog.h ../src/kfifo.h \
- ../src/AlgoLib.h
+ ../src/AlgoLib.h ../src/applicfg.h
 
 ../src/v4l2_capture_output.hpp:
 
@@ -50,3 +50,5 @@ src/v4l2_tvin.d: ../src/v4l2_tvin.cpp ../src/v4l2_capture_output.hpp \
 ../src/kfifo.h:
 
 ../src/AlgoLib.h:
+
+../src/applicfg.h:

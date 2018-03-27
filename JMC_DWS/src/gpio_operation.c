@@ -15,7 +15,6 @@ void* vibrate_motor(void* argv)
 	unsigned short i = 0, j;
 	unsigned short min_vibration_time = 0; //minimum vibration time, unit: second
 
-
 	while(true)
 	{
 		motor_pwm_period = config_param.motor_pwm_period;
@@ -30,8 +29,7 @@ void* vibrate_motor(void* argv)
 		}
 
 		//printf("motor_pwm_period: %d, motor_pwm_duty: %d\n", motor_pwm_period, motor_pwm_duty);
-
-		if(0 == serial_input_var.DDWS_switch)  //if DDWS function is enable
+		if(1 == serial_input_var.DDWS_switch)  //if DDWS function is enable
 		{
 			/* camera led control logic */
 		    if((serial_input_var.vehicle_speed >> 8) < (config_param.vehicle_speed > 10 ? (config_param.vehicle_speed-10):0))
@@ -43,7 +41,7 @@ void* vibrate_motor(void* argv)
 				if(0 == serial_input_var.small_lamp)  //if small light went out
 				{
 					/* camera led lamp working under maximum power mode */
-					set_led_brightness(95);
+					set_led_brightness(92);
 				}
 				else if(1 == serial_input_var.small_lamp)  //if small light turn on
 				{
@@ -53,10 +51,10 @@ void* vibrate_motor(void* argv)
 		    }
 
 			/* vibration motor control logic */
-			if(0 == serial_input_var.OK_switch) /* if OK_switch is enabled */
+			if(1 == serial_input_var.OK_switch) /* if OK_switch is enabled */
 			{
 				/*if level 3 warning occurred now, motor begin to vibrate*/
-				if(3 == serial_output_var.warning_state)
+				if(LEVEL_THREE_WARNING == serial_output_var.warnning_level.warning_state)
 				{
 					if(i%motor_pwm_period < motor_pwm_duty) //motor begin to vibrate
 					{
@@ -117,14 +115,14 @@ void* vibrate_motor(void* argv)
 					}
 				}
 			}
-			else if(1 == serial_input_var.OK_switch)  // if OK_switch is disabled
+			else if(0 == serial_input_var.OK_switch)  // if OK_switch is disabled
 			{
 				gpio_write(VIBRAT_MOTOR_GPIO_INDEX, 0);
 				i = 0;
 				j = 0;
 			}
 		}
-		else if(1 == serial_input_var.DDWS_switch)  //if DDWS function is disable
+		else if(0 == serial_input_var.DDWS_switch)  //if DDWS function is disable
 		{
 			set_led_brightness(0);  //pull down gpio for camera led, close camera led
 			gpio_write(VIBRAT_MOTOR_GPIO_INDEX, 0);  //pull down gpio for motor, close vibrate motor
@@ -132,9 +130,7 @@ void* vibrate_motor(void* argv)
 			j = 0;
 		}
 
-		//milliseconds_sleep(100);
 		milliseconds_sleep(125);
-
 	}
 
 	pthread_exit(NULL);

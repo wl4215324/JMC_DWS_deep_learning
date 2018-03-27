@@ -65,7 +65,7 @@ typedef struct _ARITH_INPUT
 	Uint8 	 framesPerSecond;		// 算法每秒处理帧数
 }ARITH_INPUT;
 
-#define XIAOMING_ARITH_INPUT_DEFAULT  {1, 1, 1, 3, 2, 3, 10, 4, 1, 1, 0, 7}
+#define XIAOMING_ARITH_INPUT_DEFAULT  {1, 1, 1, 2, 2, 3, 10, 4, 1, 1, 1, 7}
 
 typedef struct _ARITH_OUTPUT
 {

@@ -28,7 +28,7 @@
 #define GET_HIG_BYTE_FROM_WORD(word)  (unsigned char) ((word&0xff00) >> 8)
 #define GET_LOW_BYTE_FROM_WORD(word)  (unsigned char) (word&0xff)
 #define GET_BIT_OF_BYTE(byte_addr, bit)  (unsigned char)(((*byte_addr)&(0x01<<bit))>>bit)
-#define CONFIG_PARAMS_COUNT  17
+#define CONFIG_PARAMS_COUNT  18
 
 static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char start_bit_index,  unsigned char bits)
 {
@@ -102,6 +102,10 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_ID_OF_DDWS_SWITCH_MP5  0x18FF504C
 #define MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX  104
 
+#define MESSAGE_ID_OF_CRUISE_SWITCH  0x18FEF100
+#define MESSAGE_ID_OF_CRUISE_SWITCH_INDEX  44
+
+
 /*
  * configuration variables message ID of CAN communication
  */
@@ -125,6 +129,25 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 
 
 /*
+ * JMC soft switch trigger type
+ */
+#define TRIGGER_STYLE  0
+#define RISING_EDGE  1
+#define HIGH_LEVEL   2
+
+
+/*
+ * JMC warning levels definition
+ */
+#define  NO_WARNING  0
+#define  LEVEL_ONE_WARNING    0x01
+#define  LEVEL_TWO_WARNING    0x02
+#define  LEVEL_THREE_WARNING  0x03
+#define  COVER_WARNING        0x0D
+#define  FAULT_WARNING        0x0E
+
+
+/*
  *  input data type definition for receiving serial port
  */
 typedef struct {
@@ -138,7 +161,10 @@ typedef struct {
     unsigned short DDWS_switch;
     unsigned short OK_switch;
     unsigned short MP5_DDWS_switch;
+    unsigned short IC_DDWS_switch;
+    unsigned short Cruise_switch;
 } SerialInputVar;
+
 
 
 /*
@@ -150,8 +176,15 @@ typedef struct {
 	unsigned char yawn_warn;
 	unsigned char distract_warn;
 	unsigned char calling_warn;
-	unsigned char somking_warn;
-	unsigned char warning_state;
+	//unsigned char somking_warn;
+	//unsigned char warning_state;
+	struct {
+		unsigned char somking_warn:2;
+		unsigned char warning_state:4;
+		unsigned char working_state:2;
+	} warnning_level;
+
+	unsigned char reserved;
 	unsigned char close_eye_time;
 
 }SerialOutputVar;
