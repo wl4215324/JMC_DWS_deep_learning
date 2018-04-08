@@ -26,8 +26,8 @@
  *           (1): DDWS algorithm modified by Xiaming, which made cover time close to 10 seconds.
  *
  *
- *Version 1.3: 2018/03/24 20:30 pm
-             Following modifications are according to Function Specification V 2.6
+ * Version 1.3: 2018/03/24 20:30 pm
+ *           Following modifications are according to Function Specification V 2.6
  *           (1) Eye-closed time conversion is implemented, second(s) is directly sent to MCU via serial port communication.
  *           (2) When distraction warning comes out, 6 warning messages are continuously sent rather than only one message.
  *           (3) DDWS switch control logic is modified, one modification is saving switch status into xml file and reading

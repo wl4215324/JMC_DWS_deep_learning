@@ -747,7 +747,7 @@ v4l2_init:
 
 	for (i = 0; ; i++)
 	{
-        if(serial_input_var.DDWS_switch == 1)
+        if(1 == serial_input_var.DDWS_switch)
         {
         	if(close_camera > 0)
         	{
@@ -779,8 +779,7 @@ v4l2_init:
     		memcpy(output_buffers[output_buf.index].start, capture_buffers[capture_buf.index].start, g_frame_size);
     		//printf("timer_flag.timer_val is: %4X, g_frame_size is: %d\n", timer_flag.timer_val, g_frame_size);
 
-
-    		if((timer_flag.timer_val == 0) && (serial_input_var.DDWS_switch == 1) && (serial_commu_recv_state == 0) &&
+    		if((0 == timer_flag.timer_val) && (1 == serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) &&
     				((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed))
     		//if((serial_input_var.DDWS_switch == 1) && (serial_commu_recv_state == 0))
     		//if(true)
@@ -801,7 +800,6 @@ v4l2_init:
     			serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
     			serial_output_var.close_eye_time = 0;
     		}
-
 
     		if (xioctl(fd_capture_v4l, VIDIOC_QBUF, &capture_buf) < 0)
     		{
@@ -858,7 +856,6 @@ v4l2_init:
 	total_time = (tv_current.tv_sec - tv_start.tv_sec) * 1000000L;
 	total_time += tv_current.tv_usec - tv_start.tv_usec;
 	printf("total time for %u frames = %u us =  %lld fps\n", i, total_time, (i * 1000000ULL) / total_time);
-
 	return 0;
 }
 
@@ -950,7 +947,6 @@ void* image_process_algorithm(void*)
 		printf("Unable to open %s\n", v4l_output_dev);
 		return NULL;
 	}
-
 
 	if ((fd_fb = open(fb_device, O_RDWR )) < 0)
 	{

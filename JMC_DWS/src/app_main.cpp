@@ -159,6 +159,7 @@ static int create_task()
 }
 
 
+
 static int wait_task()
 {
 	pthread_join(serial_pthread_id, NULL);

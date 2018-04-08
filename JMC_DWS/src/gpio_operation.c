@@ -7,7 +7,10 @@
 
 #include "gpio_operation.h"
 
-
+/*
+ * camera led lamp and vibration motor control thread function.
+ *
+ */
 void* vibrate_motor(void* argv)
 {
 	unsigned short motor_pwm_period = 0;
@@ -21,7 +24,7 @@ void* vibrate_motor(void* argv)
 		motor_pwm_duty = config_param.motor_pwm_duty;
 
 		motor_pwm_period = 8;  //8*125ms = 1S
-		motor_pwm_duty = motor_pwm_duty * motor_pwm_period/100;  //ms
+		motor_pwm_duty = motor_pwm_duty * motor_pwm_period/100;  //PWM duty, unit is ms
 
 		if(motor_pwm_duty >= motor_pwm_period)
 		{
@@ -115,9 +118,9 @@ void* vibrate_motor(void* argv)
 					}
 				}
 			}
-			else if(0 == serial_input_var.OK_switch)  // if OK_switch is disabled
+			else if(0 == serial_input_var.OK_switch)  // if OK_switch is disabled, the motor stops vibrating.
 			{
-				gpio_write(VIBRAT_MOTOR_GPIO_INDEX, 0);
+				gpio_write(VIBRAT_MOTOR_GPIO_INDEX, 0);  //stop motor working
 				i = 0;
 				j = 0;
 			}

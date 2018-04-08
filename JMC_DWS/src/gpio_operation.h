@@ -26,16 +26,16 @@
 extern pthread_mutex_t motor_lock;
 extern pthread_cond_t  motor_cond;
 
-/**
-** function:
-**          gpio_export
+/*
+* function:
+*          gpio_export
 
-** arguments:
-**          int pin: gpio pin index
+* arguments:
+*          int pin: gpio pin index
 
-** return:
-**        -1: error; 0: success
-**/
+* return:
+*        -1: error; 0: success
+*/
 static inline int gpio_export(int pin)
 {
 	char buffer[64];
@@ -45,8 +45,8 @@ static inline int gpio_export(int pin)
 	fd = open("/sys/class/gpio/export", O_WRONLY);
 	if (fd < 0)
 	{
-		printf("Failed to open export for writing!\n");
-		return(-1);
+		perror("Failed to open export for writing!");
+		return -1;
 	}
 
 	memset(buffer, '\0', sizeof(buffer));
@@ -70,16 +70,16 @@ static inline int gpio_export(int pin)
 
 
 
-/**
-** function:
-**          gpio_unexport
+/*
+* function:
+*          gpio_unexport
 
-** arguments:
-**          int pin: gpio pin index
+* arguments:
+*          int pin: gpio pin index
 
-** return:
-**        -1: error; 0: success
-**/
+* return:
+*        -1: error; 0: success
+*/
 static inline int gpio_unexport(int pin)
 {
 	char buffer[64];
@@ -89,7 +89,7 @@ static inline int gpio_unexport(int pin)
 	fd = open("/sys/class/gpio/unexport", O_WRONLY);
 	if (fd < 0)
 	{
-		printf("Failed to open unexport for writing!\n");
+		perror("Failed to open unexport for writing!");
 		return -1;
 	}
 
@@ -97,7 +97,7 @@ static inline int gpio_unexport(int pin)
 	if (write(fd, buffer, len) < 0)
 	{
 		close(fd);
-		printf("Failed to unexport gpio!\n");
+		perror("Failed to unexport gpio!");
 		return -1;
 	}
 
@@ -107,17 +107,17 @@ static inline int gpio_unexport(int pin)
 
 
 
-/**
-** function:
-**          gpio_direction
+/*
+* function:
+*          gpio_direction
 
-** arguments:
-**          int pin: gpio pin index
+* arguments:
+*          int pin: gpio pin index
             int dir: input or out direction, 0-->input, 1-->output
 
-** return:
-**        -1: error; 0: success
-**/
+* return:
+*        -1: error; 0: success
+*/
 static inline int gpio_direction(int pin, int dir)
 {
 	static const char dir_str[] = "in\0out";
@@ -145,18 +145,18 @@ static inline int gpio_direction(int pin, int dir)
 
 
 
-/**
-** function:
-**          gpio_write
+/*
+* function:
+*          gpio_write
 
-** arguments:
-**          int pin: gpio pin index
+* arguments:
+*          int pin: gpio pin index
             int value: high or low level, 0-->LOW, 1-->HIGH
 
-** return:
-**        -1: error; 0: success
+* return:
+*        -1: error; 0: success
 
-**/
+*/
 static inline int gpio_write(int pin, int value)
 {
 	static const char values_str[] = "01";
@@ -188,17 +188,17 @@ static inline int gpio_write(int pin, int value)
 
 
 
-/**
-** function:
-**          gpio_read
+/*
+* function:
+*          gpio_read
+*
+* arguments:
+*          int pin: gpio pin index
 
-** arguments:
-**          int pin: gpio pin index
-
-** return:
-**        -1: error; 0: low; 1: high
-
-**/
+* return:
+*        -1: error; 0: low; 1: high
+*
+*/
 static inline int gpio_read(int pin)
 {
 	char path[64];
@@ -227,6 +227,18 @@ static inline int gpio_read(int pin)
 }
 
 
+/*
+* function:
+*          gpio_init
+*
+* arguments:
+*          int pin: gpio pin index
+*          int dir: 0-->input, 1-->output
+
+* return:
+*        -1: error; 0: success
+*
+*/
 static inline int gpio_init(int pin, int dir)
 {
 	if(gpio_export(pin) < 0)
@@ -244,9 +256,20 @@ static inline int gpio_init(int pin, int dir)
 		return -1;
 	}
 
-	return 1;
+	return 0;
 }
 
+/*
+* function:
+*          set_led_brightness
+*
+* arguments:
+*          unsigned char brightness
+
+* return:
+*        -1: error; 0: success
+*
+*/
 static inline int set_led_brightness(unsigned char brightness)
 {
 	int fd;
@@ -280,6 +303,6 @@ static inline int set_led_brightness(unsigned char brightness)
 }
 
 
-extern void* vibrate_motor(void* argv);
+void* vibrate_motor(void* argv);
 
 #endif /* GPIO_OPERATION_H_ */

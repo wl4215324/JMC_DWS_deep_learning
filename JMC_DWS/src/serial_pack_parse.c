@@ -1193,7 +1193,7 @@ void* serial_commu_app(void* argv)
 			    	/*get dws warning message from cache fifo*/
 			    	if(kfifo_len(dws_warn_fifo) > 0)
 			    	{
-			    		if((timer_flag.timer_val == 0) && (serial_input_var.DDWS_switch == 1))
+			    		if((0 == timer_flag.timer_val) && (1 == serial_input_var.DDWS_switch))
 			    		{
 				    		kfifo_get(dws_warn_fifo, dws_mesg_array, sizeof(dws_mesg_array));
 				    		pack_serial_send_message(D2_MESSAGE, dws_mesg_array, serial_send_buf, &send_buf_len);
