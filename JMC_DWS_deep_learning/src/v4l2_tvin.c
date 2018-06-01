@@ -554,7 +554,6 @@ v4l2_init:
 			if (xioctl(fd_capture_v4l, VIDIOC_DQBUF, &capture_buf) < 0)
 			{
 				printf("capture VIDIOC_QBUF failed\n");
-<<<<<<< HEAD
 				continue;
 			}
 
@@ -562,8 +561,6 @@ v4l2_init:
 			if(g_frame_size > 691200)
 			{
 				g_frame_size = 691200;
-=======
->>>>>>> 9624006fb645fd78363626f95914443b155e0134
 			}
 
 			pthread_mutex_lock(&uyvy_image_mutex);
@@ -573,10 +570,7 @@ v4l2_init:
 			if (xioctl(fd_capture_v4l, VIDIOC_QBUF, &capture_buf) < 0)
 			{
 				printf("capture VIDIOC_QBUF failed\n");
-<<<<<<< HEAD
 				continue;
-=======
->>>>>>> 9624006fb645fd78363626f95914443b155e0134
 			}
 
 			if(i < 3)
@@ -601,18 +595,11 @@ v4l2_init:
 			if (xioctl(fd_output_v4l, VIDIOC_DQBUF, &output_buf) < 0)
 			{
 				printf("output VIDIOC_DQBUF failed\n");
-<<<<<<< HEAD
 				continue;
 			}
 
 			/*copy image buffer of camera to display buffer */
 			memcpy(output_buffers[output_buf.index].start, YUYV_image, g_frame_size);
-=======
-			}
-
-			/*copy image buffer of camera to display buffer */
-			memcpy(output_buffers[output_buf.index].start, YUYV_image, sizeof(YUYV_image));
->>>>>>> 9624006fb645fd78363626f95914443b155e0134
 
 			output_buf.timestamp.tv_sec = tv_start.tv_sec;
 			output_buf.timestamp.tv_usec = tv_start.tv_usec + (g_frame_period * i);
@@ -625,16 +612,10 @@ v4l2_init:
 			if (xioctl(fd_output_v4l, VIDIOC_QBUF, &output_buf) < 0)
 			{
 				printf(" output VIDIOC_QBUF failed\n");
-<<<<<<< HEAD
 				continue;
 			}
 
 			usleep(100000);
-=======
-			}
-
-			usleep(150000);
->>>>>>> 9624006fb645fd78363626f95914443b155e0134
 		}
 		else
 		{

@@ -7,7 +7,6 @@
 
 #include "driving_behav_analys.h"
 
-<<<<<<< HEAD
 #ifdef ENABLE_ACCELERATOR
 TimerFlag timer_flag = {0x1f};
 #else
@@ -18,12 +17,6 @@ TimerFlag OK_Switch_timer_flag = {0};
 
 TimerFlag level2_closing_eye_timer_flag = {0};
 
-=======
-TimerFlag timer_flag = {0x1f};
-
-TimerFlag OK_Switch_timer_flag = {0};
-
->>>>>>> 9624006fb645fd78363626f95914443b155e0134
 
 /* callback function for timer, if timeout happened this function will be executed */
 void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_type)
@@ -64,7 +57,6 @@ void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_
 	case OK_Switch_timer_3s:
 		timer_flag->timer_val = 0;
 		printf("OK_Switch 3S timeout! \n");
-<<<<<<< HEAD
 		break;
 
 		/* added on 05-21 */
@@ -72,8 +64,6 @@ void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_
 		timer_flag->timer_val = 2;
 		serial_output_var.close_eye_time +=1;
 		break;
-=======
->>>>>>> 9624006fb645fd78363626f95914443b155e0134
 	}
 
 	printf("function: %s, timer_flag->timer_val: %d\n", \
