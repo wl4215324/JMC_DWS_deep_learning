@@ -20,7 +20,8 @@ C_SRCS += \
 ../src/timer.c \
 ../src/timer_unix.c \
 ../src/watchdog.c \
-../src/xml_operation.c 
+../src/xml_operation.c \
+../src/bootloader.c
 
 CPP_SRCS += \
 ../src/app_main.cpp \
@@ -37,7 +38,8 @@ OBJS += \
 ./src/timer_unix.o \
 ./src/v4l2_tvin.o \
 ./src/watchdog.o \
-./src/xml_operation.o 
+./src/xml_operation.o \
+./src/bootloader.o
 
 C_DEPS += \
 ./src/driving_behav_analys.d \
@@ -48,7 +50,8 @@ C_DEPS += \
 ./src/timer.d \
 ./src/timer_unix.d \
 ./src/watchdog.d \
-./src/xml_operation.d 
+./src/xml_operation.d \
+./src/bootloader.d
 
 CPP_DEPS += \
 ./src/app_main.d \

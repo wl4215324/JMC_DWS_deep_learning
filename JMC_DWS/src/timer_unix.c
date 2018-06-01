@@ -81,6 +81,7 @@ void TimerInit(void)
 #endif
 }
 
+
 void StopTimerLoop(TimerCallback_t exitfunction)
 {
 	EnterMutex();

@@ -8,9 +8,9 @@ src/app_main.d: ../src/app_main.cpp ../src/v4l2_capture_output.hpp \
  ../src/ipu.h ../src/serial_pack_parse.h ../src/serial_port_commu.h \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/software_version.h ../src/watchdog.h \
- /home/tony/Public/adas/Include/linux/watchdog.h ../src/timers_driver.h \
- ../src/timerscfg.h ../src/user_timer.h ../src/applicfg.h \
- ../src/single_daemon_running.h ../src/xml_operation.h \
+ /home/tony/Public/adas/Include/linux/watchdog.h ../src/kfifo.h \
+ ../src/timers_driver.h ../src/timerscfg.h ../src/user_timer.h \
+ ../src/applicfg.h ../src/single_daemon_running.h ../src/xml_operation.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/parser.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlversion.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlexports.h \
@@ -68,6 +68,8 @@ src/app_main.d: ../src/app_main.cpp ../src/v4l2_capture_output.hpp \
 ../src/watchdog.h:
 
 /home/tony/Public/adas/Include/linux/watchdog.h:
+
+../src/kfifo.h:
 
 ../src/timers_driver.h:
 

@@ -8,6 +8,7 @@
 
 #include "v4l2_capture_output.hpp"
 #include "AlgoLib.h"
+#include "applicfg.h"
 
 #if HJWS_HARDWARE_I
 static char v4l_capture_dev[100] = "/dev/video6";
@@ -44,7 +45,7 @@ struct testbuffer output_buffers[4];
 struct testbuffer capture_buffers[3];
 
 ARITH_INPUT algorithm_input = XIAOMING_ARITH_INPUT_DEFAULT;
-ARITH_OUTPUT algorithm_output;
+ARITH_OUTPUT algorithm_output, last_algorithm_output;
 unsigned char gray_image[720*480];
 unsigned char YUYV_image[720*480*2];
 
@@ -497,14 +498,19 @@ int prepare_output(void)
 }
 
 
+
+
 void fatigue_detect_output_warn(const unsigned char* YUYV_image, SerialOutputVar* serial_warn_output)
 {
 	int i = 0;
 	int send_buf_len = 0;
+	static unsigned char last_close_eye_two_level_warn  = 0;
+	unsigned char temp_drowsyLevel = 0;
+	float real_close_time = 0;
 
 	get_Ycompnt_from_YUYV(YUYV_image, gray_image, 1); //get Y component from gray picture of YUYV type
 
-    /* update dws algorithm's inputs */
+    /* update dws algorithm's input variables */
 	algorithm_input.eyeCloseTime = dws_alg_init_val.level1_closing_eye_time;
 	algorithm_input.yawnTime = dws_alg_init_val.yawn_time;
 	algorithm_input.smokingTime = dws_alg_init_val.somking_time;
@@ -518,103 +524,171 @@ void fatigue_detect_output_warn(const unsigned char* YUYV_image, SerialOutputVar
 				"algorithm_output.eyeCloseEventTime: %d\n", \
 				algorithm_output.drowsyLevel, algorithm_output.faceFlag, algorithm_output.eyeCloseEventTime);
 
-		switch(algorithm_output.drowsyLevel)
+		temp_drowsyLevel = algorithm_output.drowsyLevel;
+
+		/* get eye-closed time */
+		serial_warn_output->close_eye_time = algorithm_output.eyeCloseEventTime;
+		serial_warn_output->warnning_level.working_state = 0x01;
+		serial_warn_output->calling_warn = 0;
+		serial_warn_output->close_eye_one_level_warn = 0;
+		serial_warn_output->close_eye_two_level_warn = 0;
+		serial_warn_output->distract_warn = 0;
+		serial_warn_output->yawn_warn = 0;
+		serial_warn_output->warnning_level.somking_warn = 0;
+		serial_warn_output->warnning_level.warning_state = 0;
+
+		/* to avoid warn discontinuously */
+		if((0 == temp_drowsyLevel) && (last_algorithm_output.drowsyLevel > 0) && (3 != last_algorithm_output.drowsyLevel)\
+				&& (algorithm_output.eyeCloseEventTime <= 0))
 		{
-		case 0:  //nor warning
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
+			temp_drowsyLevel = last_algorithm_output.drowsyLevel;
+		}
+
+		switch(temp_drowsyLevel)
+		{
+		case 0:  //no warning
+			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
+					(serial_warn_output->close_eye_time > 0))
+			{
+				if((real_close_time = serial_warn_output->close_eye_time*0.15) > 0) //convert closing_eye time
+				{
+					serial_warn_output->close_eye_time = (unsigned char)real_close_time;
+				}
+				else
+				{
+					serial_warn_output->close_eye_time = 0;
+				}
+
+				kfifo_put(dws_warn_fifo, (unsigned char*)serial_warn_output, 8);
+				send_buf_len = 8;
+			}
+			goto fatigue_detect_return;
 			break;
 
 		case 2:  //yawn
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.yawn_enable))
 			{
 				serial_warn_output->yawn_warn = 1;
+				serial_warn_output->warnning_level.warning_state = LEVEL_TWO_WARNING;
+				serial_warn_output->close_eye_time = 0;
 			}
 			break;
 
 		case 3:  //distraction
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.distract_enable))
 			{
 				serial_warn_output->distract_warn = 1;
+				serial_warn_output->warnning_level.warning_state = LEVEL_THREE_WARNING;
+				serial_warn_output->close_eye_time = 0;
+				kfifo_put(dws_warn_fifo, (unsigned char*)serial_warn_output, 8);
+				kfifo_put(dws_warn_fifo, (unsigned char*)serial_warn_output, 8);
+				kfifo_put(dws_warn_fifo, (unsigned char*)serial_warn_output, 8);
 			}
+			goto fatigue_detect_return;
 			break;
 
 		case 4:  //calling phone
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.calling_enable))
 			{
 				serial_warn_output->calling_warn = 1;
+				serial_warn_output->warnning_level.warning_state = LEVEL_ONE_WARNING;
+				serial_warn_output->close_eye_time = 0;
 			}
 			break;
 
 		case 5:  //smoking
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.smoking_enable))
 			{
-				serial_warn_output->somking_warn = 1;
+				serial_warn_output->warnning_level.somking_warn = 1;
+				serial_warn_output->warnning_level.warning_state = LEVEL_ONE_WARNING;
+				serial_warn_output->close_eye_time = 0;
 			}
 			break;
 
-		case 6:  //leaving post
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
+		case 6:  //leaving post or covering warning
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.covering_enable))
 			{
-				serial_warn_output->warning_state = 4;
+				serial_warn_output->warnning_level.warning_state = COVER_WARNING;
+				serial_warn_output->close_eye_time = 0;
+				kfifo_put(dws_warn_fifo, (unsigned char*)serial_warn_output, 8);
 			}
+			goto fatigue_detect_return;
 			break;
 
 		case 7:  //dangerous driving
+		case 100: ////warning voice
+		default:
+			serial_warn_output->close_eye_time = 0;
+			goto fatigue_detect_return;
 			break;
 
 		case 8:  //level one closed-eye warning
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.level1_closing_eye_enable))
 			{
 				serial_warn_output->close_eye_one_level_warn = 1;
+				serial_warn_output->warnning_level.warning_state = LEVEL_TWO_WARNING;
+				serial_warn_output->close_eye_time = 0;
 			}
 			break;
 
 		case 9:  //level two closed-eye warning
-			memset(serial_warn_output, 0, sizeof(SerialOutputVar));
 			if(((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && \
 					(1 == dws_alg_init_val.dws_warning_enable_config.bits.level2_closing_eye_enable))
 			{
 				serial_warn_output->close_eye_two_level_warn = 1;
+				//last_close_eye_two_level_warn = 1;
+				serial_warn_output->warnning_level.warning_state = LEVEL_THREE_WARNING;
+				serial_warn_output->close_eye_time = 0;
 			}
 			break;
-
-		case 100:  //warning voice
-			break;
 		}
 
-		serial_warn_output->close_eye_time = algorithm_output.eyeCloseEventTime;
-
-		if(serial_warn_output->calling_warn | serial_warn_output->somking_warn)
+#if 0
+		/*classify calling warning and smoking warning as level 1 waring*/
+		if(serial_warn_output->calling_warn | serial_warn_output->warnning_level.somking_warn)
 		{
-			serial_warn_output->warning_state = 1;
+			serial_warn_output->warnning_level.warning_state = LEVEL_ONE_WARNING;
 		}
 
+		/*classify yawn warning and eye-closed level 1 as level 2 waring*/
 		if(serial_warn_output->close_eye_one_level_warn | serial_warn_output->yawn_warn)
 		{
-			serial_warn_output->warning_state = 2;
+			serial_warn_output->warnning_level.warning_state = LEVEL_TWO_WARNING;
 		}
 
+		/*classify distraction warning and eye-closed level 2 as level 3 waring*/
 		if(serial_warn_output->close_eye_two_level_warn | serial_warn_output->distract_warn)
 		{
-			serial_warn_output->warning_state = 3;
+			serial_warn_output->warnning_level.warning_state = LEVEL_THREE_WARNING;
 		}
+#endif
 
-		if((serial_warn_output->warning_state > 0) || (serial_warn_output->close_eye_time > 0))
+
+#if 0
+		/* to avoid close_eye_level_two warning disappear occasionally during close_eye_level_two warning */
+		if((1 == last_close_eye_two_level_warn) && (0 == serial_warn_output->close_eye_two_level_warn))
 		{
-			pack_serial_send_message(D2_MESSAGE, (void*)serial_warn_output, serial_send_buf, &send_buf_len);
-			send_spec_len_data(fd, serial_send_buf, send_buf_len);
+			serial_warn_output->close_eye_two_level_warn = 1;
+			serial_warn_output->warnning_level.warning_state = LEVEL_THREE_WARNING;
+			last_close_eye_two_level_warn = 0;
+		}
+#endif
+
+		if(serial_warn_output->warnning_level.warning_state > 0)
+		{
+			if((serial_warn_output->distract_warn == 0) || \
+					(serial_warn_output->warnning_level.warning_state != COVER_WARNING))
+			{
+				pack_serial_send_message(D2_MESSAGE, (void*)serial_warn_output, serial_send_buf, &send_buf_len);
+				send_spec_len_data(fd, serial_send_buf, send_buf_len);
+			}
+
 			printf("warning occurred send serial data actively! send data:  ");
 
 			for(i=0; i<send_buf_len; i++)
@@ -624,6 +698,10 @@ void fatigue_detect_output_warn(const unsigned char* YUYV_image, SerialOutputVar
 
 			puts("\n");
 		}
+
+fatigue_detect_return:
+		last_algorithm_output = algorithm_output;
+		return;
 	}
 }
 
@@ -669,7 +747,7 @@ v4l2_init:
 
 	for (i = 0; ; i++)
 	{
-        if(serial_input_var.DDWS_switch == 0)
+        if(1 == serial_input_var.DDWS_switch)
         {
         	if(close_camera > 0)
         	{
@@ -701,7 +779,7 @@ v4l2_init:
     		memcpy(output_buffers[output_buf.index].start, capture_buffers[capture_buf.index].start, g_frame_size);
     		//printf("timer_flag.timer_val is: %4X, g_frame_size is: %d\n", timer_flag.timer_val, g_frame_size);
 
-    		if((timer_flag.timer_val == 0) && (serial_input_var.DDWS_switch == 0) && (serial_commu_recv_state == 0) &&
+    		if((0 == timer_flag.timer_val) && (1 == serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) &&
     				((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed))
     		//if((serial_input_var.DDWS_switch == 1) && (serial_commu_recv_state == 0))
     		//if(true)
@@ -711,8 +789,16 @@ v4l2_init:
     		}
     		else
     		{
-    			/**/
-    			serial_output_var = {0, 0, 0, 0, 0, 0, 0, 0};
+    			memset(&last_algorithm_output, 0, sizeof(last_algorithm_output));
+    			serial_output_var.calling_warn = 0;
+    			serial_output_var.close_eye_one_level_warn = 0;
+    			serial_output_var.close_eye_two_level_warn = 0;
+    			serial_output_var.distract_warn = 0;
+    			serial_output_var.yawn_warn = 0;
+    			serial_output_var.warnning_level.somking_warn = 0;
+    			serial_output_var.warnning_level.warning_state = 0;
+    			serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
+    			serial_output_var.close_eye_time = 0;
     		}
 
     		if (xioctl(fd_capture_v4l, VIDIOC_QBUF, &capture_buf) < 0)
@@ -770,7 +856,6 @@ v4l2_init:
 	total_time = (tv_current.tv_sec - tv_start.tv_sec) * 1000000L;
 	total_time += tv_current.tv_usec - tv_start.tv_usec;
 	printf("total time for %u frames = %u us =  %lld fps\n", i, total_time, (i * 1000000ULL) / total_time);
-
 	return 0;
 }
 
@@ -862,7 +947,6 @@ void* image_process_algorithm(void*)
 		printf("Unable to open %s\n", v4l_output_dev);
 		return NULL;
 	}
-
 
 	if ((fd_fb = open(fb_device, O_RDWR )) < 0)
 	{

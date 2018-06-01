@@ -4,8 +4,13 @@ src/app_main.d: ../src/app_main.cpp ../src/algorithm.hpp ../src/AlgoLib.h \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/timerscfg.h ../src/software_version.h \
  ../src/watchdog.h ../src/kfifo.h ../src/bootloader.h ../src/list.h \
+<<<<<<< HEAD
  ../src/crc32.h ../src/applicfg.h ../src/user_timer.h \
  ../src/timers_driver.h ../src/single_daemon_running.h \
+=======
+ ../src/crc32.h ../src/applicfg.h ../src/timers_driver.h \
+ ../src/user_timer.h ../src/single_daemon_running.h \
+>>>>>>> 9624006fb645fd78363626f95914443b155e0134
  ../src/xml_operation.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/parser.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlversion.h \
@@ -67,10 +72,17 @@ src/app_main.d: ../src/app_main.cpp ../src/algorithm.hpp ../src/AlgoLib.h \
 
 ../src/applicfg.h:
 
+<<<<<<< HEAD
 ../src/user_timer.h:
 
 ../src/timers_driver.h:
 
+=======
+../src/timers_driver.h:
+
+../src/user_timer.h:
+
+>>>>>>> 9624006fb645fd78363626f95914443b155e0134
 ../src/single_daemon_running.h:
 
 ../src/xml_operation.h:

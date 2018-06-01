@@ -19,6 +19,7 @@ extern "C"
 #include "watchdog.h"
 #include "single_daemon_running.h"
 #include "xml_operation.h"
+#include "kfifo.h"
 }
 
 using namespace std;
@@ -117,8 +118,14 @@ static void param_validity_detect(KeyValuePair* key_value_list)
 			/* ensure that accelerator freezing time no more than 60 seconds */
 			config_param.acceleator_time = ((key_value_list+i)->value > 60) ? 60: (key_value_list+i)->value;
 		}
+		else if(!strcmp((key_value_list+i)->key_name, "ddws_switch"))
+		{
+			/* get ddws switch status from xml file, 0: ddws turn off, 1: ddws turn on */
+			serial_input_var.DDWS_switch = ((key_value_list+i)->value > 1) ? 1: (key_value_list+i)->value;
+		}
 	}
 }
+
 
 
 
@@ -150,6 +157,7 @@ static int create_task()
 
 	return 1;
 }
+
 
 
 static int wait_task()
@@ -197,8 +205,8 @@ static void process_cmd(int argc, char** argv)
 
 		if(0 == strcmp(argv[i], "-smoke"))
 		{
-			printf("serial_output_var_test.somking_warn: %2X \n", serial_output_var_test.somking_warn);
-			serial_output_var_test.somking_warn = atoi(argv[i+1]);
+			printf("serial_output_var_test.somking_warn: %2X \n", serial_output_var_test.warnning_level.somking_warn);
+			serial_output_var_test.warnning_level.somking_warn = atoi(argv[i+1]);
 		}
 
 		if(0 == strcmp(argv[i], "-close_time"))
@@ -208,10 +216,11 @@ static void process_cmd(int argc, char** argv)
 
 		if(0 == strcmp(argv[i], "-warn_state"))
 		{
-			serial_output_var_test.warning_state = atoi(argv[i+1]);
+			serial_output_var_test.warnning_level.warning_state = atoi(argv[i+1]);
 		}
 	}
 }
+
 
 
 /* initialize hardware resources to be used */
@@ -260,6 +269,7 @@ static int hardware_init()
 	}
 
 	tcflush(fd, TCIOFLUSH);
+
     /*
 	if(open_watchdog() < 0)
 	{
@@ -272,11 +282,19 @@ static int hardware_init()
 
 	if(already_running() == 0)
 	{
-		printf("program will be executed!\n");
+		DEBUG_INFO(program is to be executed!);
 	}
 	else
 	{
-		printf("program has already been executed!\n");
+		DEBUG_INFO(program has already been executed!);
+		return -1;
+	}
+
+	/* create cache fifo for DDWS warning message */
+	dws_warn_fifo = kfifo_alloc(DWS_WARNING_FIFO_SIZE);
+	if(!dws_warn_fifo)
+	{
+		perror("create cache fifo for DDWS warning message error:");
 		return -1;
 	}
 
@@ -284,11 +302,9 @@ static int hardware_init()
 }
 
 
-
 int main(int argc, char** argv)
 {
 	//daemon(0, 0);
-
 	if(hardware_init() < 0)
 	{
 		return -1;

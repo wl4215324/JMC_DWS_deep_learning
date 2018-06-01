@@ -18,8 +18,11 @@ SerialInputVar serial_input_var = {
 		.engine_speed = 0,
 		.small_lamp = 0,
 	    .DDWS_switch = 0,
-	    .OK_switch = 0,
+	    .OK_switch = 1,  //default enable
+	    .MP5_DDWS_switch = 0,
+	    .Cruise_switch = 0,
 };
+
 
 SerialOutputVar serial_output_var = {0, 0, 0,}, serial_output_var_test;
 
@@ -77,7 +80,8 @@ KeyValuePair key_value_list[CONFIG_PARAMS_COUNT] = {
 		{"driver_door_freeze_time", 15},
 		{"brake_freeze_time", 20},
 		{"turn_light_freeze_time", 20},
-		{"acceleator_freeze_time", 20}
+		{"acceleator_freeze_time", 20},
+		{"ddws_switch", 1}
 };
 
 /*
@@ -88,6 +92,8 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 	int left_bytes = 0;
 	int read_bytes = 0;
 	int retry_cnt = 0;
+	int i = 0;
+	unsigned char *buf_begin = recv_buf;
 	left_bytes = spec_len;
 
 	while(left_bytes > 0)
@@ -126,6 +132,14 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 		left_bytes -= read_bytes;
 		recv_buf += read_bytes;
 	}
+
+	/*
+	for(i=0; i < spec_len - left_bytes; i++)
+	{
+		printf("%2X", *(buf_begin+i));
+	}
+	printf("\n");
+	*/
 
 	return (spec_len - left_bytes);
 }
@@ -276,80 +290,134 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 }
 
 
+
 /*
  * parse receiving frame and get input variables for DWS algorithm
  */
 static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 {
+#if (TRIGGER_STYLE == RISING_EDGE)
 	static unsigned short DDWS_switch_temp = 0;
 	static unsigned short OK_switch_temp = 0;
+#endif
 
+	unsigned int can_frame;
+	char value_buf[8] = "";
+
+	/*receiving message length error*/
+	if((NULL == recv_buf) || (recv_buf_len < 128))  //128 = 8+12*10
+		return -1;
+
+	/*get variable vehicle_speed from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+3)) == \
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
-		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
-		printf("vehicle_speed is: %4X\n", serial_input_var.vehicle_speed);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+		}
+
+		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/*get variable turn_signal from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX), *(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+2), *(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+3)) == \
 			MESSAGE_ID_OF_TURN_SIGNAL)
 	{
-		serial_input_var.turn_signal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+4, 8, 4);
-		printf("turn_signal is: %4X\n", serial_input_var.turn_signal);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.turn_signal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+4, 8, 4);
+		}
+
+		DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/*get variable accel_pedal from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX), *(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+2), *(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+3)) == \
 			MESSAGE_ID_OF_ACCEL_PEDAL)
 	{
-		serial_input_var.accel_pedal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+4, 2, 2);
-		printf("accel_pedal is: %4X\n", serial_input_var.accel_pedal);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.accel_pedal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+4, 2, 2);
+		}
+
+		DEBUG_INFO(accel_pedal is: %4X\n, serial_input_var.accel_pedal);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/*get variable brake_switch from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX), *(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+3)) == \
 			MESSAGE_ID_OF_BRAKE_SWITCH)
 	{
-		serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 28, 2);
-		printf("brake_switch is: %4X\n", serial_input_var.brake_switch);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.Cruise_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 24, 2);
+			serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 28, 2);
+		}
+
+		DEBUG_INFO(Cruise_switch is: %4X\n, serial_input_var.Cruise_switch);
+		DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/*get variable driver_door from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX), *(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+2), *(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+3)) == \
 			MESSAGE_ID_OF_DRIVER_DOOR)
 	{
-		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
-		printf("driver_door is: %4X\n", serial_input_var.driver_door);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
+		}
+
+		DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/*get variable small_lamp from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX), *(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+2), *(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+3)) == \
 			MESSAGE_ID_OF_SMALL_LAMP)
 	{
-		serial_input_var.small_lamp = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+4, 30, 2);
-		printf("small_lamp is: %4X\n", serial_input_var.small_lamp);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.small_lamp = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+4, 30, 2);
+		}
+
+		DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
 
 	}
 	else
@@ -357,10 +425,12 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		return -1;
 	}
 
+	/*get variables DDWS_switch and OK_switch from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX), *(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+2), *(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+3)) == \
 			MESSAGE_ID_OF_DDWS_SWITCH)
 	{
+#if (TRIGGER_STYLE == RISING_EDGE)
 		if((0 == DDWS_switch_temp) && (1 == get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 20, 2)))
 		{
 			serial_input_var.DDWS_switch = serial_input_var.DDWS_switch^1;
@@ -374,29 +444,103 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		OK_switch_temp = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 22, 2);
+#else
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, sizeof(can_frame));
 
-		printf("DDWS_switch is: %4X\n", serial_input_var.DDWS_switch);
-		printf("OK_switch is: %4X\n", serial_input_var.OK_switch);
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.IC_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 20, 2);
+			serial_input_var.OK_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 22, 2);
+
+			if(1 == serial_input_var.DDWS_switch^serial_input_var.IC_DDWS_switch)
+			{
+				serial_input_var.DDWS_switch = serial_input_var.IC_DDWS_switch;
+				/* save DDWS_switch status into file-system */
+				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
+				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
+			}
+		}
+#endif
+
+		DEBUG_INFO(serial_input_var.IC_DDWS_switch: %4X\n, serial_input_var.IC_DDWS_switch);
+		DEBUG_INFO(OK_switch is: %4X\n, serial_input_var.OK_switch);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/*get variable engine_speed from receiving data*/
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX), *(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+2), *(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+3)) == \
 			MESSAGE_ID_OF_ENGINE_SPEED)
 	{
-		serial_input_var.engine_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+4, 24, 16);
-		printf("engine_speed is: %4X\n", serial_input_var.engine_speed);
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.engine_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+4, 24, 16);
+		}
+
+		DEBUG_INFO(engine_speed is: %4X\n, serial_input_var.engine_speed);
 	}
 	else
 	{
 		return -1;
 	}
 
+	/* get variable MP5_DDWS_switch from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX), *(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+2), *(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+3)) == \
+			MESSAGE_ID_OF_DDWS_SWITCH_MP5)
+	{
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.MP5_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, 20, 2);
+
+			if(1 == serial_input_var.DDWS_switch^serial_input_var.MP5_DDWS_switch)
+			{
+				serial_input_var.DDWS_switch = serial_input_var.MP5_DDWS_switch;
+				/* save DDWS_switch status into file-system */
+				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
+				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
+			}
+		}
+
+		DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X\n, serial_input_var.MP5_DDWS_switch);
+		DEBUG_INFO(serial_input_var.DDWS_switch: %4X\n, serial_input_var.DDWS_switch);
+	}
+	else
+	{
+		return -1;
+	}
+
+#if 0
+	/* get variable Cruise_switch from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_CRUISE_SWITCH_INDEX), *(recv_buf+MESSAGE_ID_OF_CRUISE_SWITCH_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_CRUISE_SWITCH_INDEX+2), *(recv_buf+MESSAGE_ID_OF_CRUISE_SWITCH_INDEX+3)) == \
+			MESSAGE_ID_OF_CRUISE_SWITCH)
+	{
+		memcpy(&can_frame, recv_buf+MESSAGE_ID_OF_CRUISE_SWITCH_INDEX+4, sizeof(can_frame));
+
+		if(0xFFFFFFFF != can_frame)
+		{
+			serial_input_var.Cruise_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_CRUISE_SWITCH_INDEX+4, 24, 2);
+		}
+
+		DEBUG_INFO(serial_input_var.Cruise_switch: %4X\n, serial_input_var.Cruise_switch);
+	}
+	else
+	{
+		return -1;
+	}
+#endif
+
 	return 1;
 }
+
 
 
 /*
@@ -417,12 +561,18 @@ int pack_serial_send_message(unsigned char message_type, void* send_data, unsign
 		message_len = 14;
 		message_len_compl = ~(14);
 		message_type_id = D2_MESSAGE;
+		/*
 		memcpy(send_buf+7, (unsigned char*)send_data, 5);
 		*send_buf_len = 7 + 5;
 		*(send_buf+*send_buf_len) = *(unsigned char*)(send_data+6) & 0x0F;
 		*(send_buf+*send_buf_len) = *(send_buf+*send_buf_len) << 2;
 		*(send_buf+*send_buf_len) = *(send_buf+*send_buf_len) | (*(unsigned char*)(send_data+5) & 0x03);
 		*send_buf_len += 1;
+		*(send_buf+*send_buf_len) = *(unsigned char*)(send_data+7);
+		*send_buf_len += 1;
+		*/
+		memcpy(send_buf+7, (unsigned char*)send_data, 6);
+		*send_buf_len = 7 + 6;
 		*(send_buf+*send_buf_len) = *(unsigned char*)(send_data+7);
 		*send_buf_len += 1;
 		break;
@@ -508,6 +658,7 @@ static int D2_message_process(unsigned char* recv_buf, int recv_buf_len,\
 		return -1;
 	}
 
+	serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 	return pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, send_buf, send_buf_len);
 }
 
@@ -674,7 +825,7 @@ static int D5_message_process(unsigned char* recv_buf, int recv_buf_len,\
 		unsigned char* send_buf, int* send_buf_len)
 {
 	if(( D5_MESSAGE != *(recv_buf+MESSAGE_TYPE_ID) ) || \
-			( (recv_buf_len-2) != MAKE_WORD(*(recv_buf+MESSAGE_LEN_INDEX), *(recv_buf+MESSAGE_LEN_INDEX+1)) ))
+			( (recv_buf_len-2) != MAKE_WORD(*(recv_buf+MESSAGE_LEN_INDEX), *(recv_buf+MESSAGE_LEN_INDEX+1))))
 	{
 		return -1;
 	}
@@ -727,6 +878,7 @@ static int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 }
 
 
+
 /*
  * send specified length data to serial port
  */
@@ -763,11 +915,11 @@ int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short spec_send
 	return (spec_send_data_len- nleft);
 }
 
+
 void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 {
-
-	/* if engine start */
-	if(((serial_input_var_temp.engine_speed >> 3) > 0) && ((serial_input_var_temp.vehicle_speed>>8) > 0))
+	/* if vehicle speed more than 0 */
+	if((serial_input_var_temp.vehicle_speed>>8) > 0)
 	{
 		/* if 15mins timer for engine start for 15mins*/
 		if((timer_flag.bits.engine_start_timer_stat == 0) && (timer_flag.bits.engine_start_afer_15min_flag == 1))
@@ -780,10 +932,10 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 		}
 	}
 	else
-	{   /*if engine stop*/
+	{   /*if vehicle stop*/
 		timer_flag.timer_val = 0x1f;
 		free_all_alarm();
-		printf("engine stop!\n");
+		DEBUG_INFO(engine stop!);
 	}
 
 	/*if driver door closed*/
@@ -842,8 +994,8 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 		free_spec_type_alarm(brake_active_after_20s);
 	}
 
-	/*if accelerator pedal is kicked down*/
-	if(serial_input_var_temp.accel_pedal == 1)
+	/* if accelerator pedal is kicked down or cruise mode is active */
+	if((1==serial_input_var_temp.accel_pedal) || (1 == serial_input_var_temp.Cruise_switch))
 	{
 		if((timer_flag.bits.accelerator_active_timer_stat == 0) && (timer_flag.bits.accelerator_active_after_20s_flag == 1))
 		{
@@ -852,7 +1004,8 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 					S_TO_TIMEVAL(config_param.acceleator_time), 0);
 		}
 	}
-	else
+	/*if accelerator pedal is released as well as cruise mode is turned off*/
+	else if((0 ==serial_input_var_temp.accel_pedal) && (0 == serial_input_var_temp.Cruise_switch))
 	{
 		/*if pedal is not kicked down*/
 		timer_flag.bits.accelerator_active_timer_stat = 0;
@@ -860,6 +1013,7 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 		free_spec_type_alarm(accelerator_active_after_20s);
 	}
 }
+
 
 void serial_input_var_judge(SerialInputVar serial_input_var_temp)
 {
@@ -1005,8 +1159,9 @@ void* serial_commu_app(void* argv)
 	fd_set rfds;
 	int recv_length, spec_recv_len;
 	int send_buf_len;
+	unsigned char dws_mesg_array[8] = {0};
 	struct timeval tv = {
-			.tv_sec = 1,
+			.tv_sec = 3,
 			.tv_usec = 300000,
 	};
 
@@ -1015,25 +1170,41 @@ void* serial_commu_app(void* argv)
 		FD_ZERO(&rfds);
 		FD_SET(fd, &rfds);
 
-		if(select(fd + 1, &rfds, NULL, NULL, &tv) > 0)
+		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
 		{
+			/*read serial data from rs232 */
 			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
 			{
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 
-				printf("recv_length is: %d, data: ", recv_length);
+				printf("recv_length is: %d data:", recv_length);
 
 				for(i=0; i<recv_length; i++ )
 				{
-					printf("%02X ",serial_recv_buf[i]);
+					printf("%02X", serial_recv_buf[i]);
 				}
 
 			    puts("\n");
 
+			    /* parse receiving serial data */
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 			    {
-				    if(send_buf_len > 0)
+			    	/*get dws warning message from cache fifo*/
+			    	if(kfifo_len(dws_warn_fifo) > 0)
+			    	{
+			    		if((0 == timer_flag.timer_val) && (1 == serial_input_var.DDWS_switch))
+			    		{
+				    		kfifo_get(dws_warn_fifo, dws_mesg_array, sizeof(dws_mesg_array));
+				    		pack_serial_send_message(D2_MESSAGE, dws_mesg_array, serial_send_buf, &send_buf_len);
+			    		}
+			    		else
+			    		{
+			    			kfifo_reset(dws_warn_fifo);
+			    		}
+			    	}
+
+			    	if(send_buf_len > 0)
 				    {
 						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 						{

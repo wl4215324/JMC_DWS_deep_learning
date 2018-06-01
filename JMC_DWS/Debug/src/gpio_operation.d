@@ -5,7 +5,8 @@ src/gpio_operation.d: ../src/gpio_operation.c ../src/gpio_operation.h \
  /home/tony/Public/adas/Include/linux/ioctl.h \
  /home/tony/Public/adas/Include/linux/types.h \
  /home/tony/Public/adas/Include/linux/posix_types.h \
- /home/tony/Public/adas/Include/linux/stddef.h ../src/timer_delay.h
+ /home/tony/Public/adas/Include/linux/stddef.h ../src/kfifo.h \
+ ../src/timer_delay.h
 
 ../src/gpio_operation.h:
 
@@ -28,5 +29,7 @@ src/gpio_operation.d: ../src/gpio_operation.c ../src/gpio_operation.h \
 /home/tony/Public/adas/Include/linux/posix_types.h:
 
 /home/tony/Public/adas/Include/linux/stddef.h:
+
+../src/kfifo.h:
 
 ../src/timer_delay.h:

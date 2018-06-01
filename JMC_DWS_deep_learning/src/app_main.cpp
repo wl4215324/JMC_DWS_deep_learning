@@ -130,7 +130,10 @@ static void param_validity_detect(KeyValuePair* key_value_list)
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9624006fb645fd78363626f95914443b155e0134
 static int create_task()
 {
 	/* create rs232 communication task */
@@ -166,7 +169,10 @@ static int create_task()
 }
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 9624006fb645fd78363626f95914443b155e0134
 static int wait_task()
 {
 	pthread_join(serial_pthread_id, NULL);

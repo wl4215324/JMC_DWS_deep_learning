@@ -16,7 +16,10 @@ extern "C" {
 #include "v4l2_tvin.h"
 #include "serial_pack_parse.h"
 #include "applicfg.h"
+<<<<<<< HEAD
 #include "user_timer.h"
+=======
+>>>>>>> 9624006fb645fd78363626f95914443b155e0134
 }
 
 
