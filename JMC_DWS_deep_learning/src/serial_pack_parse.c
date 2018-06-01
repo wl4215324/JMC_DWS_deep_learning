@@ -318,7 +318,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 	if((NULL == recv_buf) || (recv_buf_len < 128))  //128 = 8+12*10
 		return -1;
 
-	/*get variable vehicle_speed from receiving data*/
+	/* get variable vehicle_speed from receiving data */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+3)) == \
 			MESSAGE_ID_OF_VEHICLE_SPEED)
@@ -331,7 +331,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
 		}
 		*/
-		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+		//serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+		serial_input_var.vehicle_speed = 0x3800;
 		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
 	}
 	else
@@ -339,7 +340,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		return -1;
 	}
 
-	/*get variable turn_signal from receiving data*/
+	/* get variable turn_signal from receiving data */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX), *(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+2), *(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+3)) == \
 			MESSAGE_ID_OF_TURN_SIGNAL)
@@ -361,7 +362,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		return -1;
 	}
 
-	/*get variable accel_pedal from receiving data*/
+	/* get variable accel_pedal from receiving data */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX), *(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+2), *(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+3)) == \
 			MESSAGE_ID_OF_ACCEL_PEDAL)
@@ -383,7 +384,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		return -1;
 	}
 
-	/*get variable brake_switch from receiving data*/
+	/* get variable brake_switch from receiving data */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX), *(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+3)) == \
 			MESSAGE_ID_OF_BRAKE_SWITCH)
@@ -536,7 +537,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		return -1;
 	}
 
-	/*get variable engine_speed from receiving data*/
+	/* get variable engine_speed from receiving data */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX), *(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+2), *(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+3)) == \
 			MESSAGE_ID_OF_ENGINE_SPEED)
@@ -609,7 +610,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 
 	return 0;
 }
-
 
 
 
@@ -1046,7 +1046,11 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 	}
 	else
 	{   /*if vehicle stop*/
+#ifdef ENABLE_ACCELERATOR
 		timer_flag.timer_val = 0x1f;
+#else
+		timer_flag.timer_val = 0x0f;
+#endif
 		free_all_alarm();
 		DEBUG_INFO(engine stop!\n);
 	}
@@ -1067,7 +1071,11 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 	else
 	{
 		/*if driver door opened now */
+#ifdef ENABLE_ACCELERATOR
 		timer_flag.timer_val = 0x1f;
+#else
+		timer_flag.timer_val = 0x0f;
+#endif
 		free_all_alarm();
 		printf("driver door open!\n");
 	}
@@ -1108,6 +1116,7 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 		free_spec_type_alarm(brake_active_after_20s);
 	}
 
+#ifdef ENABLE_ACCELERATOR
 	/* if accelerator pedal is kicked down or cruise mode is active */
 	if(((0 < serial_input_var_temp.accel_pedal) && (serial_input_var_temp.accel_pedal <= 0xFA)) ||\
 		(1 == serial_input_var_temp.Cruise_switch))
@@ -1126,12 +1135,17 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 			(((0 >= serial_input_var_temp.accel_pedal) || (0xFA < serial_input_var_temp.accel_pedal)) \
 			&& (1 < serial_input_var_temp.Cruise_switch)))
 	{
-		/*if pedal is not kicked down*/
+		/*if pendal is not kicked down*/
 		timer_flag.bits.accelerator_active_timer_stat = 0;
 		timer_flag.bits.accelerator_active_after_20s_flag = 1;
 		free_spec_type_alarm(accelerator_active_after_20s);
 	}
+#else
+	timer_flag.bits.accelerator_active_timer_stat = 0;
+	timer_flag.bits.accelerator_active_after_20s_flag = 0;
+#endif
 }
+
 
 
 void serial_input_var_judge(SerialInputVar serial_input_var_temp)
@@ -1281,10 +1295,9 @@ void* serial_commu_app(void* argv)
 	unsigned char dws_mesg_array[8] = {0};
 
 	struct timeval tv = {
-			.tv_sec = 3,
+			.tv_sec = 1,
 			.tv_usec = 300000,
 	};
-
 
 	while(true)
 	{

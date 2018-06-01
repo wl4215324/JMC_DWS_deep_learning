@@ -615,7 +615,7 @@ v4l2_init:
 				continue;
 			}
 
-			usleep(150000);
+			usleep(100000);
 		}
 		else
 		{

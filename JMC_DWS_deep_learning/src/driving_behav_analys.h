@@ -14,6 +14,8 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "serial_pack_parse.h"
+
 #define VEHICLE_SPEED_THRESHOLD  50
 
 typedef union{
@@ -42,12 +44,15 @@ typedef enum{
 	driver_door_close_after_15min,
 	turning_light_active_after_20s,
 	accelerator_active_after_20s,
-	OK_Switch_timer_3s
+	OK_Switch_timer_3s,
+	level2_closing_eye_timer_1s  // added on 05-21
 } TimerEventType;
 
 extern TimerFlag timer_flag ;
 
 extern TimerFlag OK_Switch_timer_flag ;
+
+extern TimerFlag level2_closing_eye_timer_flag; // added on 05-21
 
 extern void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_type);
 

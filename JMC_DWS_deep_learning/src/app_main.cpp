@@ -130,6 +130,7 @@ static void param_validity_detect(KeyValuePair* key_value_list)
 
 
 
+
 static int create_task()
 {
 	/* create rs232 communication task */
@@ -163,6 +164,7 @@ static int create_task()
 
 	return 0;
 }
+
 
 
 static int wait_task()

@@ -18,13 +18,16 @@ void* vibrate_motor(void* argv)
 	unsigned short i = 0, j;
 	unsigned short min_vibration_time = 0; //minimum vibration time, unit: second
 
+	motor_pwm_period = config_param.motor_pwm_period;
+	motor_pwm_duty = config_param.motor_pwm_duty;
+	printf("motor_pwm_period: %d\n", motor_pwm_period);
+
 	while(true)
 	{
-		motor_pwm_period = config_param.motor_pwm_period;
-		motor_pwm_duty = config_param.motor_pwm_duty;
+		motor_pwm_period = 6;  //8*125ms = 1S
 
-		motor_pwm_period = 8;  //8*125ms = 1S
-		motor_pwm_duty = motor_pwm_duty * motor_pwm_period/100;  //PWM duty, unit is ms
+		//motor_pwm_duty = motor_pwm_duty * motor_pwm_period/100;  //PWM duty, unit is ms
+		motor_pwm_duty = 4;
 
 		if(motor_pwm_duty >= motor_pwm_period)
 		{
@@ -59,6 +62,7 @@ void* vibrate_motor(void* argv)
 			{
 				/*if level 3 warning occurred now, motor begin to vibrate*/
 				if(LEVEL_THREE_WARNING == serial_output_var.warnning_level.warning_state)
+				//if(serial_output_var.warnning_level&0x3f > 0)
 				{
 					if(i%motor_pwm_period < motor_pwm_duty) //motor begin to vibrate
 					{
@@ -71,6 +75,9 @@ void* vibrate_motor(void* argv)
 						i++;
 					}
 
+					min_vibration_time = 2;
+
+#if 0
 					if(1 == serial_output_var.distract_warn)
 					{
 						min_vibration_time = 4; // minimum vibration time for distract warning is 4 seconds
@@ -79,6 +86,7 @@ void* vibrate_motor(void* argv)
 					{
 						min_vibration_time = 2; // minimum vibration time for other warnings is 2 seconds
 					}
+#endif
 				}
 				else // if level 3 warning disappeared, check vibrating time is less than minimum vibration time
 				{
@@ -136,7 +144,7 @@ void* vibrate_motor(void* argv)
 				j = 0;
 			}
 			else if((OK_SWITCH_ENABLE == serial_input_var.OK_switch) && \
-					(0 == OK_Switch_timer_flag.timer_val))  // if OK_switch is enabled, the motor stops vibrating.
+					(0 == OK_Switch_timer_flag.timer_val))  //if OK_switch is enabled, the motor stops vibrating.
 			{
 				gpio_write(VIBRAT_MOTOR_GPIO_INDEX, 0);  //stop motor working
 				i = 0;
