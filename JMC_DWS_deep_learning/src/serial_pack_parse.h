@@ -257,6 +257,7 @@ extern SerialInputVar serial_input_var;
 extern SerialOutputVar serial_output_var;
 extern SerialOutputVar serial_output_var_test;
 extern unsigned char serial_send_buf[512];
+extern pthread_mutex_t serial_output_var_mutex;
 
 
 extern ConfigParam config_param;

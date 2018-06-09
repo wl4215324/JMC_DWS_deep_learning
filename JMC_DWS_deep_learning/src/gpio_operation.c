@@ -24,10 +24,10 @@ void* vibrate_motor(void* argv)
 
 	while(true)
 	{
-		motor_pwm_period = 6;  //8*125ms = 1S
+		motor_pwm_period = 8;  //8*125ms = 1S
 
 		//motor_pwm_duty = motor_pwm_duty * motor_pwm_period/100;  //PWM duty, unit is ms
-		motor_pwm_duty = 4;
+		motor_pwm_duty = 6;
 
 		if(motor_pwm_duty >= motor_pwm_period)
 		{

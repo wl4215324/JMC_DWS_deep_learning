@@ -283,6 +283,7 @@ static int hardware_init()
 
 	/* create cache fifo for DDWS warning message */
 	dws_warn_fifo = kfifo_alloc(DWS_WARNING_FIFO_SIZE);
+
 	if(!dws_warn_fifo)
 	{
 		perror("create cache fifo for DDWS warning message error:");

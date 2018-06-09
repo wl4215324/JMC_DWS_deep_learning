@@ -1,7 +1,7 @@
 #include "serial_port_commu.h"
 
-static int speed_arr[] = {B115200, B38400, B19200, B9600, B4800};
-static int name_arr[] = {115200, 38400,  19200,  9600, 4800};
+static int speed_arr[] = {B115200, B57600, B38400, B19200, B9600, B4800};
+static int name_arr[] = {115200, 57600, 38400,  19200,  9600, 4800};
 
 static int open_serial(const char* dev_name)
 {
@@ -140,7 +140,7 @@ int open_set_serial_port( )
 		return -1;
 	}
 
-	if(set_speed(fd, 9600) < 0)
+	if(set_speed(fd, 57600) < 0)
 	{
 		return -1;
 	}

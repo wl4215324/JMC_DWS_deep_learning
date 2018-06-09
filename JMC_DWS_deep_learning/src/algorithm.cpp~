@@ -43,6 +43,8 @@ void *algorithm_process(void *argv)
 	unsigned char temp_drowsyLevel = 0;
 	int send_buf_len = 0;
 
+    usleep(500000);
+
 	/* initialize algorithm */
 	InitParams();
 
@@ -62,45 +64,29 @@ void *algorithm_process(void *argv)
 			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output)) && \
 				(algorithm_output.drowsyLevel != 100) )
 			{
-				/*
 				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d,"
 								"algorithm_output.eyeCloseEventTime: %d\n",
 						algorithm_output.drowsyLevel, algorithm_output.faceFlag,
 						algorithm_output.eyeCloseEventTime);
-				*/
+				temp_drowsyLevel = algorithm_output.drowsyLevel;
 
-				if((timer_flag.timer_val > 0) || (0 == serial_input_var.DDWS_switch))
-				{
-					memset(&algorithm_output, 0, sizeof(algorithm_output));
+				/* get eye-closed time */
+				//serial_output_var.close_eye_time = algorithm_output.eyeCloseEventTime;
+				serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
+//				serial_output_var.calling_warn = 0;
+//				serial_output_var.close_eye_one_level_warn = 0;
+//				serial_output_var.close_eye_two_level_warn = 0;
+//				serial_output_var.distract_warn = 0;
+//				serial_output_var.yawn_warn = 0;
+//				serial_output_var.warnning_level.somking_warn = 0;
+//				serial_output_var.warnning_level.warning_state = 0;
 
-					pthread_mutex_lock(&serial_output_var_mutex);
-					serial_output_var.calling_warn = 0;
-					serial_output_var.close_eye_one_level_warn = 0;
-					serial_output_var.close_eye_two_level_warn = 0;
-					serial_output_var.close_eye_time = 0;
-					serial_output_var.distract_warn = 0;
-					serial_output_var.yawn_warn = 0;
-					serial_output_var.warnning_level.somking_warn = 0;
-					serial_output_var.warnning_level.warning_state = 0;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
-
-					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-					send_spec_len_data(fd, serial_send_buf, send_buf_len);
-
-					level2_closing_eye_timer_flag.timer_val = 0;
-					free_spec_type_alarm(level2_closing_eye_timer_1s);
-
-					goto exit_detect;
-				}
-
-				switch (algorithm_output.drowsyLevel)
+				switch (temp_drowsyLevel)
 				{
 				case 0:  //no warning
 				case 7:  //dangerous driving
 				case 100: //warning voice
 				default:
-					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
 					serial_output_var.close_eye_two_level_warn = 0;
@@ -109,15 +95,12 @@ void *algorithm_process(void *argv)
 					serial_output_var.yawn_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.warning_state = 0;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
 
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
 					break;
 
 				case 2:  //yawn
-					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
 					serial_output_var.close_eye_two_level_warn = 0;
@@ -126,8 +109,6 @@ void *algorithm_process(void *argv)
 					serial_output_var.yawn_warn = 1;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.warning_state = LEVEL_TWO_WARNING;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
@@ -137,7 +118,6 @@ void *algorithm_process(void *argv)
 					break;
 
 				case 3:  //distraction
-					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
 					serial_output_var.close_eye_two_level_warn = 0;
@@ -146,8 +126,6 @@ void *algorithm_process(void *argv)
 					serial_output_var.yawn_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.warning_state = LEVEL_THREE_WARNING;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
@@ -157,7 +135,6 @@ void *algorithm_process(void *argv)
 					break;
 
 				case 4:  //calling phone
-					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 1;
 					serial_output_var.close_eye_one_level_warn = 0;
 					serial_output_var.close_eye_two_level_warn = 0;
@@ -166,8 +143,6 @@ void *algorithm_process(void *argv)
 					serial_output_var.yawn_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.warning_state = LEVEL_ONE_WARNING;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
@@ -177,7 +152,6 @@ void *algorithm_process(void *argv)
 					break;
 
 				case 5:  //smoking
-					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
 					serial_output_var.close_eye_two_level_warn = 0;
@@ -186,8 +160,6 @@ void *algorithm_process(void *argv)
 					serial_output_var.yawn_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 1;
 					serial_output_var.warnning_level.warning_state = LEVEL_ONE_WARNING;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
@@ -197,7 +169,6 @@ void *algorithm_process(void *argv)
 					break;
 
 				case 6:  //leaving post or covering warning
-					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
 					serial_output_var.close_eye_two_level_warn = 0;
@@ -206,8 +177,6 @@ void *algorithm_process(void *argv)
 					serial_output_var.yawn_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.warning_state = COVER_WARNING;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
@@ -247,6 +216,7 @@ void *algorithm_process(void *argv)
 				        		level2_closing_eye_timer_flag.timer_val);
 					}
 
+
 					//serial_output_var.close_eye_time = 0;
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
@@ -255,7 +225,6 @@ void *algorithm_process(void *argv)
 			}
 			else if(1 == OK_Switch_timer_flag.timer_val)
 			{
-				pthread_mutex_lock(&serial_output_var_mutex);
 				serial_output_var.calling_warn = 0;
 				serial_output_var.close_eye_one_level_warn = 0;
 				serial_output_var.close_eye_two_level_warn = 0;
@@ -265,43 +234,13 @@ void *algorithm_process(void *argv)
 				serial_output_var.warnning_level.somking_warn = 0;
 				serial_output_var.warnning_level.warning_state = 0;
 				serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-				pthread_mutex_unlock(&serial_output_var_mutex);
 
 				//level2_closing_eye_timer_flag.timer_val = 0;
 				//free_spec_type_alarm(level2_closing_eye_timer_1s);
 			}
 			else
 			{
-				if((timer_flag.timer_val > 0) || (0 == serial_input_var.DDWS_switch))
-				{
-					memset(&algorithm_output, 0, sizeof(algorithm_output));
-
-					pthread_mutex_lock(&serial_output_var_mutex);
-					serial_output_var.calling_warn = 0;
-					serial_output_var.close_eye_one_level_warn = 0;
-					serial_output_var.close_eye_two_level_warn = 0;
-					serial_output_var.close_eye_time = 0;
-					serial_output_var.distract_warn = 0;
-					serial_output_var.yawn_warn = 0;
-					serial_output_var.warnning_level.somking_warn = 0;
-					serial_output_var.warnning_level.warning_state = 0;
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-					pthread_mutex_unlock(&serial_output_var_mutex);
-
-					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-					send_spec_len_data(fd, serial_send_buf, send_buf_len);
-
-					level2_closing_eye_timer_flag.timer_val = 0;
-					free_spec_type_alarm(level2_closing_eye_timer_1s);
-
-					goto exit_detect;
-				}
-				else
-				{
-					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-				}
-
-
+				serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 //				serial_output_var.calling_warn = 0;
 //				serial_output_var.close_eye_one_level_warn = 0;
 //				serial_output_var.close_eye_two_level_warn = 0;
@@ -330,7 +269,7 @@ void *algorithm_process(void *argv)
 			algorithm_input.clearBuf = 1;
 			ImageProcessing(gray_image, &algorithm_input, &algorithm_output);
 
-			pthread_mutex_lock(&serial_output_var_mutex);
+			serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 			serial_output_var.calling_warn = 0;
 			serial_output_var.close_eye_one_level_warn = 0;
 			serial_output_var.close_eye_two_level_warn = 0;
@@ -339,13 +278,10 @@ void *algorithm_process(void *argv)
 			serial_output_var.yawn_warn = 0;
 			serial_output_var.warnning_level.somking_warn = 0;
 			serial_output_var.warnning_level.warning_state = 0;
-			serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-			pthread_mutex_unlock(&serial_output_var_mutex);
 
 			level2_closing_eye_timer_flag.timer_val = 0;
 			free_spec_type_alarm(level2_closing_eye_timer_1s);
 
-exit_detect:
 			usleep(10000);
 		}
 	}

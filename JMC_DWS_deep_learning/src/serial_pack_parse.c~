@@ -29,7 +29,6 @@ SerialInputVar serial_input_var = {
 
 
 SerialOutputVar serial_output_var = {0, 0, 0,}, serial_output_var_test;
-pthread_mutex_t serial_output_var_mutex =PTHREAD_MUTEX_INITIALIZER;
 
 
 /*
@@ -141,16 +140,13 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 		recv_buf += read_bytes;
 	}
 
-
-	printf("\n %s data: ", __func__);
-
+	/*
 	for(i=0; i < spec_len - left_bytes; i++)
 	{
 		printf("%2X", *(buf_begin+i));
 	}
-
 	printf("\n");
-
+	*/
 
 	return (spec_len - left_bytes);
 }
@@ -186,13 +182,6 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 	unsigned short temp_var;
 	unsigned short message_head, message_len, message_len_complement, check_sum;
 
-	/*
-	struct timeval tp;
-	gettimeofday(&tp, NULL);
-	DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-	*/
-
-
 	while(true)
 	{
 		if(i < 4)
@@ -215,8 +204,7 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 				*(recv_buff+MESSAGE_TYPE_ID) = message_type;
 				*(recv_buff+MESSAGE_VAR_NUM) = var_cnt;
 				check_sum = calc_check_sum(recv_buff+2, message_len-2);
-
-				//DEBUG_INFO(cal check_sum: %2X\n, check_sum);
+				DEBUG_INFO(cal check_sum: %2X\n, check_sum);
 
 				if(check_sum == (((*(recv_buff+ *recv_frame_leng -2) & 0xffff) << 8) |*(recv_buff+ *recv_frame_leng -1)))
 				{
@@ -330,7 +318,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
     static unsigned short last_turn_signal = 0;
 	static unsigned short last_brake_switch = 0;
 	static unsigned short last_driver_door = 0;
-	struct timeval tp;
 
 	/*receiving message length error*/
 	if((NULL == recv_buf) || (recv_buf_len < 128))  //128 = 8+12*10
@@ -342,12 +329,12 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+		//serial_input_var.vehicle_speed = 0x3800;
 		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
         
 		/* if vehicle is going to stop, device DDWS sends no warning message */
-		if( (last_vehicle_speed > 0) && (serial_input_var.vehicle_speed <= 0) )
+		if((serial_input_var.vehicle_speed <= 0) && (last_vehicle_speed > 0))
 		{
-			pthread_mutex_lock(&serial_output_var_mutex);
 			serial_output_var.calling_warn = 0;
 			serial_output_var.close_eye_one_level_warn = 0;
 			serial_output_var.close_eye_two_level_warn = 0;
@@ -356,15 +343,9 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_output_var.yawn_warn = 0;
 			serial_output_var.warnning_level.somking_warn = 0;
 			serial_output_var.warnning_level.warning_state = 0;
-			pthread_mutex_unlock(&serial_output_var_mutex);
 
 			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-
-			if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-			{
-				gettimeofday(&tp, NULL);
-				DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-			}
+			send_spec_len_data(fd, serial_send_buf, send_buf_len);
 		}
 
 		last_vehicle_speed = serial_input_var.vehicle_speed;
@@ -383,9 +364,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
 
 		/* if left or right turnning light is going to flash, device DDWS sends no warning message */
-		if( (last_turn_signal == 0) && (serial_input_var.turn_signal > 0) )
+		if( (serial_input_var.turn_signal > 0) && (last_turn_signal == 0) )
 		{
-			pthread_mutex_lock(&serial_output_var_mutex);
         	serial_output_var.calling_warn = 0;
 			serial_output_var.close_eye_one_level_warn = 0;
 			serial_output_var.close_eye_two_level_warn = 0;
@@ -394,15 +374,9 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_output_var.yawn_warn = 0;
 			serial_output_var.warnning_level.somking_warn = 0;
 			serial_output_var.warnning_level.warning_state = 0;
-			pthread_mutex_unlock(&serial_output_var_mutex);
 
 			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-
-			if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-			{
-				gettimeofday(&tp, NULL);
-				DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-			}
+			send_spec_len_data(fd, serial_send_buf, send_buf_len);
 		}
 
 		last_turn_signal = serial_input_var.turn_signal;
@@ -439,7 +413,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		/* if brake switch is going to be actualized, device DDWS sends no warning message*/
         if( (last_brake_switch == 0) && (serial_input_var.brake_switch > 0) )
 		{
-        	pthread_mutex_lock(&serial_output_var_mutex);
             serial_output_var.calling_warn = 0;
 			serial_output_var.close_eye_one_level_warn = 0;
 			serial_output_var.close_eye_two_level_warn = 0;
@@ -448,15 +421,9 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_output_var.yawn_warn = 0;
 			serial_output_var.warnning_level.somking_warn = 0;
 			serial_output_var.warnning_level.warning_state = 0;
-			pthread_mutex_unlock(&serial_output_var_mutex);
 
 			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-
-			if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-			{
-				gettimeofday(&tp, NULL);
-				DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-			}
+			send_spec_len_data(fd, serial_send_buf, send_buf_len);
 		}
 
 		last_brake_switch = serial_input_var.brake_switch;
@@ -473,30 +440,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
 		DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
-		
-		/* if driver-side door is going to be opened, device DDWS sends no warning message */
-		if( (last_driver_door == 0) && (serial_input_var.driver_door > 0) )
-		{
-			pthread_mutex_lock(&serial_output_var_mutex);
-            serial_output_var.calling_warn = 0;
-			serial_output_var.close_eye_one_level_warn = 0;
-			serial_output_var.close_eye_two_level_warn = 0;
-			serial_output_var.close_eye_time = 0;
-			serial_output_var.distract_warn = 0;
-			serial_output_var.yawn_warn = 0;
-			serial_output_var.warnning_level.somking_warn = 0;
-			serial_output_var.warnning_level.warning_state = 0;
-			pthread_mutex_unlock(&serial_output_var_mutex);
-
-			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-			if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-			{
-				gettimeofday(&tp, NULL);
-				DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-			}
-		}
-
-		last_driver_door = serial_input_var.driver_door;
 	}
 	else
 	{
@@ -567,7 +510,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			{
 				serial_input_var.DDWS_switch = serial_input_var.IC_DDWS_switch;
 
-				pthread_mutex_lock(&serial_output_var_mutex);
 				if(0 == serial_input_var.DDWS_switch)  //IC turn off ddws
 				{
 					serial_output_var.warnning_level.working_state = 0;
@@ -577,14 +519,9 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 				{
 					serial_output_var.warnning_level.working_state = 1;
 				}
-				pthread_mutex_unlock(&serial_output_var_mutex);
 
 				pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-				if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-				{
-					gettimeofday(&tp, NULL);
-					DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-				}
+				send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
 				/* save DDWS_switch status into file-system */
 				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
@@ -647,7 +584,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			{
 				serial_input_var.DDWS_switch = serial_input_var.MP5_DDWS_switch;
 
-				pthread_mutex_lock(&serial_output_var_mutex);
 				if(0 == serial_input_var.DDWS_switch)  //mp5 turn off ddws
 				{
 					memset(&serial_output_var, 0, sizeof(serial_output_var));
@@ -657,14 +593,9 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 				{
 					serial_output_var.warnning_level.working_state = 1;
 				}
-				pthread_mutex_unlock(&serial_output_var_mutex);
 
 				pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-				if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-				{
-					gettimeofday(&tp, NULL);
-					DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-				}
+				send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
 				/* save DDWS_switch status into file-system */
 				sprintf(value_buf, "%d", serial_input_var.MP5_DDWS_switch);
@@ -1047,6 +978,7 @@ static int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 
 	case D6_MESSAGE:
 		DEBUG_INFO(enter D6 message deal);
+		//DEBUG_INFO(send_buf_len: %d\n, send_buf_len);
 		return D6_message_process(recv_buf, recv_buf_len, send_buf, send_buf_len);
 		break;
 
@@ -1071,9 +1003,6 @@ int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short spec_send
 {
 	int nwritten, retry_cnt = 0;
 	int nleft = spec_send_data_len;
-	struct timeval tp;
-	unsigned short i = 0;
-	unsigned char *temp_send_buf = send_buf;
 
 	while(nleft > 0)
 	{
@@ -1099,19 +1028,6 @@ int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short spec_send
 		nleft -= nwritten;
 		send_buf += nwritten;
 	}
-
-	/*
-	gettimeofday(&tp, NULL);
-	DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
-
-	puts("serial send data: ");
-	for(i=0; i< (spec_send_data_len- nleft); i++)
-	{
-		printf("%02X ", *(temp_send_buf+i));
-	}
-
-	puts("\n");
-	*/
 
 	return (spec_send_data_len- nleft);
 }
@@ -1428,13 +1344,11 @@ void* serial_commu_app(void* argv)
 			    	}
 #endif
 
-			    	serial_input_var_judge_2(serial_input_var);
-
 			    	if(send_buf_len > 0)
 				    {
 						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 						{
-							printf("periodic serial port send_length is: %d, data: ", send_buf_len);
+							printf("send_length is: %d, data: ", send_buf_len);
 
 							for(i=0; i<send_buf_len; i++)
 							{
@@ -1449,6 +1363,7 @@ void* serial_commu_app(void* argv)
 						}
 				    }
 
+				    serial_input_var_judge_2(serial_input_var);
 			    }
 
 			    feed_watchdog();
@@ -1470,7 +1385,7 @@ recv_error:
 			else
 			{
 				tcflush(fd, TCIOFLUSH);
-				usleep(50000);
+				usleep(500000);
 			}
 		}
 	}
