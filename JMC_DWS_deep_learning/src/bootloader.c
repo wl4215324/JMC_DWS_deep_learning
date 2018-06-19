@@ -78,6 +78,7 @@ int bootloader_logic_init(BootloaderBusinessLogic *bootloader_logic)
 	bootloader_logic->secret_key.level_one = 0;
 	INIT_LIST_HEAD(&bootloader_logic->driver_list_head);
 	INIT_LIST_HEAD(&bootloader_logic->app_list_head);
+
 	return 0;
 }
 
@@ -228,7 +229,7 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 			driver_logicblock_node->logic_block_data.file_type = 0; //driver file logic block
 			driver_logicblock_node->logic_block_data.mem_addr = 0;
 			driver_logicblock_node->logic_block_data.mem_size = 0;
-			driver_logicblock_node->logic_block_data.MaxNumOfBlockLeng = 250;
+			driver_logicblock_node->logic_block_data.MaxNumOfBlockLeng = 100;
 			INIT_LIST_HEAD(&driver_logicblock_node->logic_block_data.data_segment_head);
 			list_add_tail(&(driver_logicblock_node->logic_block_list), &(bootloader_logic->driver_list_head));
 
@@ -301,11 +302,13 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 			}
 
 			DEBUG_INFO(ARM positive response \n);
+
 			/* positive response */
 			*reply_mesg = 0x74;
 			*(reply_mesg+1) = 0x10;
 			*(reply_mesg+2) = driver_logicblock_node->logic_block_data.MaxNumOfBlockLeng;
 			*reply_mesg_len = 3;
+
 			return 0;
 		}
 		/* download transfer */
@@ -415,6 +418,18 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 				*(reply_mesg+2) = 0x22;
 				*reply_mesg_len = 3;
 			}
+
+			return 0;
+		}
+		else if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && \
+				(0xFF == *(can_mesg+2)) && (0x00 == *(can_mesg+3)))
+		{
+			/* positive response */
+			*reply_mesg = 0x71;
+			*(reply_mesg+1) = 0x01;
+			*(reply_mesg+2) = 0xFF;
+			*(reply_mesg+3) = 0x00;
+			*reply_mesg_len = 4;
 
 			return 0;
 		}
@@ -912,6 +927,21 @@ int bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, \
 		return -1;
 	}
 
+
+	if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && (0xFF == *(can_mesg+2)) \
+			&& (0x00 == *(can_mesg+3)))
+	{
+		*reply_mesg = 0x71;
+		*(reply_mesg+1) = 0x01;
+		*(reply_mesg+2) = 0xFF;
+		*(reply_mesg+3) = 0x00;
+		*reply_mesg_len = 4;
+
+		return 0;
+	}
+
+	printf("bootloader_logic->bootloader_subseq: %d\n", bootloader_logic->bootloader_subseq);
+
 	switch(bootloader_logic->bootloader_subseq)
 	{
 	case ExtendedSession:
@@ -940,6 +970,10 @@ int bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, \
 	case CheckPreprogrammingCondition:
 		if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && (0x02 == *(can_mesg+2)) \
 				&& (0x03 == *(can_mesg+3)))
+	    /*
+		if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && (0xFF == *(can_mesg+2)) \
+				&& (0x00 == *(can_mesg+3)))
+		*/
 		{
 			*reply_mesg = 0x71;
 			*(reply_mesg+1) = 0x01;
@@ -947,7 +981,8 @@ int bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, \
 			*(reply_mesg+3) = 0x03;
 			*(reply_mesg+4) = 0x00;
 			*reply_mesg_len = 5;
-			bootloader_logic->bootloader_subseq = SetDTCoff;
+			//bootloader_logic->bootloader_subseq = SetDTCoff;
+			bootloader_logic->bootloader_subseq = DownloadDriver;
 		}
 		else
 		{
@@ -996,11 +1031,11 @@ int bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, \
 		break;
 
 	case ReadDataByDID:
-		if((0x22 == *can_mesg))
+		if((0x22 == *can_mesg) && (0xF1 == *(can_mesg+1)) && (0x5B == *(can_mesg+2)))
 		{
 			*reply_mesg = 0x62;
 			*(reply_mesg+1) = *(can_mesg+1);
-			*(reply_mesg+2) = 0xAA;
+			*(reply_mesg+2) = *(can_mesg+2);
 			*reply_mesg_len = 3;
 			bootloader_logic->bootloader_subseq = ProgrammingSession;
 		}

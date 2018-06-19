@@ -142,6 +142,7 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 	}
 
 
+	/*
 	printf("\n %s data: ", __func__);
 
 	for(i=0; i < spec_len - left_bytes; i++)
@@ -150,6 +151,7 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 	}
 
 	printf("\n");
+	*/
 
 
 	return (spec_len - left_bytes);
@@ -191,7 +193,6 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 	gettimeofday(&tp, NULL);
 	DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
 	*/
-
 
 	while(true)
 	{
@@ -1400,14 +1401,18 @@ void* serial_commu_app(void* argv)
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 
-				printf("recv_length is: %d data:", recv_length);
 
-				for(i=0; i<recv_length; i++ )
+				if(0xd6 == *(serial_recv_buf+6))
 				{
-					printf("%02X", serial_recv_buf[i]);
-				}
+					printf("recv_length is: %d data:", recv_length);
 
-			    puts("\n");
+					for(i=0; i<recv_length; i++ )
+					{
+						printf("%02X", serial_recv_buf[i]);
+					}
+
+				    puts("\n");
+				}
 
 			    /* parse receiving serial data */
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
@@ -1434,14 +1439,18 @@ void* serial_commu_app(void* argv)
 				    {
 						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 						{
-							printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
-							for(i=0; i<send_buf_len; i++)
+							if(0xd6 == *(serial_send_buf+6))
 							{
-								printf("%02X ", serial_send_buf[i]);
-							}
+								printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
-							puts("\n");
+								for(i=0; i<send_buf_len; i++)
+								{
+									printf("%02X ", serial_send_buf[i]);
+								}
+
+								puts("\n");
+							}
 						}
 						else
 						{
@@ -1470,7 +1479,7 @@ recv_error:
 			else
 			{
 				tcflush(fd, TCIOFLUSH);
-				usleep(50000);
+				usleep(5000);
 			}
 		}
 	}
