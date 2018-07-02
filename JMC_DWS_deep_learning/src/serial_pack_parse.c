@@ -343,6 +343,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+<<<<<<< HEAD
 		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
         
 		/* if vehicle is going to stop, device DDWS sends no warning message */
@@ -369,6 +370,10 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		last_vehicle_speed = serial_input_var.vehicle_speed;
+=======
+		//serial_input_var.vehicle_speed = 0x3800;
+		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
+>>>>>>> update JMC_DWS_deep_learning project
 	}
 	else
 	{
@@ -382,6 +387,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 	{
 		serial_input_var.turn_signal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+4, 8, 4);
 		DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
+<<<<<<< HEAD
 
 		/* if left or right turnning light is going to flash, device DDWS sends no warning message */
 		if( (last_turn_signal == 0) && (serial_input_var.turn_signal > 0) )
@@ -407,6 +413,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		last_turn_signal = serial_input_var.turn_signal;
+=======
+>>>>>>> update JMC_DWS_deep_learning project
 	}
 	else
 	{
@@ -474,6 +482,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
 		DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
+<<<<<<< HEAD
 		
 		/* if driver-side door is going to be opened, device DDWS sends no warning message */
 		if( (last_driver_door == 0) && (serial_input_var.driver_door > 0) )
@@ -498,6 +507,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		last_driver_door = serial_input_var.driver_door;
+=======
+>>>>>>> update JMC_DWS_deep_learning project
 	}
 	else
 	{

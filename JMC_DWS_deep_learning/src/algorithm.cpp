@@ -40,7 +40,7 @@ void *algorithm_process(void *argv)
 {
 	unsigned char gray_image[IMAGE_HEIGHT*IMAGE_WIDTH];
 	unsigned char local_image[IMAGE_HEIGHT*IMAGE_WIDTH*2];
-	unsigned char temp_drowsyLevel = 0;
+	//unsigned char temp_drowsyLevel = 0;
 	int send_buf_len = 0;
 
 	/* initialize algorithm */
@@ -62,12 +62,12 @@ void *algorithm_process(void *argv)
 			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output)) && \
 				(algorithm_output.drowsyLevel != 100) )
 			{
-				/*
 				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d,"
 								"algorithm_output.eyeCloseEventTime: %d\n",
 						algorithm_output.drowsyLevel, algorithm_output.faceFlag,
 						algorithm_output.eyeCloseEventTime);
-				*/
+
+				temp_drowsyLevel = algorithm_output.drowsyLevel;
 
 				if((timer_flag.timer_val > 0) || (0 == serial_input_var.DDWS_switch))
 				{
@@ -344,6 +344,8 @@ void *algorithm_process(void *argv)
 
 			level2_closing_eye_timer_flag.timer_val = 0;
 			free_spec_type_alarm(level2_closing_eye_timer_1s);
+
+			temp_drowsyLevel = 0;
 
 exit_detect:
 			usleep(10000);
