@@ -11,7 +11,7 @@
  *      Author: tony
  */
 #include "v4l2_tvin.h"
-
+#include "disp_num_on_image.h"
 
 
 
@@ -53,6 +53,8 @@ unsigned char gray_image[IMAGE_WIDTH*IMAGE_HEIGHT];
 unsigned char YUYV_image[IMAGE_WIDTH*IMAGE_HEIGHT*2];
 
 pthread_mutex_t uyvy_image_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+unsigned char temp_drowsyLevel = 0;
 
 static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image, unsigned char* gray_image, unsigned char YUYV_type)
 {
@@ -513,6 +515,7 @@ int mxc_v4l_tvin_test(void)
 	int total_time;
 	unsigned char close_camera = 0;
 	struct timeval tv_start, tv_current;
+	unsigned char local_gray_image[720*480*2] = {0,};
 
 v4l2_init:
 	if (v4l_capture_setup() < 0)
@@ -597,6 +600,14 @@ v4l2_init:
 				printf("output VIDIOC_DQBUF failed\n");
 				continue;
 			}
+
+			/*copy image buffer of camera to display buffer */
+			uyvy_2_gray(YUYV_image, local_gray_image);
+			//DrawHz32(40, 10, A_IMAGE_WIDTH , 10, gray_image);
+
+
+			DrawNums32(40, 10, temp_drowsyLevel, local_gray_image);
+			gray_2_uyvy(local_gray_image, YUYV_image);
 
 			/*copy image buffer of camera to display buffer */
 			memcpy(output_buffers[output_buf.index].start, YUYV_image, g_frame_size);

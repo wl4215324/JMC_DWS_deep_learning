@@ -43,6 +43,9 @@
 #define  CONTROL_DTC_SETTING  0x85
 #define  MAX_NUMBER_OF_BLOCK_LENG  0x100
 
+#define  APPLICATION_NAME  "/home/user/jmc_dws"
+#define  APPLICATION_NAME_BAKUP "/home/user/jmc_dws_bakup"
+
 
 struct BootloaderData{
 	unsigned int state;
@@ -106,9 +109,10 @@ typedef struct {
 typedef struct {
 	struct list_head segment_list;
 	unsigned char block_index;
+	unsigned char prev_block_index;
 	unsigned int mem_addr;
 	unsigned int mem_size;
-    short segment_len;
+    unsigned int segment_len;
     unsigned char *data;
 } DataSegment;
 
@@ -141,6 +145,7 @@ typedef struct {
 	unsigned char file_type;  //0:driver file, 1: application file
 	LogicBlockState block_state;
 	unsigned char block_index;
+	unsigned char prev_block_index;
 	unsigned char block_download_result;
 	unsigned int mem_addr;
 	unsigned int mem_size;

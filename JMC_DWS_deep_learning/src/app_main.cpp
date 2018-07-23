@@ -22,6 +22,7 @@ extern "C"
 #include "xml_operation.h"
 #include "kfifo.h"
 #include "bootloader.h"
+#include "disp_num_on_image.h"
 }
 
 using namespace std;
@@ -296,6 +297,9 @@ static int hardware_init()
 		DEBUG_INFO(program has already been executed!);
 		return -1;
 	}
+
+	/* initialization for numerical display on monitor */
+	Hz32Init();
 
 	return 0;
 }

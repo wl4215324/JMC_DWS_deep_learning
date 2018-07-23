@@ -142,16 +142,17 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 	}
 
 
-	/*
+
+/*
 	printf("\n %s data: ", __func__);
 
 	for(i=0; i < spec_len - left_bytes; i++)
 	{
-		printf("%2X", *(buf_begin+i));
+		DEBUG_INFO(%2X, *(buf_begin+i));
 	}
 
 	printf("\n");
-	*/
+*/
 
 
 	return (spec_len - left_bytes);
@@ -180,13 +181,17 @@ static unsigned short calc_check_sum(unsigned char* data_buf, int data_len)
  */
 static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng)
 {
-	int i = 0;
+	int i = 0, j = 0;
 	int retry_cnt = 0;
 	int retval = 0;
 	unsigned char temp_buf[2];
 	unsigned char message_type, var_cnt;
 	unsigned short temp_var;
 	unsigned short message_head, message_len, message_len_complement, check_sum;
+
+//	struct timeval tp;
+//	gettimeofday(&tp, NULL);
+	//DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
 
 	/*
 	struct timeval tp;
@@ -218,6 +223,16 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 				check_sum = calc_check_sum(recv_buff+2, message_len-2);
 
 				//DEBUG_INFO(cal check_sum: %2X\n, check_sum);
+
+//				if((0xd6 == *(recv_buff+6)) && ((0x36 == *(recv_buff+7)) || (0x37 == *(recv_buff+7))))
+//				{
+//					for(j=0; j<*recv_frame_leng; j++ )
+//					{
+//						printf("%02X", recv_buff[j]);
+//					}
+//
+//					DEBUG_INFO(cal check_sum: %4X\n, check_sum);
+//				}
 
 				if(check_sum == (((*(recv_buff+ *recv_frame_leng -2) & 0xffff) << 8) |*(recv_buff+ *recv_frame_leng -1)))
 				{
@@ -343,8 +358,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
-<<<<<<< HEAD
-		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
+		//DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
         
 		/* if vehicle is going to stop, device DDWS sends no warning message */
 		if( (last_vehicle_speed > 0) && (serial_input_var.vehicle_speed <= 0) )
@@ -370,10 +384,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		last_vehicle_speed = serial_input_var.vehicle_speed;
-=======
-		//serial_input_var.vehicle_speed = 0x3800;
-		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
->>>>>>> update JMC_DWS_deep_learning project
 	}
 	else
 	{
@@ -386,8 +396,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_TURN_SIGNAL)
 	{
 		serial_input_var.turn_signal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+4, 8, 4);
-		DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
-<<<<<<< HEAD
+		//DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
 
 		/* if left or right turnning light is going to flash, device DDWS sends no warning message */
 		if( (last_turn_signal == 0) && (serial_input_var.turn_signal > 0) )
@@ -413,8 +422,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		last_turn_signal = serial_input_var.turn_signal;
-=======
->>>>>>> update JMC_DWS_deep_learning project
 	}
 	else
 	{
@@ -427,7 +434,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_ACCEL_PEDAL)
 	{
 		serial_input_var.accel_pedal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+4, 8, 8);
-		DEBUG_INFO(accel_pedal is: %4X\n, serial_input_var.accel_pedal);
+		//DEBUG_INFO(accel_pedal is: %4X\n, serial_input_var.accel_pedal);
 	}
 	else
 	{
@@ -442,8 +449,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		serial_input_var.Cruise_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 24, 2);
 		serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 28, 2);
 
-		DEBUG_INFO(Cruise_switch is: %4X\n, serial_input_var.Cruise_switch);
-		DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
+		//DEBUG_INFO(Cruise_switch is: %4X\n, serial_input_var.Cruise_switch);
+		//DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
 		
 		/* if brake switch is going to be actualized, device DDWS sends no warning message*/
         if( (last_brake_switch == 0) && (serial_input_var.brake_switch > 0) )
@@ -481,8 +488,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_DRIVER_DOOR)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
-		DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
-<<<<<<< HEAD
+		//DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
 		
 		/* if driver-side door is going to be opened, device DDWS sends no warning message */
 		if( (last_driver_door == 0) && (serial_input_var.driver_door > 0) )
@@ -507,8 +513,6 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		}
 
 		last_driver_door = serial_input_var.driver_door;
-=======
->>>>>>> update JMC_DWS_deep_learning project
 	}
 	else
 	{
@@ -521,7 +525,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_SMALL_LAMP)
 	{
 		serial_input_var.small_lamp = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+4, 30, 2);
-		DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
+		//DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
 	}
 	else
 	{
@@ -572,8 +576,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_input_var.IC_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 20, 2);
 			serial_input_var.OK_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 22, 2);
 
-			DEBUG_INFO(serial_input_var.IC_DDWS_switch: %4X\n, serial_input_var.IC_DDWS_switch);
-			DEBUG_INFO(OK_switch is: %4X\n, serial_input_var.OK_switch);
+			//DEBUG_INFO(serial_input_var.IC_DDWS_switch: %4X\n, serial_input_var.IC_DDWS_switch);
+			//DEBUG_INFO(OK_switch is: %4X\n, serial_input_var.OK_switch);
 
 			if(serial_input_var.IC_DDWS_switch != serial_input_var.DDWS_switch)
 			{
@@ -608,8 +612,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_input_var.OK_switch = 0;
 		}
 
-		DEBUG_INFO(serial_input_var.IC_DDWS_switch: %4X\n, serial_input_var.IC_DDWS_switch);
-		DEBUG_INFO(OK_switch is: %4X\n, serial_input_var.OK_switch);
+		//DEBUG_INFO(serial_input_var.IC_DDWS_switch: %4X\n, serial_input_var.IC_DDWS_switch);
+		//DEBUG_INFO(OK_switch is: %4X\n, serial_input_var.OK_switch);
 	}
 	else
 	{
@@ -622,7 +626,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_ENGINE_SPEED)
 	{
 		serial_input_var.engine_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+4, 24, 16);
-		DEBUG_INFO(engine_speed is: %4X\n, serial_input_var.engine_speed);
+		//DEBUG_INFO(engine_speed is: %4X\n, serial_input_var.engine_speed);
 	}
 	else
 	{
@@ -684,8 +688,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			}
 		}
 
-		DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X\n, serial_input_var.MP5_DDWS_switch);
-		DEBUG_INFO(serial_input_var.DDWS_switch: %4X\n, serial_input_var.DDWS_switch);
+		//DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X\n, serial_input_var.MP5_DDWS_switch);
+		//DEBUG_INFO(serial_input_var.DDWS_switch: %4X\n, serial_input_var.DDWS_switch);
 	}
 	else
 	{
@@ -1058,7 +1062,7 @@ static int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 		break;
 
 	case D6_MESSAGE:
-		DEBUG_INFO(enter D6 message deal);
+		DEBUG_INFO(enter D6 message deal\n);
 		return D6_message_process(recv_buf, recv_buf_len, send_buf, send_buf_len);
 		break;
 
@@ -1152,7 +1156,7 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 		timer_flag.timer_val = 0x0f;
 #endif
 		free_all_alarm();
-		DEBUG_INFO(engine stop!\n);
+		//DEBUG_INFO(engine stop!\n);
 	}
 
 	/*if driver door closed*/
@@ -1165,7 +1169,7 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 			SetAlarm(&timer_flag, driver_door_close_after_15min, &timeout_execute_activity, \
 					MIN_TO_TIMEVAL(config_param.driver_door_time), 0);
 					//MIN_TO_TIMEVAL(15), 0);
-			printf("driver door close, config_param.driver_door_time: %d\n", config_param.driver_door_time);
+			//printf("driver door close, config_param.driver_door_time: %d\n", config_param.driver_door_time);
 		}
 	}
 	else
@@ -1177,7 +1181,7 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 		timer_flag.timer_val = 0x0f;
 #endif
 		free_all_alarm();
-		printf("driver door open!\n");
+		//printf("driver door open!\n");
 	}
 
 	/*if turning signal light didn't flash*/
@@ -1393,6 +1397,7 @@ void* serial_commu_app(void* argv)
 	int recv_length, spec_recv_len;
 	int send_buf_len;
 	unsigned char dws_mesg_array[8] = {0};
+	struct timeval tp;
 
 	struct timeval tv = {
 			.tv_sec = 1,
@@ -1412,48 +1417,44 @@ void* serial_commu_app(void* argv)
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 
+				/*
+				if((JMC_bootloader_logic.bootloader_subseq >= DownloadDriver) && \
+						(0xd2 == *(serial_recv_buf+6)))
+				{
+					continue;
+				}
+				*/
 
 				if(0xd6 == *(serial_recv_buf+6))
 				{
-					printf("recv_length is: %d data:", recv_length);
+					gettimeofday(&tp, NULL);
+
+					printf("%d ms recv_length is: %d data:", (tp.tv_sec*1000+tp.tv_usec/1000), recv_length);
 
 					for(i=0; i<recv_length; i++ )
 					{
 						printf("%02X", serial_recv_buf[i]);
 					}
 
-				    puts("\n");
+				    printf("\n");
 				}
 
 			    /* parse receiving serial data */
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 			    {
-#if 0
-			    	/*get dws warning message from cache fifo*/
-			    	if(kfifo_len(dws_warn_fifo) > 0)
-			    	{
-			    		if((0 == timer_flag.timer_val) && (1 == serial_input_var.DDWS_switch))
-			    		{
-				    		kfifo_get(dws_warn_fifo, dws_mesg_array, sizeof(dws_mesg_array));
-				    		pack_serial_send_message(D2_MESSAGE, dws_mesg_array, serial_send_buf, &send_buf_len);
-			    		}
-			    		else
-			    		{
-			    			kfifo_reset(dws_warn_fifo);
-			    		}
-			    	}
-#endif
-
 			    	serial_input_var_judge_2(serial_input_var);
 
 			    	if(send_buf_len > 0)
 				    {
 						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 						{
+							//printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
 							if(0xd6 == *(serial_send_buf+6))
 							{
-								printf("periodic serial port send_length is: %d, data: ", send_buf_len);
+								gettimeofday(&tp, NULL);
+								printf("%d ms periodic serial port send_length is: %d, data: ", (tp.tv_sec*1000+tp.tv_usec/1000), \
+										send_buf_len);
 
 								for(i=0; i<send_buf_len; i++)
 								{
@@ -1468,7 +1469,6 @@ void* serial_commu_app(void* argv)
 							printf("send data failed!\n");
 						}
 				    }
-
 			    }
 
 			    feed_watchdog();
@@ -1481,16 +1481,15 @@ void* serial_commu_app(void* argv)
 		else
 		{
 recv_error:
-			if(retry_cnt++ > 10)
+			if(retry_cnt++ > 1000)
 			{
 				serial_commu_recv_state = -1;
-				tcflush(fd, TCIOFLUSH);
-				retry_cnt = 11;
+				tcflush(fd, TCIFLUSH);
+				retry_cnt = 0;
 			}
 			else
 			{
-				tcflush(fd, TCIOFLUSH);
-				usleep(5000);
+				usleep(10000);
 			}
 		}
 	}

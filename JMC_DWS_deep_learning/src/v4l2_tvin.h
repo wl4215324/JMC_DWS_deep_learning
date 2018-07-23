@@ -50,6 +50,8 @@ struct testbuffer
 extern unsigned char YUYV_image[IMAGE_WIDTH*IMAGE_HEIGHT*2];
 extern pthread_mutex_t uyvy_image_mutex;
 
+extern unsigned char temp_drowsyLevel;
+
 extern int mxc_v4l_tvin_test(void);
 
 extern void* sample_image_task(void *);

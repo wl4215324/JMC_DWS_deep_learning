@@ -100,6 +100,7 @@ void *algorithm_process(void *argv)
 				case 7:  //dangerous driving
 				case 100: //warning voice
 				default:
+					/* update warning output variables */
 					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
@@ -112,11 +113,15 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 					pthread_mutex_unlock(&serial_output_var_mutex);
 
+					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
+
 					break;
 
 				case 2:  //yawn
+				{
+					/* update warning output variables */
 					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
@@ -129,14 +134,18 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 					pthread_mutex_unlock(&serial_output_var_mutex);
 
+					/* send yawn warning message via serial port */
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
+					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
-					break;
+				}
+				break;
 
 				case 3:  //distraction
+					/* update warning output variables */
 					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
@@ -149,14 +158,17 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 					pthread_mutex_unlock(&serial_output_var_mutex);
 
+					/* send distraction warning via serial port */
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
+					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
 					break;
 
 				case 4:  //calling phone
+					/* update warning output variables */
 					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 1;
 					serial_output_var.close_eye_one_level_warn = 0;
@@ -169,14 +181,17 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 					pthread_mutex_unlock(&serial_output_var_mutex);
 
+					/* send calling phone warning via serial port */
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
+					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
 					break;
 
 				case 5:  //smoking
+					/* update warning output variables */
 					pthread_mutex_lock(&serial_output_var_mutex);
 					serial_output_var.calling_warn = 0;
 					serial_output_var.close_eye_one_level_warn = 0;
@@ -189,9 +204,11 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
 					pthread_mutex_unlock(&serial_output_var_mutex);
 
+					/* send smoking warning via serial port */
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
+					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
 					break;
@@ -217,6 +234,7 @@ void *algorithm_process(void *argv)
 					break;
 
 				case 8:  //level one closed-eye warning
+					/* if level 1 close-eye warning happened just now */
 					if(0 == level2_closing_eye_timer_flag.timer_val)
 					{
 						serial_output_var.close_eye_one_level_warn = 1;
@@ -230,6 +248,7 @@ void *algorithm_process(void *argv)
 				        DEBUG_INFO(level2_closing_eye_timer_flag.timer_val: %d\n, \
 				        		level2_closing_eye_timer_flag.timer_val);
 					}
+					/* if level 1 close-eye warning continued less than 2 seconds */
 					else if(1 == level2_closing_eye_timer_flag.timer_val)
 					{
 						serial_output_var.close_eye_one_level_warn = 1;
@@ -238,6 +257,7 @@ void *algorithm_process(void *argv)
 				        DEBUG_INFO(level2_closing_eye_timer_flag.timer_val: %d\n, \
 				        		level2_closing_eye_timer_flag.timer_val);
 					}
+					/* if level 1 close-eye warning continued more than 2 seconds */
 					else if(2 == level2_closing_eye_timer_flag.timer_val)
 					{
 						serial_output_var.close_eye_one_level_warn = 0;

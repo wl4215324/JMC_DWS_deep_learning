@@ -38,7 +38,7 @@
  *
  */
 
-#define ARM_APP_SOFTWARE_VER_MAJ  10
-#define ARM_APP_SOFTWARE_VER_MIN  3
+#define ARM_APP_SOFTWARE_VER_MAJ  1
+#define ARM_APP_SOFTWARE_VER_MIN  5
 
 #endif /* SOFTWARE_VERSION_H_ */

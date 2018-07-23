@@ -102,5 +102,5 @@ void InitParams();
 ***************************************/
 int ImageProcessing(unsigned char * pDisp, ARITH_INPUT* ArithInput, ARITH_OUTPUT* ArithOuput);
 
-void uyvy_2_gray(unsigned char *uyvy, unsigned char *gray);
+//void uyvy_2_gray(unsigned char *uyvy, unsigned char *gray);
 #endif
