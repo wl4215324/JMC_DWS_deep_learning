@@ -22,7 +22,7 @@ void* vibrate_motor(void* argv)
 	motor_pwm_duty = config_param.motor_pwm_duty;
 	printf("motor_pwm_period: %d\n", motor_pwm_period);
 
-	while(true)
+	while(JMC_bootloader_logic.bootloader_subseq < DownloadDriver)
 	{
 		motor_pwm_period = 8;  //8*125ms = 1S
 

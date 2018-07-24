@@ -46,7 +46,7 @@ void *algorithm_process(void *argv)
 	/* initialize algorithm */
 	InitParams();
 
-	while(true)
+	while(JMC_bootloader_logic.bootloader_subseq < DownloadDriver)
 	{
 		if( (0 == timer_flag.timer_val) && (1 == serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
 		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val))

@@ -1016,7 +1016,7 @@ static int D6_message_process(unsigned char* recv_buf, int recv_buf_len,\
 	}
 
 	if (bootloader_main_process(&JMC_bootloader_logic, recv_buf+MESSAGE_TYPE_ID+1, \
-			recv_buf_len, (send_buf+7), send_buf_len) < 0)
+			recv_buf_len, (send_buf+7), (unsigned short*)send_buf_len) < 0)
 	{
 		return -1;
 	}
@@ -1033,7 +1033,6 @@ static int D6_message_process(unsigned char* recv_buf, int recv_buf_len,\
 	*(send_buf+send_mesg_len) = GET_HIG_BYTE_FROM_WORD(check_sum);
 	*(send_buf+send_mesg_len+1) = GET_LOW_BYTE_FROM_WORD(check_sum);
 	*send_buf_len = send_mesg_len + 2;
-	DEBUG_INFO(D6 message deal normal \n);
 
 	return *send_buf_len;
 }
@@ -1417,15 +1416,7 @@ void* serial_commu_app(void* argv)
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 
-				/*
-				if((JMC_bootloader_logic.bootloader_subseq >= DownloadDriver) && \
-						(0xd2 == *(serial_recv_buf+6)))
-				{
-					continue;
-				}
-				*/
-
-				if(0xd6 == *(serial_recv_buf+6))
+				//if(0xd6 == *(serial_recv_buf+6))
 				{
 					gettimeofday(&tp, NULL);
 
@@ -1450,7 +1441,7 @@ void* serial_commu_app(void* argv)
 						{
 							//printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
-							if(0xd6 == *(serial_send_buf+6))
+							//if(0xd6 == *(serial_send_buf+6))
 							{
 								gettimeofday(&tp, NULL);
 								printf("%d ms periodic serial port send_length is: %d, data: ", (tp.tv_sec*1000+tp.tv_usec/1000), \
@@ -1469,6 +1460,11 @@ void* serial_commu_app(void* argv)
 							printf("send data failed!\n");
 						}
 				    }
+
+			    	if(JMC_bootloader_logic.bootloader_subseq >= ResetECU)
+			    	{
+			    		bootloader_completetion(&JMC_bootloader_logic);
+			    	}
 			    }
 
 			    feed_watchdog();

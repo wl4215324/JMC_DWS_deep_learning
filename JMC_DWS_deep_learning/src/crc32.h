@@ -2,7 +2,7 @@
  * crc32.h
  *
  *  Created on: Jan 31, 2018
- *      Author: tony wang
+ *      Author: tony
  */
 
 #ifndef CRC32_H_

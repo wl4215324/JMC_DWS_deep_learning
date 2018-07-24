@@ -17,6 +17,7 @@ extern "C" {
 #include "serial_pack_parse.h"
 #include "applicfg.h"
 #include "user_timer.h"
+#include "bootloader.h"
 }
 
 

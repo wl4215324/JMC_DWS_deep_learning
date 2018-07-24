@@ -21,6 +21,7 @@
 #include "timer_delay.h"
 #include "driving_behav_analys.h"
 #include "timerscfg.h"
+#include "bootloader.h"
 
 #define CAMERA_LED_GPIO_INDEX     9
 #define VIBRAT_MOTOR_GPIO_INDEX   6
