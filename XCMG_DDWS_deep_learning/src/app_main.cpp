@@ -258,17 +258,15 @@ static int hardware_init()
 	}
 #endif
 
-#ifdef CONFIG_JMC_DDWS_ENABLE
 
-	if(gpio_init(VIBRAT_MOTOR_GPIO_INDEX, 1) < 0)
+	if(gpio_init(RS485_RW_GPIO_INDEX, 1) < 0)
 	{
-		printf("initial gpio%d error!\n", VIBRAT_MOTOR_GPIO_INDEX);
+		printf("initial gpio%d error!\n", RS485_RW_GPIO_INDEX);
 		return -1;
 	}
 
-	/* pull down gpio for vibrating motor, turn out vibrating motor */
-	gpio_write(VIBRAT_MOTOR_GPIO_INDEX, 0);
-#endif
+	gpio_write(RS485_RW_GPIO_INDEX, RS485_READ_MODE);
+
 
     /* initialize rs232 serial port */
 	if((fd = open_set_serial_port()) < 0)

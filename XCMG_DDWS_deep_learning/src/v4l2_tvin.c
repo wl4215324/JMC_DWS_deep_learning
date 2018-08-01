@@ -43,7 +43,7 @@ static  int g_display_top = 0;
 static  int g_display_left = 0;
 static  int g_frame_size;
 static  int g_frame_period = 33333;
-static  v4l2_std_id g_current_std = V4L2_STD_NTSC;
+static  v4l2_std_id g_current_std = V4L2_STD_PAL; //V4L2_STD_NTSC
 
 struct testbuffer output_buffers[4];
 struct testbuffer capture_buffers[3];
@@ -611,7 +611,6 @@ v4l2_init:
 			switch(temp_drowsyLevel)
 			{
 			case 0:  //no warning
-			case 3:  //distraction
 			case 6:  //leaving post or covering warning
 			case 7:  //dangerous driving
 			case 100: //warning voice
@@ -621,6 +620,10 @@ v4l2_init:
 
 			case 2:  //yawn
 				strcpy(disp_str, "yawn");
+				break;
+
+			case 3:  //distraction
+				strcpy(disp_str, "distraction");
 				break;
 
 			case 4:  //calling phone

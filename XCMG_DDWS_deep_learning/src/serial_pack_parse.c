@@ -8,6 +8,7 @@
 #include "serial_pack_parse.h"
 #include "user_timer.h"
 #include "xml_operation.h"
+#include "rs485_protocol.h"
 
 /*
  *
@@ -94,7 +95,7 @@ KeyValuePair key_value_list[CONFIG_PARAMS_COUNT] = {
 /*
  * read specified length data from serial port
  */
-static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
+int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 {
 	int left_bytes = 0;
 	int read_bytes = 0;
@@ -972,6 +973,7 @@ void* serial_commu_app(void* argv)
 {
 	int i  = 0, retry_cnt = 0;
 	fd_set rfds;
+	int max_fd = 0;
 	int recv_length, spec_recv_len;
 	int send_buf_len;
 	unsigned char dws_mesg_array[8] = {0};
@@ -986,69 +988,109 @@ void* serial_commu_app(void* argv)
 	{
 		FD_ZERO(&rfds);
 		FD_SET(fd, &rfds);
+		FD_SET(fd_rs485, &rfds);
+		max_fd = fd > fd_rs485 ? fd:fd_rs485;
 
-		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
+		switch(select(max_fd+1, &rfds, NULL, NULL, &tv))
 		{
-			/*read serial data from rs232 */
-			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
+		case -1:  //handle exception
+			goto recv_error;
+			break;
+
+		case 0:  //handle timeout
+			break;
+
+		default:
+			if(FD_ISSET(fd, &rfds))  //handle internal rs232
 			{
-				retry_cnt = 0;
-				serial_commu_recv_state = 0;
-
-				printf("recv_length is: %d data:", recv_length);
-
-				for(i=0; i<recv_length; i++ )
+				/*read serial data from rs232 */
+				if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
 				{
-					printf("%02X", serial_recv_buf[i]);
-				}
+					retry_cnt = 0;
+					serial_commu_recv_state = 0;
 
-			    puts("\n");
+					printf("recv_length is: %d data:", recv_length);
 
-			    /* parse receiving serial data */
-			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
-			    {
-			    	if(send_buf_len > 0)
+					for(i=0; i<recv_length; i++ )
+					{
+						printf("%02X", serial_recv_buf[i]);
+					}
+
+				    puts("\n");
+
+				    /* parse receiving serial data */
+				    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 				    {
-						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-						{
-							printf("send_length is: %d, data: ", send_buf_len);
-
-							for(i=0; i<send_buf_len; i++)
+				    	if(send_buf_len > 0)
+					    {
+							if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 							{
-								printf("%02X ", serial_send_buf[i]);
+								printf("send_length is: %d, data: ", send_buf_len);
+
+								for(i=0; i<send_buf_len; i++)
+								{
+									printf("%02X ", serial_send_buf[i]);
+								}
+
+								puts("\n");
 							}
-
-							puts("\n");
-						}
-						else
-						{
-							printf("send data failed!\n");
-						}
+							else
+							{
+								printf("send data failed!\n");
+							}
+					    }
 				    }
+				}
+				else
+				{
+					goto recv_error;
+				}
+			}
 
-			    	memcpy(rs485_send_message+1, (void*)&(serial_output_var.warnning_level), 1);
-			    	send_spec_len_data(fd_rs485, rs485_send_message, sizeof(rs485_send_message));
-			    }
-			}
-			else
+			if(FD_ISSET(fd_rs485, &rfds))  //handle external rs485
 			{
-				goto recv_error;
+				if((recv_length = read_one_rs485_frame(fd_rs485, rs485_recv_buf, &spec_recv_len)) > 0)
+				{
+					DEBUG_INFO(rs485 recv: );
+
+					for(i=0; i<spec_recv_len; i++ )
+					{
+						printf("%02X", rs485_recv_buf[i]);
+					}
+
+					printf("\n");
+
+					send_rs485_warning_status(rs485_warning_status, rs485_send_buf, (unsigned short*)&send_buf_len);
+
+					gpio_write(RS485_RW_GPIO_INDEX, RS485_WRITE_MODE);
+					send_spec_len_data(fd_rs485, rs485_send_buf, send_buf_len);
+					usleep(20000);
+					gpio_write(RS485_RW_GPIO_INDEX, RS485_READ_MODE);
+
+					DEBUG_INFO(rs485 send: );
+
+					for(i=0; i<send_buf_len; i++ )
+					{
+						printf("%02X", rs485_send_buf[i]);
+					}
+
+					printf("\n");
+				}
 			}
+
+			break;
+		}
+
+recv_error:
+		if(retry_cnt++ > 100)
+		{
+			serial_commu_recv_state = -1;
+			tcflush(fd, TCIFLUSH);
+			retry_cnt = 0;
 		}
 		else
 		{
-recv_error:
-			if(retry_cnt++ > 10)
-			{
-				serial_commu_recv_state = -1;
-				tcflush(fd, TCIOFLUSH);
-				retry_cnt = 11;
-			}
-			else
-			{
-				tcflush(fd, TCIOFLUSH);
-				usleep(50000);
-			}
+			usleep(50000);
 		}
 	}
 

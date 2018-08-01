@@ -7,6 +7,7 @@
 
 #include "algorithm.hpp"
 
+
 ARITH_INPUT algorithm_input = XIAOMING_ARITH_INPUT_DEFAULT;
 ARITH_OUTPUT algorithm_output;
 
@@ -40,9 +41,8 @@ void *algorithm_process(void *argv)
 {
 	unsigned char gray_image[IMAGE_HEIGHT*IMAGE_WIDTH];
 	unsigned char local_image[IMAGE_HEIGHT*IMAGE_WIDTH*2];
-	unsigned char rs485_send_message[4] = {0xAA, 00, 00, 0xFF};
-	//unsigned char temp_drowsyLevel = 0;
 	int send_buf_len = 0;
+	unsigned short rs485_send_buf_len = 0;
 
 	/* initialize algorithm */
 	InitParams();
@@ -84,13 +84,12 @@ void *algorithm_process(void *argv)
 				switch (temp_drowsyLevel)
 				{
 				case 0:  //no warning
-				case 3:  //distraction
 				case 6:  //leaving post or covering warning
 				case 7:  //dangerous driving
 				case 100: //warning voice
 				default:
 					serial_output_var.warnning_level = {0};
-					rs485_send_message[1] = 0;
+					rs485_warning_status = 0;
 					break;
 
 				case 2:  //yawn
@@ -98,12 +97,29 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.phone_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.yawn_warn = 1;
+					serial_output_var.warnning_level.distraction = 0;
+					rs485_warning_status = 2;
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
-					memcpy(rs485_send_message+1, (void*)&(serial_output_var.warnning_level), 1);
-					send_spec_len_data(fd_rs485, rs485_send_message, sizeof(rs485_send_message));
+//					send_rs485_warning_status(rs485_warning_status, rs485_send_buf, &rs485_send_buf_len);
+//					send_spec_len_data(fd_rs485, rs485_send_buf, rs485_send_buf_len);
+					break;
+
+				case 3:  //distraction
+					serial_output_var.warnning_level.close_eye_warn = 0;
+					serial_output_var.warnning_level.phone_warn = 0;
+					serial_output_var.warnning_level.somking_warn = 0;
+					serial_output_var.warnning_level.yawn_warn = 0;
+					serial_output_var.warnning_level.distraction = 1;
+					rs485_warning_status = 3;
+
+					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+					send_spec_len_data(fd, serial_send_buf, send_buf_len);
+
+//					send_rs485_warning_status(rs485_warning_status, rs485_send_buf, &rs485_send_buf_len);
+//					send_spec_len_data(fd_rs485, rs485_send_buf, rs485_send_buf_len);
 					break;
 
 				case 4:  //calling phone
@@ -111,12 +127,14 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.phone_warn = 1;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.yawn_warn = 0;
+					serial_output_var.warnning_level.distraction = 0;
+					rs485_warning_status = 4;
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
-					memcpy(rs485_send_message+1, (void*)&(serial_output_var.warnning_level), 1);
-					send_spec_len_data(fd_rs485, rs485_send_message, sizeof(rs485_send_message));
+//					send_rs485_warning_status(rs485_warning_status, rs485_send_buf, &rs485_send_buf_len);
+//					send_spec_len_data(fd_rs485, rs485_send_buf, rs485_send_buf_len);
 					break;
 
 				case 5:  //smoking
@@ -124,12 +142,14 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.phone_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 1;
 					serial_output_var.warnning_level.yawn_warn = 0;
+					serial_output_var.warnning_level.distraction = 0;
+					rs485_warning_status = 5;
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
-					memcpy(rs485_send_message+1, (void*)&(serial_output_var.warnning_level), 1);
-					send_spec_len_data(fd_rs485, rs485_send_message, sizeof(rs485_send_message));
+//					send_rs485_warning_status(rs485_warning_status, rs485_send_buf, &rs485_send_buf_len);
+//					send_spec_len_data(fd_rs485, rs485_send_buf, rs485_send_buf_len);
 					break;
 
 				case 8:  //level one closed-eye warning
@@ -138,12 +158,14 @@ void *algorithm_process(void *argv)
 					serial_output_var.warnning_level.phone_warn = 0;
 					serial_output_var.warnning_level.somking_warn = 0;
 					serial_output_var.warnning_level.yawn_warn = 0;
+					serial_output_var.warnning_level.distraction = 0;
+					rs485_warning_status = 1;
 
 					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 
-					memcpy(rs485_send_message+1, (void*)&(serial_output_var.warnning_level), 1);
-					send_spec_len_data(fd_rs485, rs485_send_message, sizeof(rs485_send_message));
+//					send_rs485_warning_status(rs485_warning_status, rs485_send_buf, &rs485_send_buf_len);
+//					send_spec_len_data(fd_rs485, rs485_send_buf, rs485_send_buf_len);
 					break;
 				}
 			}
@@ -166,7 +188,7 @@ void *algorithm_process(void *argv)
 			serial_output_var.reserved = 0;
 			serial_output_var.yawn_warn = 0;
 			serial_output_var.warnning_level = {0};
-			rs485_send_message[1] = 0;
+			rs485_warning_status = 0;
 
 			usleep(10000);
 		}

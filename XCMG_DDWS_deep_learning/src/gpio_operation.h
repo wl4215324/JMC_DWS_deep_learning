@@ -25,6 +25,10 @@
 #define CAMERA_LED_GPIO_INDEX     9
 #define VIBRAT_MOTOR_GPIO_INDEX   6
 
+#define RS485_RW_GPIO_INDEX  2
+#define RS485_READ_MODE  0
+#define RS485_WRITE_MODE 1
+
 extern pthread_mutex_t motor_lock;
 extern pthread_cond_t  motor_cond;
 

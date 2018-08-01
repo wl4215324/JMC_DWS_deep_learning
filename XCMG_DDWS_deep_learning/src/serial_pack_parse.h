@@ -190,7 +190,8 @@ typedef struct {
 		unsigned char yawn_warn:1;
 		unsigned char phone_warn:1;
 		unsigned char somking_warn:1;
-		unsigned char :4;
+		unsigned char distraction:1;
+		unsigned char :3;
 	} warnning_level;
 
 	unsigned char reserved;
@@ -272,5 +273,5 @@ void* serial_commu_app(void* argv);
 extern int pack_serial_send_message(unsigned char message_type, \
 		void* send_data, unsigned char* send_buf, int* send_buf_len);
 extern int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short spec_send_data_len);
-
+extern int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len);
 #endif /* SERIAL_PARSE_PACK_PARSE_H_ */
