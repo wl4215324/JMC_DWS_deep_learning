@@ -513,6 +513,7 @@ int mxc_v4l_tvin_test(void)
 	int total_time;
 	struct timeval tv_start, tv_current;
 	unsigned char gray_image[720*480*2];
+	char warning_str[16] = "";
 
 v4l2_init:
 	if (v4l_capture_setup() < 0)
@@ -586,7 +587,40 @@ v4l2_init:
 
 		/*copy image buffer of camera to display buffer */
 		uyvy_2_gray(YUYV_image, gray_image);
-		DrawHz32(40, 10, A_IMAGE_WIDTH , serial_output_var.warning_sub_state, gray_image);
+		//DrawHz32(40, 10, A_IMAGE_WIDTH , serial_output_var.warning_sub_state, gray_image);
+		switch(serial_output_var.warning_sub_state)
+		{
+		case 0:
+		default:
+			strcpy(warning_str, "nowarning");
+			break;
+
+		case 1:
+			strcpy(warning_str, "yawning");
+			break;
+
+		case 2:
+			strcpy(warning_str, "distracting");
+			break;
+
+		case 3:
+			strcpy(warning_str, "smoking");
+			break;
+
+		case 4:
+			strcpy(warning_str, "phoning");
+			break;
+
+		case 5:
+			strcpy(warning_str, "nodriver");
+			break;
+
+		case 6:
+			strcpy(warning_str, "closingeye");
+			break;
+		}
+
+		disp_str_on_monitor(40, 10, warning_str, gray_image);
 		gray_2_uyvy(gray_image, YUYV_image);
 
 		memcpy(output_buffers[output_buf.index].start, YUYV_image, sizeof(YUYV_image));

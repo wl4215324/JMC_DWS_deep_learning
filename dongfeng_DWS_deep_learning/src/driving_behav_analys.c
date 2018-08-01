@@ -61,6 +61,11 @@ void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_
 		timer_flag->bits.speed_more_than_threshold_flag = 0;
 		timer_flag->bits.speed_more_than_threshold_timer_stat = 0;
 		break;
+
+	case smoking_10min_interval:
+		timer_flag->bits.smoking_10min_interval_flag = 0;
+		timer_flag->bits.smoking_10min_interval_stat = 0;
+		break;
 	}
 
 	printf("function: %s, timer_flag->timer_val: %d\n", \

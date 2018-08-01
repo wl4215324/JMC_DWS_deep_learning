@@ -49,7 +49,7 @@ void* algorithm_process_task(void* argv)
 
 	while(true)
 	{
-		if(0 == serial_commu_recv_state)
+		if(true)
 		{
 			pthread_mutex_lock(&uyvy_image_mutex);
 			memcpy(local_image, YUYV_image, sizeof(YUYV_image));
@@ -67,15 +67,10 @@ void* algorithm_process_task(void* argv)
 						algorithm_output.drowsyLevel, algorithm_output.faceFlag,
 						algorithm_output.eyeCloseEventTime);
 
-				/* get eye-closed time */
-				//serial_output_var.close_eye_time = algorithm_output.eyeCloseEventTime;
-				//serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-
 				switch (algorithm_output.drowsyLevel)
 				{
 				case 0:  // no warning
 				case 7:  // dangerous driving
-				case 8:  // closing eye
 				case 100: // warning voice
 				default:  //else
 					memset(&serial_output_var, 0, sizeof(serial_output_var));
@@ -130,11 +125,22 @@ void* algorithm_process_task(void* argv)
 				case 5:  //smoking
 					if(1 == vehicle_speed_judge_flag)
 					{
-						serial_output_var.warning_state = 1;
-						serial_output_var.warning_sub_state = 3;
+						if(0 == timer_flag.bits.smoking_10min_interval_flag)
+						{
+							serial_output_var.warning_state = 1;
+							serial_output_var.warning_sub_state = 3;
 
-						pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-						send_spec_len_data(fd, serial_send_buf, send_buf_len);
+							pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+							send_spec_len_data(fd, serial_send_buf, send_buf_len);
+
+							timer_flag.bits.smoking_10min_interval_flag = 1;
+							timer_flag.bits.smoking_10min_interval_stat = 1;
+							SetAlarm(&timer_flag, smoking_10min_interval, &timeout_execute_activity, MIN_TO_TIMEVAL(10), 0);
+						}
+						else
+						{
+							memset(&serial_output_var, 0, sizeof(serial_output_var));
+						}
 					}
 					else
 					{
@@ -143,20 +149,34 @@ void* algorithm_process_task(void* argv)
 					break;
 
 				case 6:
-					if(0 == vehicle_speed_judge_flag)
-					{
-						serial_output_var.warning_state = 1;
-						serial_output_var.warning_sub_state = 6;
-					}
-					else
+					if(1 == vehicle_speed_judge_flag)
 					{
 						serial_output_var.warning_state = 1;
 						serial_output_var.warning_sub_state = 5;
+
+						pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+						send_spec_len_data(fd, serial_send_buf, send_buf_len);
+					}
+					else
+					{
+						memset(&serial_output_var, 0, sizeof(serial_output_var));
 					}
 
-					pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
-					send_spec_len_data(fd, serial_send_buf, send_buf_len);
+					break;
 
+				case 8:  // closing eye
+					if(1 == vehicle_speed_judge_flag)
+					{
+						serial_output_var.warning_state = 1;
+						serial_output_var.warning_sub_state = 6;
+
+						pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+						send_spec_len_data(fd, serial_send_buf, send_buf_len);
+					}
+					else
+					{
+						memset(&serial_output_var, 0, sizeof(serial_output_var));
+					}
 					break;
 				}
 			}

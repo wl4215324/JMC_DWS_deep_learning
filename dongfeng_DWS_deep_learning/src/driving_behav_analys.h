@@ -27,7 +27,7 @@ typedef union{
 	    unsigned char accelerator_active_after_20s_flag:1;
 		unsigned char speed_less_than_threshold_flag:1;
 		unsigned char speed_more_than_threshold_flag:1;
-	    unsigned char : 0;
+	    unsigned char smoking_10min_interval_flag:1;
 	    unsigned char engine_start_timer_stat:1;
 		unsigned char brake_active_timer_stat:1;
 		unsigned char driver_door_close_timer_stat:1;
@@ -35,6 +35,7 @@ typedef union{
 	    unsigned char accelerator_active_timer_stat:1;
 		unsigned char speed_less_than_threshold_timer_stat:1;
 		unsigned char speed_more_than_threshold_timer_stat:1;
+		unsigned char smoking_10min_interval_stat:1;
 	}bits;
 
 } TimerFlag;
@@ -47,7 +48,8 @@ typedef enum{
 	turning_light_active_after_20s,
 	accelerator_active_after_20s,
 	speed_less_than_threshold_after_3s,
-	speed_more_than_threshold_after_3s
+	speed_more_than_threshold_after_3s,
+	smoking_10min_interval
 } TimerEventType;
 
 extern TimerFlag timer_flag;
