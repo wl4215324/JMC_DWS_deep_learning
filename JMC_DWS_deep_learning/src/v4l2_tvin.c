@@ -36,8 +36,8 @@ static  int g_tb = 0;
 static  int g_output = 3;
 static  int g_output_num_buffers = 4;
 static  int g_capture_num_buffers = 3;
-static  int g_in_width = 0;
-static  int g_in_height = 0;
+static  int g_in_width = IMAGE_WIDTH;
+static  int g_in_height = IMAGE_HEIGHT;
 static  int g_display_width = IMAGE_WIDTH;
 static  int g_display_height = IMAGE_HEIGHT;
 static  int g_display_top = 0;
@@ -213,7 +213,7 @@ int v4l_capture_setup(void)
 
 	if (ioctl (fd_capture_v4l, VIDIOC_S_FMT, &fmt) < 0)
 	{
-		fprintf (stderr, "%s iformat not supported \n", v4l_capture_dev);
+		fprintf (stderr, "%s format not supported \n", v4l_capture_dev);
 		return TFAIL;
 	}
 
@@ -372,6 +372,7 @@ int v4l_output_setup(void)
 		fmt.fmt.pix.field = V4L2_FIELD_INTERLACED_TB;
 	else
 		fmt.fmt.pix.field = V4L2_FIELD_INTERLACED_BT;
+
 	if (ioctl(fd_output_v4l, VIDIOC_S_FMT, &fmt) < 0)
 	{
 		printf("set format failed\n");
@@ -505,6 +506,30 @@ int prepare_output(void)
 	return 0;
 }
 
+static int detect_hot_plug(unsigned char *yuyv_image)
+{
+	int i = 0;
+	int flag = 0;
+	static int changeCnt = 0;
+	static unsigned char preValue[10];
+
+	for (i = 0; i < sizeof(preValue); i++)
+	{
+		if (preValue[i] == yuyv_image[IMAGE_WIDTH*2*48*i+3*48*i])
+		{
+			flag++;
+		}
+
+		preValue[i] = yuyv_image[IMAGE_WIDTH*2*48*i+3*48*i];
+	}
+
+	if (flag == 10)
+		changeCnt++;
+	else
+		changeCnt = 0;
+
+	return changeCnt>9 ? 1:0;
+}
 
 
 int mxc_v4l_tvin_test(void)
@@ -516,8 +541,10 @@ int mxc_v4l_tvin_test(void)
 	unsigned char close_camera = 0;
 	struct timeval tv_start, tv_current;
 	unsigned char local_gray_image[720*480*2] = {0,};
+	int hot_plug_ret = 0;
 
 v4l2_init:
+
 	if (v4l_capture_setup() < 0)
 	{
 		printf("Setup v4l capture failed.\n");
@@ -542,7 +569,7 @@ v4l2_init:
 
 	for (i = 0; ; i++)
 	{
-		if(1 == serial_input_var.DDWS_switch)
+		if(0 < serial_input_var.DDWS_switch)
 		{
 			if(close_camera > 0)
 			{
@@ -560,7 +587,6 @@ v4l2_init:
 				continue;
 			}
 
-
 			if(g_frame_size > 691200)
 			{
 				g_frame_size = 691200;
@@ -569,6 +595,42 @@ v4l2_init:
 			pthread_mutex_lock(&uyvy_image_mutex);
 			memcpy(YUYV_image, capture_buffers[capture_buf.index].start, g_frame_size);
 			pthread_mutex_unlock(&uyvy_image_mutex);
+
+			if(0 == detect_hot_plug(YUYV_image))
+			{
+				if(hot_plug_ret)
+				{
+					/* close outputting image */
+					type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+					xioctl(fd_output_v4l, VIDIOC_STREAMOFF, &type);
+
+					for(j = 0; j < g_output_num_buffers; j++)
+					{
+						munmap(output_buffers[j].start, output_buffers[j].length);
+					}
+
+					/* close camera image */
+					type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+					xioctl(fd_capture_v4l, VIDIOC_STREAMOFF, &type);
+
+					for(j = 0; j < g_capture_num_buffers; j++)
+					{
+						munmap(capture_buffers[j].start, capture_buffers[j].length);
+					}
+
+					hot_plug_ret = 0;
+					goto v4l2_init;
+				}
+				else
+				{
+					hot_plug_ret = 0;
+				}
+			}
+			else
+			{
+				hot_plug_ret = 1;
+			}
+
 
 			if (xioctl(fd_capture_v4l, VIDIOC_QBUF, &capture_buf) < 0)
 			{
@@ -604,7 +666,6 @@ v4l2_init:
 			/*copy image buffer of camera to display buffer */
 			uyvy_2_gray(YUYV_image, local_gray_image);
 			//DrawHz32(40, 10, A_IMAGE_WIDTH , 10, gray_image);
-
 
 			DrawNums32(40, 10, temp_drowsyLevel, local_gray_image);
 			gray_2_uyvy(local_gray_image, YUYV_image);

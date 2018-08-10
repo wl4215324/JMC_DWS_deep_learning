@@ -206,12 +206,14 @@ static int save_app_list_as_file(BootloaderBusinessLogic *bootloader_logic)
 					(data_seg_1->data != NULL) && (data_seg_1->segment_len > 0))
 			{
 				fwrite(data_seg_1->data, data_seg_1->segment_len, 1, src_file);
+				DEBUG_INFO(write file\n);
 			}
 		}
 	}
 
 	fclose(src_file);
 	chmod(APPLICATION_NAME, 777);
+	DEBUG_INFO(write file finished\n);
 	return 0;
 }
 
@@ -1095,17 +1097,15 @@ create_app_logicblock:
 			*(reply_mesg+3) = 0x01;
 			*(reply_mesg+4) = 0x00;
 			*reply_mesg_len = 5;
-			bootloader_logic->bootloader_subseq = ResetECU;
 
 			//save_app_list_as_file(bootloader_logic);
+			bootloader_logic->bootloader_subseq = ResetECU;
 			return 0;
 		}
 	}
 
 	return -1;
 }
-
-
 
 
 static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
@@ -1120,11 +1120,16 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 	memset(&bootloader_logic->seed, 0, sizeof(bootloader_logic->seed));
 	memset(&bootloader_logic->secret_key, 0, sizeof(bootloader_logic->secret_key));
 
-	if(list_empty(&bootloader_logic->driver_list_head) <= 0)
+	if(!list_empty(&bootloader_logic->driver_list_head))
 	{
 		list_for_each_entry_safe(logicblock_node_1, logicblock_node_2, \
-				&(bootloader_logic->driver_list_head), logic_block_list);
+				&bootloader_logic->driver_list_head, logic_block_list)
 		{
+			if(!logicblock_node_1)
+			{
+				continue;
+			}
+
 			logicblock_node_1->logic_block_data.MaxNumOfBlockLeng = 0;
 			logicblock_node_1->logic_block_data.block_download_result = 0;
 			logicblock_node_1->logic_block_data.block_index = 0;
@@ -1134,20 +1139,28 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 			logicblock_node_1->logic_block_data.mem_addr = 0;
 			logicblock_node_1->logic_block_data.mem_size = 0;
 
-			if(list_empty(&logicblock_node_1->logic_block_data.data_segment_head) <= 0)
-			{
-				list_for_each_entry_safe(data_seg_1, data_seg_2, \
-						&logicblock_node_1->logic_block_data.data_segment_head, segment_list)
-				{
-					if(data_seg_1->data != NULL)
-					{
-						free(data_seg_1->data);
-					}
+//			if(!list_empty(&(logicblock_node_1->logic_block_data.data_segment_head)))
+//			{
+//
+//			}
 
-					list_del(&data_seg_1->segment_list);
-					free(data_seg_1);
-					data_seg_1 = NULL;
+			list_for_each_entry_safe(data_seg_1, data_seg_2, \
+					&logicblock_node_1->logic_block_data.data_segment_head, segment_list)
+			{
+				if(!data_seg_1)
+				{
+					continue;
 				}
+
+				if(!data_seg_1->data)
+				{
+					free(data_seg_1->data);
+				}
+
+
+				list_del(&data_seg_1->segment_list);
+				free(data_seg_1);
+				data_seg_1 = NULL;
 			}
 
 			list_del(&logicblock_node_1->logic_block_list);
@@ -1156,11 +1169,17 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 		}
 	}
 
-	if(list_empty(&bootloader_logic->app_list_head) <= 0)
+	if(!list_empty(&bootloader_logic->app_list_head))
 	{
 		list_for_each_entry_safe(logicblock_node_1, logicblock_node_2, \
-				&bootloader_logic->app_list_head, logic_block_list);
+				&bootloader_logic->app_list_head, logic_block_list)
 		{
+			//if(list_empty(&logicblock_node_1->logic_block_data.data_segment_head))
+			if(!logicblock_node_1)
+			{
+				continue;
+			}
+
 			logicblock_node_1->logic_block_data.MaxNumOfBlockLeng = 0;
 			logicblock_node_1->logic_block_data.block_download_result = 0;
 			logicblock_node_1->logic_block_data.block_index = 0;
@@ -1170,20 +1189,26 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 			logicblock_node_1->logic_block_data.mem_addr = 0;
 			logicblock_node_1->logic_block_data.mem_size = 0;
 
-			if(list_empty(&logicblock_node_1->logic_block_data.data_segment_head) <= 0)
-			{
-				list_for_each_entry_safe(data_seg_1, data_seg_2, \
-						&(logicblock_node_1->logic_block_data.data_segment_head), segment_list)
-				{
-					if(data_seg_1->data != NULL)
-					{
-						free(data_seg_1->data);
-					}
+//			if(!list_empty(&logicblock_node_1->logic_block_data.data_segment_head))
+//			{
+//			}
 
-					list_del(&data_seg_1->segment_list);
-					free(data_seg_1);
-					data_seg_1 = NULL;
+			list_for_each_entry_safe(data_seg_1, data_seg_2, \
+					&logicblock_node_1->logic_block_data.data_segment_head, segment_list)
+			{
+				if(!data_seg_1)
+				{
+					continue;
 				}
+
+				if(!data_seg_1->data)
+				{
+					free(data_seg_1->data);
+				}
+
+				list_del(&data_seg_1->segment_list);
+				free(data_seg_1);
+				data_seg_1 = NULL;
 			}
 
 			list_del(&logicblock_node_1->logic_block_list);
@@ -1515,7 +1540,7 @@ int bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, \
 			bootloader_logic->bootloader_subseq = FinshBootloader;
 			//save_driver_list_as_file(bootloader_logic);
 			//save_app_list_as_file(bootloader_logic);
-			bootloader_free_mem(bootloader_logic);
+			//bootloader_free_mem(bootloader_logic);
 		}
 		else
 		{
@@ -1579,23 +1604,22 @@ int bootloader_completetion(BootloaderBusinessLogic *bootloader_logic)
 		return -1;
 	}
 
-	/* save current application as bakup file */
-	if(copy_file(APPLICATION_NAME, APPLICATION_NAME_BAKUP) < 0)
-	{
-		return -1;
-	}
+	rename(APPLICATION_NAME, APPLICATION_NAME_BAKUP);
 
-	list_for_each(temp_list_head, &bootloader_logic->app_list_head)
-	{
-		app_logicblock_node = list_entry(temp_list_head, \
-				LogicBlockNode, logic_block_list);
+	save_app_list_as_file(bootloader_logic);
 
-		if(app_logicblock_node->logic_block_data.block_download_result == 1)
-		{
-			/* save file*/
-			save_app_list_as_file(bootloader_logic);
-		}
-	}
+
+//	list_for_each(temp_list_head, &bootloader_logic->app_list_head)
+//	{
+//		app_logicblock_node = list_entry(temp_list_head, \
+//				LogicBlockNode, logic_block_list);
+//
+//		if(app_logicblock_node->logic_block_data.block_download_result == 1)
+//		{
+//			/* save file*/
+//			save_app_list_as_file(bootloader_logic);
+//		}
+//	}
 
 	/* clear memory */
 	bootloader_free_mem(bootloader_logic);

@@ -294,12 +294,18 @@ static int hardware_init()
 	/* initial bootloader business logic object */
 	if(bootloader_logic_init(&JMC_bootloader_logic) < 0)
 	{
-		DEBUG_INFO(program has already been executed!);
+		DEBUG_INFO(bootloader_logic_init failed! \n);
 		return -1;
 	}
 
 	/* initialization for numerical display on monitor */
 	Hz32Init();
+
+	if(write_software_info() < 0)
+	{
+		DEBUG_INFO(write_software_info error!\n);
+		return -1;
+	}
 
 	return 0;
 }

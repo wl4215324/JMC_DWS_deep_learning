@@ -25,6 +25,8 @@ SerialInputVar serial_input_var = {
 	    .IC_DDWS_switch = 0,
 	    .MP5_DDWS_switch = 0,
 	    .Cruise_switch = 0,
+	    .IC_DDWS_switch_2_3 = 1,
+	    .MP5_DDWS_switch_2_3 = 0,
 };
 
 
@@ -346,6 +348,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
     static unsigned short last_turn_signal = 0;
 	static unsigned short last_brake_switch = 0;
 	static unsigned short last_driver_door = 0;
+	static unsigned short last_reverse_gear = 0;
+	unsigned short DDWS_switch_temp = 0;
 	struct timeval tp;
 
 	/*receiving message length error*/
@@ -575,23 +579,61 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		{
 			serial_input_var.IC_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 20, 2);
 			serial_input_var.OK_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 22, 2);
+			serial_input_var.IC_DDWS_switch_2_3 = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 24, 2);
 
-			//DEBUG_INFO(serial_input_var.IC_DDWS_switch: %4X\n, serial_input_var.IC_DDWS_switch);
-			//DEBUG_INFO(OK_switch is: %4X\n, serial_input_var.OK_switch);
-
-			if(serial_input_var.IC_DDWS_switch != serial_input_var.DDWS_switch)
+			/* if serial_input_var.IC_DDWS_switch's value is error or invalid, set disable*/
+			if(serial_input_var.IC_DDWS_switch > 1 )
 			{
-				serial_input_var.DDWS_switch = serial_input_var.IC_DDWS_switch;
+				serial_input_var.IC_DDWS_switch = 0;
+			}
 
+			if(serial_input_var.IC_DDWS_switch_2_3 > 1)
+			{
+				serial_input_var.IC_DDWS_switch_2_3 = 0;
+			}
+
+			DDWS_switch_temp = serial_input_var.IC_DDWS_switch_2_3<<1;
+			DDWS_switch_temp += serial_input_var.IC_DDWS_switch;
+
+			if(DDWS_switch_temp != serial_input_var.DDWS_switch)
+			{
+				serial_input_var.DDWS_switch = DDWS_switch_temp;
 				pthread_mutex_lock(&serial_output_var_mutex);
-				if(0 == serial_input_var.DDWS_switch)  //IC turn off ddws
+
+				switch(serial_input_var.DDWS_switch)
 				{
+				case 0:  //all levels warnings are closed
 					serial_output_var.warnning_level.working_state = 0;
-					memset(&serial_output_var, 0, sizeof(serial_output_var));
-				}
-				else if(1 == serial_input_var.DDWS_switch)  //IC turn on ddws
-				{
+				    memset(&serial_output_var, 0, sizeof(serial_output_var));
+					break;
+
+				case 1:  //level 1 warning is enabled
 					serial_output_var.warnning_level.working_state = 1;
+					if( (LEVEL_TWO_WARNING == serial_output_var.warnning_level.warning_state) && \
+					    (LEVEL_THREE_WARNING == serial_output_var.warnning_level.warning_state) )
+					{
+						serial_output_var.close_eye_one_level_warn = 0;
+						serial_output_var.close_eye_two_level_warn = 0;
+						serial_output_var.close_eye_time = 0;
+						serial_output_var.distract_warn = 0;
+						serial_output_var.yawn_warn = 0;
+						serial_output_var.warnning_level.warning_state = NO_WARNING;
+					}
+					break;
+
+				case 2:  //level 2 and 3 waring are enabled
+					serial_output_var.warnning_level.working_state = 1;
+					if(LEVEL_ONE_WARNING == serial_output_var.warnning_level.warning_state)
+					{
+						serial_output_var.calling_warn = 0;
+						serial_output_var.warnning_level.somking_warn = 0;
+						serial_output_var.warnning_level.warning_state = NO_WARNING;
+					}
+					break;
+
+				case 3:  //all levels warning are enabled
+					serial_output_var.warnning_level.working_state = 1;
+					break;
 				}
 				pthread_mutex_unlock(&serial_output_var_mutex);
 
@@ -606,6 +648,35 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
 				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
 			}
+
+
+//			if(serial_input_var.IC_DDWS_switch != serial_input_var.DDWS_switch)
+//			{
+//				serial_input_var.DDWS_switch = serial_input_var.IC_DDWS_switch;
+//
+//				pthread_mutex_lock(&serial_output_var_mutex);
+//				if(0 == serial_input_var.DDWS_switch)  //IC turn off ddws
+//				{
+//					serial_output_var.warnning_level.working_state = 0;
+//					memset(&serial_output_var, 0, sizeof(serial_output_var));
+//				}
+//				else if(1 == serial_input_var.DDWS_switch)  //IC turn on ddws
+//				{
+//					serial_output_var.warnning_level.working_state = 1;
+//				}
+//				pthread_mutex_unlock(&serial_output_var_mutex);
+//
+//				pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+//				if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
+//				{
+//					gettimeofday(&tp, NULL);
+//					DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
+//				}
+//
+//				/* save DDWS_switch status into file-system */
+//				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
+//				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
+//			}
 		}
 		else
 		{
@@ -657,21 +728,62 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		if(0xFF == get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ENGINE_SPEED_INDEX+4, 8, 8))
 		{
 			serial_input_var.MP5_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, 20, 2);
-			DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X\n, serial_input_var.MP5_DDWS_switch);
+			serial_input_var.MP5_DDWS_switch_2_3 = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, 22, 2);
+			DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X serial_input_var.MP5_DDWS_switch_2_3: %4X\n, \
+					serial_input_var.MP5_DDWS_switch, serial_input_var.MP5_DDWS_switch_2_3);
 
-			if(serial_input_var.MP5_DDWS_switch != serial_input_var.DDWS_switch)
+			if(serial_input_var.MP5_DDWS_switch > 1)
 			{
-				serial_input_var.DDWS_switch = serial_input_var.MP5_DDWS_switch;
+				serial_input_var.MP5_DDWS_switch = 0;
+			}
 
+			if(serial_input_var.MP5_DDWS_switch_2_3 > 1)
+			{
+				serial_input_var.MP5_DDWS_switch_2_3 = 0;
+			}
+
+			DDWS_switch_temp = serial_input_var.MP5_DDWS_switch_2_3<<1;
+			DDWS_switch_temp += serial_input_var.MP5_DDWS_switch;
+
+			if(DDWS_switch_temp != serial_input_var.DDWS_switch)
+			{
+				serial_input_var.DDWS_switch = DDWS_switch_temp;
 				pthread_mutex_lock(&serial_output_var_mutex);
-				if(0 == serial_input_var.DDWS_switch)  //mp5 turn off ddws
+
+				switch(serial_input_var.DDWS_switch)
 				{
-					memset(&serial_output_var, 0, sizeof(serial_output_var));
+				case 0:  //all levels warnings are closed
 					serial_output_var.warnning_level.working_state = 0;
-				}
-				else if(1 == serial_input_var.DDWS_switch)  //mp5 turn on ddws
-				{
+				    memset(&serial_output_var, 0, sizeof(serial_output_var));
+					break;
+
+				case 1:  //level 1 warning is enabled
 					serial_output_var.warnning_level.working_state = 1;
+					if( (LEVEL_TWO_WARNING == serial_output_var.warnning_level.warning_state) && \
+					    (LEVEL_THREE_WARNING == serial_output_var.warnning_level.warning_state) )
+					{
+						serial_output_var.close_eye_one_level_warn = 0;
+						serial_output_var.close_eye_two_level_warn = 0;
+						serial_output_var.close_eye_time = 0;
+						serial_output_var.distract_warn = 0;
+						serial_output_var.yawn_warn = 0;
+						serial_output_var.warnning_level.warning_state = NO_WARNING;
+					}
+					break;
+
+				case 2:  //level 2 and 3 waring are enabled
+					serial_output_var.warnning_level.working_state = 1;
+					if(LEVEL_ONE_WARNING == serial_output_var.warnning_level.warning_state)
+					{
+						serial_output_var.calling_warn = 0;
+						serial_output_var.warnning_level.somking_warn = 0;
+						serial_output_var.warnning_level.warning_state = NO_WARNING;
+					}
+					break;
+
+				case 3:  //all levels warning are enabled
+					serial_output_var.warnning_level.working_state = 1;
+					break;
 				}
 				pthread_mutex_unlock(&serial_output_var_mutex);
 
@@ -683,13 +795,79 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 				}
 
 				/* save DDWS_switch status into file-system */
-				sprintf(value_buf, "%d", serial_input_var.MP5_DDWS_switch);
+				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
 				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
 			}
+
+
+
+//			if(serial_input_var.MP5_DDWS_switch != serial_input_var.DDWS_switch)
+//			{
+//				serial_input_var.DDWS_switch = serial_input_var.MP5_DDWS_switch;
+//
+//				pthread_mutex_lock(&serial_output_var_mutex);
+//				if(0 == serial_input_var.DDWS_switch)  //mp5 turn off ddws
+//				{
+//					memset(&serial_output_var, 0, sizeof(serial_output_var));
+//					serial_output_var.warnning_level.working_state = 0;
+//				}
+//				else if(1 == serial_input_var.DDWS_switch)  //mp5 turn on ddws
+//				{
+//					serial_output_var.warnning_level.working_state = 1;
+//				}
+//				pthread_mutex_unlock(&serial_output_var_mutex);
+//
+//				pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+//				if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
+//				{
+//					gettimeofday(&tp, NULL);
+//					DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
+//				}
+//
+//				/* save DDWS_switch status into file-system */
+//				sprintf(value_buf, "%d", serial_input_var.MP5_DDWS_switch);
+//				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
+//			}
 		}
 
 		//DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X\n, serial_input_var.MP5_DDWS_switch);
 		//DEBUG_INFO(serial_input_var.DDWS_switch: %4X\n, serial_input_var.DDWS_switch);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable reverse_gear from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_REVERSE_GEAR_INDEX), *(recv_buf+MESSAGE_ID_OF_REVERSE_GEAR_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_REVERSE_GEAR_INDEX+2), *(recv_buf+MESSAGE_ID_OF_REVERSE_GEAR_INDEX+3)) == \
+			MESSAGE_ID_OF_REVERSE_GEAR)
+	{
+		serial_input_var.reverse_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_REVERSE_GEAR_INDEX+4, 16, 8);
+
+		/* if reverse_gear is in reverse position or error now, send no warning message */
+		if((0 == last_reverse_gear) && (serial_input_var.reverse_gear > 0))
+		{
+			pthread_mutex_lock(&serial_output_var_mutex);
+            serial_output_var.calling_warn = 0;
+			serial_output_var.close_eye_one_level_warn = 0;
+			serial_output_var.close_eye_two_level_warn = 0;
+			serial_output_var.close_eye_time = 0;
+			serial_output_var.distract_warn = 0;
+			serial_output_var.yawn_warn = 0;
+			serial_output_var.warnning_level.somking_warn = 0;
+			serial_output_var.warnning_level.warning_state = 0;
+			pthread_mutex_unlock(&serial_output_var_mutex);
+
+			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+			if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
+			{
+				gettimeofday(&tp, NULL);
+				DEBUG_INFO(now ms: %d\n, tp.tv_sec*1000 + tp.tv_usec/1000);
+			}
+		}
+
+		last_reverse_gear = serial_input_var.reverse_gear;
 	}
 	else
 	{
@@ -1247,6 +1425,17 @@ void serial_input_var_judge_2(SerialInputVar serial_input_var_temp)
 	timer_flag.bits.accelerator_active_timer_stat = 0;
 	timer_flag.bits.accelerator_active_after_20s_flag = 0;
 #endif
+
+	if(0 == serial_input_var_temp.reverse_gear)
+	{
+		timer_flag.bits.reverse_gear_flag = 0;
+		timer_flag.bits.reverse_gear_stat = 0;
+	}
+	else
+	{
+		timer_flag.bits.reverse_gear_flag = 1;
+		timer_flag.bits.reverse_gear_stat = 1;
+	}
 }
 
 
@@ -1416,7 +1605,7 @@ void* serial_commu_app(void* argv)
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 
-				//if(0xd6 == *(serial_recv_buf+6))
+				if(0xd6 == *(serial_recv_buf+6))
 				{
 					gettimeofday(&tp, NULL);
 
@@ -1441,7 +1630,7 @@ void* serial_commu_app(void* argv)
 						{
 							//printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
-							//if(0xd6 == *(serial_send_buf+6))
+							if(0xd6 == *(serial_send_buf+6))
 							{
 								gettimeofday(&tp, NULL);
 								printf("%d ms periodic serial port send_length is: %d, data: ", (tp.tv_sec*1000+tp.tv_usec/1000), \
@@ -1464,6 +1653,8 @@ void* serial_commu_app(void* argv)
 			    	if(JMC_bootloader_logic.bootloader_subseq >= ResetECU)
 			    	{
 			    		bootloader_completetion(&JMC_bootloader_logic);
+			    		DEBUG_INFO(exit jmc_dws program\n);
+			    		exit(0);
 			    	}
 			    }
 

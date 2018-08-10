@@ -107,6 +107,9 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_ID_OF_CRUISE_SWITCH  0x18FEF100
 #define MESSAGE_ID_OF_CRUISE_SWITCH_INDEX  44
 
+#define MESSAGE_ID_OF_REVERSE_GEAR  0x0C010021
+#define MESSAGE_ID_OF_REVERSE_GEAR_INDEX  116
+
 
 /*
  * configuration variables message ID of CAN communication
@@ -171,6 +174,9 @@ typedef struct {
     unsigned short MP5_DDWS_switch;
     unsigned short IC_DDWS_switch;
     unsigned short Cruise_switch;
+    unsigned short reverse_gear;
+    unsigned short IC_DDWS_switch_2_3;
+    unsigned short MP5_DDWS_switch_2_3;
 } SerialInputVar;
 
 

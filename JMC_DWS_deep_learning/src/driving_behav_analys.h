@@ -27,12 +27,14 @@ typedef union{
 		unsigned char driver_door_close_after_15min_flag:1;
 	    unsigned char turning_light_active_after_20s_flag:1;
 	    unsigned char accelerator_active_after_20s_flag:1;
+	    unsigned char reverse_gear_flag:1;
 	    unsigned char : 0;
 	    unsigned char engine_start_timer_stat:1;
 		unsigned char brake_active_timer_stat:1;
 		unsigned char driver_door_close_timer_stat:1;
 	    unsigned char turning_light_active_timer_stat:1;
 	    unsigned char accelerator_active_timer_stat:1;
+	    unsigned char reverse_gear_stat:1;
 	}bits;
 
 } TimerFlag;
