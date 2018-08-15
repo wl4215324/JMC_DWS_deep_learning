@@ -8,7 +8,12 @@
 #include "algorithm.hpp"
 
 
-ARITH_INPUT algorithm_input = XIAOMING_ARITH_INPUT_DEFAULT;
+ARITH_INPUT algorithm_input = {
+		OBJSEC_INITIALIZER, \
+		OBJCONF_INITIALIZER, \
+		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 0,};
+
+
 ARITH_OUTPUT algorithm_output;
 
 static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image,
@@ -45,7 +50,7 @@ void* algorithm_process_task(void* argv)
 	int send_buf_len = 0;
 
 	/* initialize algorithm */
-	InitParams();
+	InitParams(&algorithm_input);
 
 	while(true)
 	{

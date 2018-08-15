@@ -25,6 +25,9 @@
 //一体机V2.4：
 //		1.修改日期2018/04/16: 江铃定制版，算法输出参数增加了clearBuf：0——not clear buffer;1——clear buffer
 
+
+//报警阈值接口开放
+
 #ifndef _ALGOLIB_H_
 #define _ALGOLIB_H_
 
@@ -51,10 +54,42 @@
 #define TIMEWINDOWS 280
 #define TIMEWINDOWLENGTH 280
 
+//int FACE_DEQUE = 0;
+//int CALL_SIZE = 0;
+//int SMOKE_SIZE = 0;
+//int MOUTH_SIZE = 0;
+//int LEFT_RIGHT_SIZE = 0;
+//int EYE_SIZE = 0;
+
+typedef struct _Warning_Seconds
+{
+	float faceSec;
+	float phoneSec;
+	float smokeSec;
+	float mouthSec;
+	float distractSec;
+	float eyeSec;
+} WarningSeconds;
+
+typedef struct _Object_Confidence
+{
+	float faceConf;
+	float phoneConf;
+	float smokeConf;
+	float mouthConf;
+	float distractConf;
+	float closedEyeConf;
+	float brightPointConf;
+}Object_Confidence;
+
+
 //static Uint8 framesPerSecond = 8; //14;
 
 typedef struct _ARITH_INPUT
 {
+	WarningSeconds    objSec;
+	Object_Confidence objConf;
+	
 	Uint8    arithModuleEn;			// 算法功能模块使能:设置为1
 	Uint8    distractEnable;		// 左顾右看算法使能:0-失效；1-使能
 	Uint8    ctnECEnable;			// 持续闭眼报警使能:0-失效；1-使能
@@ -85,12 +120,39 @@ typedef struct _ARITH_OUTPUT
 }ARITH_OUTPUT;
 
 
+
+// //报警阈值设置
+// //algorithm input & output variable
+// ARITH_INPUT algorithmInput;
+
+// //algorithm time deque
+// algorithmInput.objSec.faceSec = 10;
+// algorithmInput.objSec.phoneSec = 3;
+// algorithmInput.objSec.smokeSec = 2;
+// algorithmInput.objSec.mouthSec = 2;
+// algorithmInput.objSec.distractSec = 3;
+// algorithmInput.objSec.eyeSec = 2;
+
+// //algorithm warning threshold
+// algorithmInput.objConf.faceConf = 0.9;
+// algorithmInput.objConf.phoneConf = 0.45;
+// algorithmInput.objConf.smokeConf = 0.45;
+// algorithmInput.objConf.mouthConf = 0.45;
+// algorithmInput.objConf.distractConf = 0.45;
+// algorithmInput.objConf.closedEyeConf = 0.45;
+
+#define OBJSEC_INITIALIZER  {2,3,2,2,3,2}
+#define OBJCONF_INITIALIZER  {0.95,0.45,0.45,0.45,0.45,0.45}
+
+
 /**************************************
 函数名：InitParams
 函数说明：疲劳检测算法初始化函数，
 		  系统上电后仅需初始化一次。
 ***************************************/
-void InitParams();
+void InitParams(ARITH_INPUT* initInput);
+
+
 
 
 /**************************************
@@ -101,6 +163,5 @@ void InitParams();
       ArithOutput-输出参数,包括疲劳结果，人脸标识等。
 ***************************************/
 int ImageProcessing(unsigned char * pDisp, ARITH_INPUT* ArithInput, ARITH_OUTPUT* ArithOuput);
-
 //void uyvy_2_gray(unsigned char *uyvy, unsigned char *gray);
 #endif
