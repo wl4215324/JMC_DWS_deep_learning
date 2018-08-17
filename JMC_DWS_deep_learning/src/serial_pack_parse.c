@@ -31,7 +31,7 @@ SerialInputVar serial_input_var = {
 
 
 SerialOutputVar serial_output_var = {0, 0, 0,}, serial_output_var_test;
-pthread_mutex_t serial_output_var_mutex =PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t serial_output_var_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 
 /*
@@ -362,7 +362,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
-		//DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
+		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
         
 		/* if vehicle is going to stop, device DDWS sends no warning message */
 		if( (last_vehicle_speed > 0) && (serial_input_var.vehicle_speed <= 0) )
@@ -400,7 +400,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_TURN_SIGNAL)
 	{
 		serial_input_var.turn_signal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_SIGNAL_INDEX+4, 8, 4);
-		//DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
+		DEBUG_INFO(turn_signal is: %4X\n, serial_input_var.turn_signal);
 
 		/* if left or right turnning light is going to flash, device DDWS sends no warning message */
 		if( (last_turn_signal == 0) && (serial_input_var.turn_signal > 0) )
@@ -454,7 +454,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 28, 2);
 
 		//DEBUG_INFO(Cruise_switch is: %4X\n, serial_input_var.Cruise_switch);
-		//DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
+		DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
 		
 		/* if brake switch is going to be actualized, device DDWS sends no warning message*/
         if( (last_brake_switch == 0) && (serial_input_var.brake_switch > 0) )
@@ -492,7 +492,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_DRIVER_DOOR)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
-		//DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
+		DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
 		
 		/* if driver-side door is going to be opened, device DDWS sends no warning message */
 		if( (last_driver_door == 0) && (serial_input_var.driver_door > 0) )
@@ -529,7 +529,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_SMALL_LAMP)
 	{
 		serial_input_var.small_lamp = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+4, 30, 2);
-		//DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
+		DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
 	}
 	else
 	{
@@ -622,7 +622,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 					break;
 
 				case 2:  //level 2 and 3 waring are enabled
-					serial_output_var.warnning_level.working_state = 1;
+					serial_output_var.warnning_level.working_state = 2;
 					if(LEVEL_ONE_WARNING == serial_output_var.warnning_level.warning_state)
 					{
 						serial_output_var.calling_warn = 0;
@@ -632,7 +632,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 					break;
 
 				case 3:  //all levels warning are enabled
-					serial_output_var.warnning_level.working_state = 1;
+					serial_output_var.warnning_level.working_state = 3;
 					break;
 				}
 				pthread_mutex_unlock(&serial_output_var_mutex);
@@ -772,7 +772,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 					break;
 
 				case 2:  //level 2 and 3 waring are enabled
-					serial_output_var.warnning_level.working_state = 1;
+					serial_output_var.warnning_level.working_state = 2;
 					if(LEVEL_ONE_WARNING == serial_output_var.warnning_level.warning_state)
 					{
 						serial_output_var.calling_warn = 0;
@@ -782,7 +782,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 					break;
 
 				case 3:  //all levels warning are enabled
-					serial_output_var.warnning_level.working_state = 1;
+					serial_output_var.warnning_level.working_state = 3;
 					break;
 				}
 				pthread_mutex_unlock(&serial_output_var_mutex);
@@ -844,6 +844,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_REVERSE_GEAR)
 	{
 		serial_input_var.reverse_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_REVERSE_GEAR_INDEX+4, 16, 8);
+		DEBUG_INFO(serial_input_var.reverse_gear: %X\n, serial_input_var.reverse_gear);
 
 		/* if reverse_gear is in reverse position or error now, send no warning message */
 		if((0 == last_reverse_gear) && (serial_input_var.reverse_gear > 0))
@@ -860,6 +861,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			pthread_mutex_unlock(&serial_output_var_mutex);
 
 			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+
 			if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
 			{
 				gettimeofday(&tp, NULL);
@@ -874,6 +876,8 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		return -1;
 	}
 
+
+	DEBUG_INFO(serial_input_var.DDWS_switch: %X\n, serial_input_var.DDWS_switch);
 	return 0;
 }
 
@@ -1605,7 +1609,7 @@ void* serial_commu_app(void* argv)
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 
-				if(0xd6 == *(serial_recv_buf+6))
+				//if(0xd6 == *(serial_recv_buf+6))
 				{
 					gettimeofday(&tp, NULL);
 
@@ -1630,7 +1634,7 @@ void* serial_commu_app(void* argv)
 						{
 							//printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
-							if(0xd6 == *(serial_send_buf+6))
+							//if(0xd6 == *(serial_send_buf+6))
 							{
 								gettimeofday(&tp, NULL);
 								printf("%d ms periodic serial port send_length is: %d, data: ", (tp.tv_sec*1000+tp.tv_usec/1000), \

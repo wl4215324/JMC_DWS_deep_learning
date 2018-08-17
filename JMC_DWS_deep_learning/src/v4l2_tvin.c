@@ -631,7 +631,6 @@ v4l2_init:
 				hot_plug_ret = 1;
 			}
 
-
 			if (xioctl(fd_capture_v4l, VIDIOC_QBUF, &capture_buf) < 0)
 			{
 				printf("capture VIDIOC_QBUF failed\n");

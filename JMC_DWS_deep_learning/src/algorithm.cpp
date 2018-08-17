@@ -116,7 +116,6 @@ void *algorithm_process(void *argv)
 					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
-
 					break;
 
 				case 2:  //yawn

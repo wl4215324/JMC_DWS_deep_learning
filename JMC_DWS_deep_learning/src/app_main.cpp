@@ -124,7 +124,7 @@ static void param_validity_detect(KeyValuePair* key_value_list)
 		else if(!strcmp((key_value_list+i)->key_name, "ddws_switch"))
 		{
 			/* get ddws switch status from xml file, 0: ddws turn off, 1: ddws turn on */
-			serial_input_var.DDWS_switch = ((key_value_list+i)->value > 1) ? 1: (key_value_list+i)->value;
+			serial_input_var.DDWS_switch = ((key_value_list+i)->value > 3) ? 3: (key_value_list+i)->value;
 		}
 	}
 }

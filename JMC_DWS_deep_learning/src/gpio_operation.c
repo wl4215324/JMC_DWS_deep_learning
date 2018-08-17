@@ -35,7 +35,8 @@ void* vibrate_motor(void* argv)
 		}
 
 		//printf("motor_pwm_period: %d, motor_pwm_duty: %d\n", motor_pwm_period, motor_pwm_duty);
-		if(1 == serial_input_var.DDWS_switch)  //if DDWS function is enable
+		//if(1 == serial_input_var.DDWS_switch)  //if DDWS function is enable
+		if(serial_input_var.DDWS_switch > 0)
 		{
 			/* camera led control logic */
 		    if((serial_input_var.vehicle_speed >> 8) < (config_param.vehicle_speed > 10 ? (config_param.vehicle_speed-10):0))

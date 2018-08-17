@@ -212,6 +212,8 @@ static int save_app_list_as_file(BootloaderBusinessLogic *bootloader_logic)
 	}
 
 	fclose(src_file);
+	sync();
+	sync();
 	chmod(APPLICATION_NAME, 777);
 	DEBUG_INFO(write file finished\n);
 	return 0;
