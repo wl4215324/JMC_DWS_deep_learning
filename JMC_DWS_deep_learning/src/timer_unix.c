@@ -43,7 +43,7 @@ void LeaveMutex(void)
 
 void timer_notify(sigval_t val)
 {
-	if(gettimeofday(&last_sig,NULL))
+	if(gettimeofday(&last_sig, NULL))
 	{
 		perror("gettimeofday()");
 	}
@@ -112,11 +112,11 @@ void setTimer(TIMEVAL value)
 	long tv_nsec = 1000 * (maxval(value,1)%1000000);
 	time_t tv_sec = value/1000000;
 	struct itimerspec timerValues;
+
 	timerValues.it_value.tv_sec = tv_sec;
 	timerValues.it_value.tv_nsec = tv_nsec;
 	timerValues.it_interval.tv_sec = 0;
 	timerValues.it_interval.tv_nsec = 0;
-
  	timer_settime (timer, 0, &timerValues, NULL);
 }
 

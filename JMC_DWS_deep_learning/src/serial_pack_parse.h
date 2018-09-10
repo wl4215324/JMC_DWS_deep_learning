@@ -198,8 +198,8 @@ typedef struct {
 		unsigned char working_state:2;
 	} warnning_level;
 
-	unsigned char reserved;
 	unsigned char close_eye_time;
+	unsigned char reserved;
 
 }SerialOutputVar;
 

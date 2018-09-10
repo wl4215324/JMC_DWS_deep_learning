@@ -47,7 +47,7 @@ typedef enum{
 	turning_light_active_after_20s,
 	accelerator_active_after_20s,
 	OK_Switch_timer_3s,
-	level2_closing_eye_timer_1s  // added on 05-21
+	level2_closing_eye_timer_1s,  // added on 05-21
 } TimerEventType;
 
 extern TimerFlag timer_flag ;

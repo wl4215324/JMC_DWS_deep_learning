@@ -438,7 +438,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_ACCEL_PEDAL)
 	{
 		serial_input_var.accel_pedal = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_ACCEL_PEDAL_INDEX+4, 8, 8);
-		//DEBUG_INFO(accel_pedal is: %4X\n, serial_input_var.accel_pedal);
+		DEBUG_INFO(accel_pedal is: %4X\n, serial_input_var.accel_pedal);
 	}
 	else
 	{
@@ -454,7 +454,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BRAKE_SWITCH_INDEX+4, 28, 2);
 
 		//DEBUG_INFO(Cruise_switch is: %4X\n, serial_input_var.Cruise_switch);
-		DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
+		//DEBUG_INFO(brake_switch is: %4X\n, serial_input_var.brake_switch);
 		
 		/* if brake switch is going to be actualized, device DDWS sends no warning message*/
         if( (last_brake_switch == 0) && (serial_input_var.brake_switch > 0) )
@@ -492,7 +492,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_DRIVER_DOOR)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 2, 2);
-		DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
+		//DEBUG_INFO(driver_door is: %4X\n, serial_input_var.driver_door);
 		
 		/* if driver-side door is going to be opened, device DDWS sends no warning message */
 		if( (last_driver_door == 0) && (serial_input_var.driver_door > 0) )
@@ -529,7 +529,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_SMALL_LAMP)
 	{
 		serial_input_var.small_lamp = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SMALL_LAMP_INDEX+4, 30, 2);
-		DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
+		//DEBUG_INFO(small_lamp is: %4X\n, serial_input_var.small_lamp);
 	}
 	else
 	{
@@ -877,7 +877,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 	}
 
 
-	DEBUG_INFO(serial_input_var.DDWS_switch: %X\n, serial_input_var.DDWS_switch);
+	//DEBUG_INFO(serial_input_var.DDWS_switch: %X\n, serial_input_var.DDWS_switch);
 	return 0;
 }
 
@@ -914,7 +914,7 @@ int pack_serial_send_message(unsigned char message_type, void* send_data, unsign
 		*/
 		memcpy(send_buf+7, (unsigned char*)send_data, 6);
 		*send_buf_len = 7 + 6;
-		*(send_buf+*send_buf_len) = *(unsigned char*)(send_data+7);
+		*(send_buf+*send_buf_len) = *(unsigned char*)(send_data+6);
 		*send_buf_len += 1;
 		break;
 

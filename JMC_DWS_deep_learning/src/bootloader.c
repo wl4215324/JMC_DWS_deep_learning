@@ -22,6 +22,12 @@ SecretKey secret_key = {
 
 BootloaderBusinessLogic  JMC_bootloader_logic;
 
+#define  ELF_MAGIC_LENGTH  16
+unsigned char elf_magic[ELF_MAGIC_LENGTH] = {
+		0x7f, 0x45, 0x4c, 0x46, 0x01, 0x01, 0x01, 0x00, \
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+};
+
 
 static unsigned char ASAP1A_CCP_ComputeKeyFromSeed(unsigned char *seed, unsigned short sizeSeed, \
 		char * key, unsigned short maxSizeKey, unsigned short *sizeKey)
@@ -334,6 +340,17 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 				return 0;
 			}
 
+			if((driver_logicblock_node->logic_block_data.mem_addr != 0x01) || \
+			   (0 == driver_logicblock_node->logic_block_data.mem_size) )
+			{
+				/* negative response */
+				*reply_mesg = 0x7F;
+				*(reply_mesg+1) = 0x34;
+				*(reply_mesg+2) = 0x31;  //reject download
+				*reply_mesg_len = 3;
+				return 0;
+			}
+
 			ptr_datasegment->block_index = 1;
 			ptr_datasegment->prev_block_index = 0;
 			ptr_datasegment->data = NULL;
@@ -536,6 +553,30 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 
 	return -1;
 }
+
+
+static int compare_array(const unsigned char *array_one, const unsigned char *array_two,\
+		unsigned int length)
+{
+	unsigned int i = 0;
+
+	if(!array_one || !array_two || (0 == length))
+	{
+		return -1;
+	}
+
+	for(i=0; i<length; i++)
+	{
+		if(*(array_one+i) != *(array_two+i))
+		{
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic);
 
 
 static int download_program_process(BootloaderBusinessLogic *bootloader_logic, \
@@ -813,9 +854,10 @@ create_app_logicblock:
 				bootloader_logic->bootloader_subseq = DownloadApplication;
 				app_logicblock_node = \
 						list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
-				app_logicblock_node->logic_block_data.block_state = RequestDownload;
+				//app_logicblock_node->logic_block_data.block_state = RequestDownload;
 				ptr_datasegment = (DataSegment*)malloc(sizeof(DataSegment));
 
+				/* apply for memory failed */
 				if(NULL == ptr_datasegment)
 				{
 					/* negative response */
@@ -834,7 +876,6 @@ create_app_logicblock:
 
 				mem_addr_bytes = *(can_mesg+2)&0x0F; //get memory address bytes
 				mem_size_bytes = (*(can_mesg+2)&0xF0)>>4; //get memory size bytes
-
 				DEBUG_INFO(download app mem_addr: %2x mem_size: %2x\n, mem_addr_bytes, mem_size_bytes);
 
 				if((*(can_mesg+1) != 0) || (mem_addr_bytes > 4) || (mem_size_bytes > 4))
@@ -871,8 +912,9 @@ create_app_logicblock:
 							*(can_mesg+3+mem_addr_bytes+i);
 				}
 
-				ptr_datasegment->data = (unsigned char*)malloc(ptr_datasegment->mem_size);
 
+                DEBUG_INFO(recv download program address: %4x\n,ptr_datasegment->mem_addr);
+				ptr_datasegment->data = (unsigned char*)malloc(ptr_datasegment->mem_size);
 				DEBUG_INFO(app file malloc: %4x bytes mem\n, ptr_datasegment->mem_size);
 
 				if(NULL == ptr_datasegment->data)
@@ -885,9 +927,21 @@ create_app_logicblock:
 					return 0;
 				}
 
+				if( (ptr_datasegment->mem_addr != 0x20) || \
+					(ptr_datasegment->mem_size == 0))
+				{
+					/* negative response */
+					*reply_mesg = 0x7F;
+					*(reply_mesg+1) = 0x34;
+					*(reply_mesg+2) = 0x31;  //address invalid
+					*reply_mesg_len = 3;
+					return 0;
+				}
+
 				ptr_datasegment->segment_len = 0;
 				list_add_tail(&ptr_datasegment->segment_list, \
 						&app_logicblock_node->logic_block_data.data_segment_head);
+				app_logicblock_node->logic_block_data.block_state = RequestDownload;
 
 				/* positive response */
 				*reply_mesg = 0x74;
@@ -917,7 +971,6 @@ create_app_logicblock:
 				app_logicblock_node = \
 						list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
 				app_logicblock_node->logic_block_data.block_index =  *(can_mesg+1);
-				app_logicblock_node->logic_block_data.block_state = DownloadData;
 				ptr_datasegment = list_entry(app_logicblock_node->logic_block_data.data_segment_head.prev, \
 						DataSegment, segment_list);
 				ptr_datasegment->block_index = *(can_mesg+1);
@@ -942,6 +995,7 @@ create_app_logicblock:
 					}
 					else
 					{
+						app_logicblock_node->logic_block_data.block_state = DownloadData;
 						/* positive response */
 						*reply_mesg = 0x76;
 						*(reply_mesg+1) = *(can_mesg+1);
@@ -967,9 +1021,18 @@ create_app_logicblock:
 		else if(0x37 == *can_mesg)
 		{
 			bootloader_logic->bootloader_subseq = DownloadApplication;
-
 			app_logicblock_node = \
 					list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
+			if((NULL == app_logicblock_node) || (app_logicblock_node->logic_block_data.block_state != DownloadData))
+			{
+				/* negative response */
+				*reply_mesg = 0x7F;
+				*(reply_mesg+1) = 0x37;
+				*(reply_mesg+2) = 0x24;
+				*reply_mesg_len = 3;
+				return 0;
+			}
+
 			ptr_datasegment = list_entry(app_logicblock_node->logic_block_data.data_segment_head.prev, \
 					DataSegment, segment_list);
 
@@ -1026,16 +1089,26 @@ create_app_logicblock:
 			app_logicblock_node = \
 					list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
 
-			app_logicblock_node->logic_block_data.block_state = CheckingIntegrity;
-			crc32_temp = (*(can_mesg+4)<<24)|(*(can_mesg+5)<<16)|(*(can_mesg+6)<<8)|*(can_mesg+7);
+			if(app_logicblock_node->logic_block_data.block_state != FinishDownload)
+			{
+				*reply_mesg = 0x71;
+				*(reply_mesg+1) = 0x01;
+				*(reply_mesg+2) = 0x02;
+				*(reply_mesg+3) = 0x02;
+				*(reply_mesg+4) = 0x01;
+				*reply_mesg_len = 5;
+				bootloader_free_mem(bootloader_logic);
+				return 0;
+			}
 
+			crc32_temp = (*(can_mesg+4)<<24)|(*(can_mesg+5)<<16)|(*(can_mesg+6)<<8)|*(can_mesg+7);
 			DEBUG_INFO(recv CRC32: %4x calc CRC32: %4x\n, crc32_temp, \
 					app_logicblock_node->logic_block_data.crc32_cal^0xffffffff);
 
-
-			if(crc32_temp == app_logicblock_node->logic_block_data.crc32_cal^0xffffffff)
+			if(crc32_temp == (app_logicblock_node->logic_block_data.crc32_cal^0xffffffff))
 			{
 				app_logicblock_node->logic_block_data.block_download_result = 1;
+				app_logicblock_node->logic_block_data.block_state = CheckingIntegrity;
 				/* positive response */
 				*reply_mesg = 0x71;
 				*(reply_mesg+1) = 0x01;
@@ -1043,6 +1116,7 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x00;
 				*reply_mesg_len = 5;
+				return 0;
 			}
 			else
 			{
@@ -1053,9 +1127,9 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x01;
 				*reply_mesg_len = 5;
+				bootloader_free_mem(bootloader_logic);
+				return 0;
 			}
-
-			return 0;
 		}
 		/* check programming dependency */
 		else if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && \
@@ -1069,10 +1143,28 @@ create_app_logicblock:
 
 				if(app_logicblock_node->logic_block_data.block_download_result != 1)
 				{
-					*reply_mesg = 0x7F;
-					*(reply_mesg+1) = 0x31;
-					*(reply_mesg+2) = 0x72;  //general programming error
-					*reply_mesg_len = 3;
+					/* negative response */
+					*reply_mesg = 0x71;
+					*(reply_mesg+1) = 0x01;
+					*(reply_mesg+2) = 0xFF;
+					*(reply_mesg+3) = 0x01;
+					*(reply_mesg+4) = 0x01;
+					*reply_mesg_len = 5;
+					return 0;
+				}
+
+				ptr_datasegment = list_entry(app_logicblock_node->logic_block_data.data_segment_head.prev, \
+						DataSegment, segment_list);
+
+				if(compare_array(ptr_datasegment->data, elf_magic, sizeof(elf_magic)) != 0)
+				{
+					/* negative response */
+					*reply_mesg = 0x71;
+					*(reply_mesg+1) = 0x01;
+					*(reply_mesg+2) = 0xFF;
+					*(reply_mesg+3) = 0x01;
+					*(reply_mesg+4) = 0x01;
+					*reply_mesg_len = 5;
 					return 0;
 				}
 			}
@@ -1084,10 +1176,13 @@ create_app_logicblock:
 
 				if(driver_logicblock_node->logic_block_data.block_download_result != 1)
 				{
-					*reply_mesg = 0x7F;
-					*(reply_mesg+1) = 0x31;
-					*(reply_mesg+2) = 0x72;  //general programming error
-					*reply_mesg_len = 3;
+					/* negative response */
+					*reply_mesg = 0x71;
+					*(reply_mesg+1) = 0x01;
+					*(reply_mesg+2) = 0xFF;
+					*(reply_mesg+3) = 0x01;
+					*(reply_mesg+4) = 0x01;
+					*reply_mesg_len = 5;
 					return 0;
 				}
 			}
@@ -1118,9 +1213,11 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 	DataSegment *data_seg_1 = NULL;
 	DataSegment *data_seg_2 = NULL;
 
-	bootloader_logic->bootloader_subseq = ExtendedSession;
-	memset(&bootloader_logic->seed, 0, sizeof(bootloader_logic->seed));
-	memset(&bootloader_logic->secret_key, 0, sizeof(bootloader_logic->secret_key));
+	bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
+	bootloader_logic->seed.level_FBL = 0;
+	bootloader_logic->seed.level_one = 0;
+	bootloader_logic->secret_key.level_FBL = 0;
+	bootloader_logic->secret_key.level_one = 0;
 
 	if(!list_empty(&bootloader_logic->driver_list_head))
 	{

@@ -43,10 +43,12 @@
  *           with accelerator pedal. If accelerator switch or cruise switch is active (on), one of driving behavior analysis
  *           is satisfied. In other words, the exit condition is both switches are off.
  *
+ *
+ *Version 1.13: 2018/09/6 10:45 am
  */
 
 #define ARM_APP_SOFTWARE_VER_MAJ  1
-#define ARM_APP_SOFTWARE_VER_MIN  10
+#define ARM_APP_SOFTWARE_VER_MIN  13
 #define SOFTWARE_VERSION_FILE  "/home/user/SoftVersion"
 
 static inline int write_software_info()
@@ -63,7 +65,7 @@ static inline int write_software_info()
 	}
 	else
 	{
-		sprintf(write_content, "V 1.4.%d.%d\n", ARM_APP_SOFTWARE_VER_MAJ, ARM_APP_SOFTWARE_VER_MIN);
+		sprintf(write_content, "V 1.8.%d.%d\n", ARM_APP_SOFTWARE_VER_MAJ, ARM_APP_SOFTWARE_VER_MIN);
 
 		if((ret = write(fd, write_content, strlen(write_content))) < 0)
 		{

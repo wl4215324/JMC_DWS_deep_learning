@@ -307,7 +307,7 @@ void *algorithm_process(void *argv)
 							serial_output_var.warnning_level.warning_state = LEVEL_TWO_WARNING;
 
 							SetAlarm(&level2_closing_eye_timer_flag, level2_closing_eye_timer_1s, &timeout_execute_activity,\
-									S_TO_TIMEVAL(1), 1);
+									S_TO_TIMEVAL(1), S_TO_TIMEVAL(1));
 							level2_closing_eye_timer_flag.timer_val = 1;
 							serial_output_var.close_eye_time = 2;
 					        DEBUG_INFO(level2_closing_eye_timer_flag.timer_val: %d\n, \
@@ -330,6 +330,8 @@ void *algorithm_process(void *argv)
 							serial_output_var.warnning_level.warning_state = LEVEL_THREE_WARNING;
 					        DEBUG_INFO(level2_closing_eye_timer_flag.timer_val: %d\n, \
 					        		level2_closing_eye_timer_flag.timer_val);
+					        DEBUG_INFO(serial_output_var.close_eye_time: %d\n, \
+					        		serial_output_var.close_eye_time);
 						}
 					}
 					else  //if level 2~3 warning is disabled
@@ -342,7 +344,6 @@ void *algorithm_process(void *argv)
 						serial_output_var.yawn_warn = 0;
 						serial_output_var.warnning_level.somking_warn = 0;
 						serial_output_var.warnning_level.warning_state = NO_WARNING;
-
 						level2_closing_eye_timer_flag.timer_val = 0;
 						free_spec_type_alarm(level2_closing_eye_timer_1s);
 					}

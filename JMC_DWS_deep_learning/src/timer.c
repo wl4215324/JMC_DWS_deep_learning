@@ -65,7 +65,7 @@ TIMER_HANDLE SetAlarm(CO_Data* d, TimerEventType id, TimerCallback_t callback, T
 			row->val = value + elapsed_time;
 			row->interval = period;
 			row->state = TIMER_ARMED;
-			printf("last_timer_raw is %d\n", last_timer_raw);
+			//DEBUG_INFO(last_timer_raw is %d\n, last_timer_raw);
 
 			return row_number;
 		}
@@ -150,13 +150,14 @@ void TimeDispatch(void)
 {
 	TIMER_HANDLE i;
 	TIMEVAL next_wakeup = TIMEVAL_MAX; /* used to compute when should normaly occur next wakeup */
+	s_timer_entry *row;
+
 	/* First run : change timer state depending on time */
 	/* Get time since timer signal */
 	UNS32 overrun = (UNS32)getElapsedTime();
 
+	DEBUG_INFO(overrun: %ld\n, overrun);
 	TIMEVAL real_total_sleep_time = total_sleep_time + overrun;
-
-	s_timer_entry *row;
 
 	for(i=0, row = timers; i <= last_timer_raw; i++, row++)
 	{
@@ -177,6 +178,10 @@ void TimeDispatch(void)
 					/* Check if this new timer value is the soonest */
 					if(row->val < next_wakeup)
 						next_wakeup = row->val;
+
+					DEBUG_INFO(row->val: %ld \n, row->val);
+
+
 				}
 			}
 			else
@@ -196,6 +201,7 @@ void TimeDispatch(void)
 
 	/* Set timer to soonest occurence */
 	setTimer(next_wakeup);
+	DEBUG_INFO(next_wakeup: %ld\n, next_wakeup);
 
 	/* Then trig them or not. */
 	for(i=0, row = timers; i<=last_timer_raw; i++, row++)
