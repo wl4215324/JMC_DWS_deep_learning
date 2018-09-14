@@ -4,7 +4,8 @@ src/algorithm.d: ../src/algorithm.cpp ../src/algorithm.hpp \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/timerscfg.h ../src/software_version.h \
  ../src/watchdog.h ../src/kfifo.h ../src/bootloader.h ../src/list.h \
- ../src/crc32.h ../src/disp_num_on_image.h ../src/applicfg.h
+ ../src/crc32.h ../src/disp_num_on_image.h ../src/applicfg.h \
+ ../src/rs485_protocol.h
 
 ../src/algorithm.hpp:
 
@@ -45,3 +46,5 @@ src/algorithm.d: ../src/algorithm.cpp ../src/algorithm.hpp \
 ../src/disp_num_on_image.h:
 
 ../src/applicfg.h:
+
+../src/rs485_protocol.h:

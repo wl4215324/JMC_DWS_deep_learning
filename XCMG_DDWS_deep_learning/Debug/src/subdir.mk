@@ -8,9 +8,9 @@ CPPFLAGS := -std=c++11 -DADAS -DNOWIN -DDLIB_USE_BLAS -O3 -DCPU_ONLY
 
 CFLAGS :=
 
-INC_DIR = -I/home/tony/Downloads/libxml2-2.7.2/install/include/libxml2
+INC_DIR = -I../lib/libxml/include/libxml2
  
-LIB_DIR =-L/home/tony/Public/lib/arm -L/home/tony/Downloads/libxml2-2.7.2/install/lib
+LIB_DIR =-L/home/tony/Public/lib/arm -L../lib/libxml/lib
 
 
 C_SRCS += \
@@ -25,7 +25,8 @@ C_SRCS += \
 ../src/timer_unix.c \
 ../src/timer.c \
 ../src/watchdog.c \
-../src/xml_operation.c
+../src/xml_operation.c \
+../src/rs485_protocol.c
 
 CPP_SRCS += \
 ../src/app_main.cpp \
@@ -45,7 +46,8 @@ OBJS += \
 ./src/timer_unix.o \
 ./src/timer.o \
 ./src/watchdog.o \
-./src/xml_operation.o
+./src/xml_operation.o \
+./src/rs485_protocol.o
 
 C_DEPS += \
 ./src/v4l2_tvin.d \
@@ -59,7 +61,8 @@ C_DEPS += \
 ./src/timer_unix.d \
 ./src/timer.d \
 ./src/watchdog.d \
-./src/xml_operation.d
+./src/xml_operation.d \
+./src/rs485_protocol.d
 
 CPP_DEPS += \
 ./src/app_main.d \
