@@ -19,6 +19,7 @@ struct kfifo *kfifo_init(unsigned char *buffer, unsigned int size)
     return fifo;
 }
 
+
 struct kfifo *kfifo_alloc(unsigned int size)
 {
     unsigned char *buffer;

@@ -46,9 +46,11 @@
  *
  *Version 1.13: 2018/09/6 10:45 am
  */
+#define MCU_APP_SOFTWARE_VER_MAJ  1
+#define MCU_APP_SOFTWARE_VER_MIN  4
 
 #define ARM_APP_SOFTWARE_VER_MAJ  1
-#define ARM_APP_SOFTWARE_VER_MIN  13
+#define ARM_APP_SOFTWARE_VER_MIN  10
 #define SOFTWARE_VERSION_FILE  "/home/user/SoftVersion"
 
 static inline int write_software_info()
@@ -65,7 +67,8 @@ static inline int write_software_info()
 	}
 	else
 	{
-		sprintf(write_content, "V 1.8.%d.%d\n", ARM_APP_SOFTWARE_VER_MAJ, ARM_APP_SOFTWARE_VER_MIN);
+		sprintf(write_content, "V %d.%d.%d.%d\n", MCU_APP_SOFTWARE_VER_MAJ, MCU_APP_SOFTWARE_VER_MIN,\
+				ARM_APP_SOFTWARE_VER_MAJ, ARM_APP_SOFTWARE_VER_MIN);
 
 		if((ret = write(fd, write_content, strlen(write_content))) < 0)
 		{

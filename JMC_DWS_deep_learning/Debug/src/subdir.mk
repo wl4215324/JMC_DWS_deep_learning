@@ -25,7 +25,8 @@ C_SRCS += \
 ../src/timer_unix.c \
 ../src/timer.c \
 ../src/watchdog.c \
-../src/xml_operation.c
+../src/xml_operation.c \
+../src/sha_1.c
 
 CPP_SRCS += \
 ../src/app_main.cpp \
@@ -45,7 +46,8 @@ OBJS += \
 ./src/timer_unix.o \
 ./src/timer.o \
 ./src/watchdog.o \
-./src/xml_operation.o
+./src/xml_operation.o \
+./src/sha_1.o
 
 C_DEPS += \
 ./src/v4l2_tvin.d \
@@ -59,7 +61,8 @@ C_DEPS += \
 ./src/timer_unix.d \
 ./src/timer.d \
 ./src/watchdog.d \
-./src/xml_operation.d
+./src/xml_operation.d \
+./src/sha_1.d
 
 CPP_DEPS += \
 ./src/app_main.d \

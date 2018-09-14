@@ -16,6 +16,7 @@
 #include "crc32.h"
 
 
+
 #define MINORBITS   16
 #define MINORMASK   ((1U << MINORBITS) - 1)
 #define MAJOR(dev)  ((unsigned int) ((dev) >> MINORBITS))
@@ -45,6 +46,12 @@
 
 #define  APPLICATION_NAME  "/home/user/jmc_dws"
 #define  APPLICATION_NAME_BAKUP "/home/user/jmc_dws_bakup"
+
+#define  DRIVER_DOWNLOAD_ADDR   0x01
+#define  DRIVER_LENTH_OF_BYTES  0x01
+
+#define  APP_DOWNLOAD_ADDR    0x20
+#define  APP_LENGTH_OF_BYTES  70000
 
 
 struct BootloaderData{
