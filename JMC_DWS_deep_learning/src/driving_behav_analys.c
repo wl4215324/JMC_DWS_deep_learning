@@ -62,7 +62,7 @@ void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_
 		/* added on 05-21 */
 	case level2_closing_eye_timer_1s:
 		timer_flag->timer_val = 2;
-		serial_output_var.close_eye_time +=1;
+		serial_output_var.close_eye_time += 1;
 		printf("serial_output_var.close_eye_time: %d\n", serial_output_var.close_eye_time);
 		break;
 	}

@@ -89,7 +89,7 @@ KeyValuePair key_value_list[CONFIG_PARAMS_COUNT] = {
 		{"brake_freeze_time", 20},
 		{"turn_light_freeze_time", 20},
 		{"acceleator_freeze_time", 20},
-		{"ddws_switch", 1}
+		{"ddws_switch", 3}
 };
 
 

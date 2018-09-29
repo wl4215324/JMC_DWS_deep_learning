@@ -47,10 +47,10 @@
  *Version 1.13: 2018/09/6 10:45 am
  */
 #define MCU_APP_SOFTWARE_VER_MAJ  1
-#define MCU_APP_SOFTWARE_VER_MIN  4
+#define MCU_APP_SOFTWARE_VER_MIN  8
 
-#define ARM_APP_SOFTWARE_VER_MAJ  1
-#define ARM_APP_SOFTWARE_VER_MIN  10
+#define ARM_APP_SOFTWARE_VER_MAJ  2
+#define ARM_APP_SOFTWARE_VER_MIN  1
 #define SOFTWARE_VERSION_FILE  "/home/user/SoftVersion"
 
 static inline int write_software_info()

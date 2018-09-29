@@ -902,7 +902,7 @@ create_app_logicblock:
 					return 0;
 				}
 
-                DEBUG_INFO(recv download program address: %4x\n,ptr_datasegment->mem_addr);
+                DEBUG_INFO(recv download program address: %4x\n, ptr_datasegment->mem_addr);
 				ptr_datasegment->data = (unsigned char*) malloc(ptr_datasegment->mem_size);
 				DEBUG_INFO(app file malloc: %4x bytes mem\n, ptr_datasegment->mem_size);
 

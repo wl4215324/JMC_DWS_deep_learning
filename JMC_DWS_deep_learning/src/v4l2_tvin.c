@@ -414,13 +414,13 @@ int start_capturing(void)
 		buf.index = i;
 		if (xioctl(fd_capture_v4l, VIDIOC_QUERYBUF, &buf) < 0)
 		{
-				printf("VIDIOC_QUERYBUF error\n");
-				return TFAIL;
+		    printf("VIDIOC_QUERYBUF error\n");
+			return TFAIL;
 		}
 
 		capture_buffers[i].length = buf.length;
 		capture_buffers[i].offset = (size_t) buf.m.offset;
-		capture_buffers[i].start = (unsigned char*)mmap (NULL, capture_buffers[i].length,
+		capture_buffers[i].start = (unsigned char*)mmap (NULL, capture_buffers[i].length, \
 			PROT_READ | PROT_WRITE, MAP_SHARED, fd_capture_v4l, capture_buffers[i].offset);
 		memset(capture_buffers[i].start, 0xFF, capture_buffers[i].length);
 	}
@@ -686,7 +686,7 @@ v4l2_init:
 				continue;
 			}
 
-			usleep(100000);
+			usleep(50000);
 		}
 		else
 		{

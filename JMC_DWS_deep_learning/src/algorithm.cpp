@@ -7,7 +7,17 @@
 
 #include "algorithm.hpp"
 
-ARITH_INPUT algorithm_input = XIAOMING_ARITH_INPUT_DEFAULT;
+ARITH_INPUT algorithm_input = {
+		OBJSEC_INITIALIZER, \
+		OBJCONF_INITIALIZER, \
+		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 0,};
+
+ARITH_INPUT algorithm_input_for_day = {
+		OBJSEC_INITIALIZER_FOR_DAY, \
+		OBJCONF_INITIALIZER_FOR_DAY,\
+		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 0,
+};
+
 ARITH_OUTPUT algorithm_output;
 
 static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image,
@@ -40,11 +50,12 @@ void *algorithm_process(void *argv)
 {
 	unsigned char gray_image[IMAGE_HEIGHT*IMAGE_WIDTH];
 	unsigned char local_image[IMAGE_HEIGHT*IMAGE_WIDTH*2];
-	//unsigned char temp_drowsyLevel = 0;
+	unsigned char last_drowsyLevel = 0;
 	int send_buf_len = 0;
 
 	/* initialize algorithm */
-	InitParams();
+	algorithm_input = algorithm_input_for_day;
+	InitParams(&algorithm_input);
 
 	while(JMC_bootloader_logic.bootloader_subseq < DownloadDriver)
 	{
@@ -116,6 +127,16 @@ void *algorithm_process(void *argv)
 					/* clear level 2 close-eye flag and timer */
 					level2_closing_eye_timer_flag.timer_val = 0;
 					free_spec_type_alarm(level2_closing_eye_timer_1s);
+
+					/* if warning exits, then output variables are sent actively via serial port in
+					 * order to response quickly.
+					*/
+					if((2 == last_drowsyLevel) || (3 == last_drowsyLevel) || (4 == last_drowsyLevel) ||\
+					   (5 == last_drowsyLevel) || (6 == last_drowsyLevel) || (8 == last_drowsyLevel))
+					{
+						pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, serial_send_buf, &send_buf_len);
+						send_spec_len_data(fd, serial_send_buf, send_buf_len);
+					}
 					break;
 
 				case 2:  //yawn
@@ -354,6 +375,8 @@ void *algorithm_process(void *argv)
 					send_spec_len_data(fd, serial_send_buf, send_buf_len);
 					break;
 				}
+
+				last_drowsyLevel = algorithm_output.drowsyLevel;
 			}
 			else if(1 == OK_Switch_timer_flag.timer_val)
 			{

@@ -21,6 +21,9 @@ extern "C" {
 }
 
 
-extern void* algorithm_process(void *);
+extern ARITH_INPUT algorithm_input;
+extern ARITH_OUTPUT algorithm_output;
+
+extern void* algorithm_process(void *argv);
 
 #endif /* ALGORITHM_HPP_ */
