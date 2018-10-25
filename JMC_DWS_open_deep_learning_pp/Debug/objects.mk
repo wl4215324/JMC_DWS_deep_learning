@@ -4,4 +4,5 @@
 
 USER_OBJS :=
 
-LIBS := -lpthread -lrt -lxml2 -L ../lib/deep_learning/ -lImageProcessing
+LIBS := -lboost_system -lprotobuf -lboost_thread -lhdf5 -lhdf5_hl -lgflags -lboost_regex -lboost_atomic -lboost_filesystem\
+-lcaffe -lImageProcessing -lpthread -lrt -lxml2 -L ../lib/deep_learning   

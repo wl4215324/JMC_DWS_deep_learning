@@ -262,10 +262,10 @@ static int hardware_init()
 
 	tcflush(fd, TCIOFLUSH);
 
-	if(open_watchdog() < 0)
-	{
-		return -1;
-	}
+//	if(open_watchdog() < 0)
+//	{
+//		return -1;
+//	}
 
 	init_xml_file(para_config_xml_path, key_value_list);
 	param_validity_detect(key_value_list);

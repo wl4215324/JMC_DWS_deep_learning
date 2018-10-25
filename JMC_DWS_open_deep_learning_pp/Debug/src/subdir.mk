@@ -10,7 +10,7 @@ CFLAGS :=
 
 INC_DIR = -I/home/tony/Downloads/libxml2-2.7.2/install/include/libxml2
  
-LIB_DIR =-L/home/tony/Public/lib/arm -L/home/tony/Downloads/libxml2-2.7.2/install/lib
+LIB_DIR = -L/home/tony/Public/lib/arm_for_detect -L/home/tony/Downloads/libxml2-2.7.2/install/lib 
 
 
 C_SRCS += \

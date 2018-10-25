@@ -581,20 +581,30 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			serial_input_var.OK_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 22, 2);
 			serial_input_var.IC_DDWS_switch_2_3 = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_INDEX+4, 24, 2);
 
-			/* if serial_input_var.IC_DDWS_switch's value is error or invalid, set disable*/
-			if(serial_input_var.IC_DDWS_switch > 1 )
+			/* if serial_input_var.OK_switch's value is error or invalid, no response to clicking button */
+			if(serial_input_var.OK_switch != 1)
 			{
-				serial_input_var.IC_DDWS_switch = 0;
+				serial_input_var.OK_switch = 0;
 			}
 
+			/* if serial_input_var.IC_DDWS_switch's value is error or invalid, keep previous state */
+			if(serial_input_var.IC_DDWS_switch > 1 )
+			{
+				//serial_input_var.IC_DDWS_switch = 0;
+				serial_input_var.IC_DDWS_switch = serial_input_var.DDWS_switch&0x01;
+			}
+
+			/* if serial_input_var.IC_DDWS_switch_2_3's value is error or invalid, keep previous state */
 			if(serial_input_var.IC_DDWS_switch_2_3 > 1)
 			{
-				serial_input_var.IC_DDWS_switch_2_3 = 0;
+				//serial_input_var.IC_DDWS_switch_2_3 = 0;
+				serial_input_var.IC_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
 			}
 
 			DDWS_switch_temp = serial_input_var.IC_DDWS_switch_2_3<<1;
 			DDWS_switch_temp += serial_input_var.IC_DDWS_switch;
 
+			/* if current DDWS switch of IC is different from previous sate */
 			if(DDWS_switch_temp != serial_input_var.DDWS_switch)
 			{
 				serial_input_var.DDWS_switch = DDWS_switch_temp;
@@ -647,6 +657,10 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 				/* save DDWS_switch status into file-system */
 				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
 				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
+			}
+			else //if current DDWS switch of IC is same with previous sate
+			{
+				;//do nothing
 			}
 
 
@@ -732,19 +746,24 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X serial_input_var.MP5_DDWS_switch_2_3: %4X\n, \
 					serial_input_var.MP5_DDWS_switch, serial_input_var.MP5_DDWS_switch_2_3);
 
+			/* if serial_input_var.MP5_DDWS_switch's value is error or invalid, keep previous state */
 			if(serial_input_var.MP5_DDWS_switch > 1)
 			{
-				serial_input_var.MP5_DDWS_switch = 0;
+				//serial_input_var.MP5_DDWS_switch = 0;
+				serial_input_var.MP5_DDWS_switch = serial_input_var.DDWS_switch&0x01;
 			}
 
+			/* if serial_input_var.MP5_DDWS_switch_2_3's value is error or invalid, keep previous state */
 			if(serial_input_var.MP5_DDWS_switch_2_3 > 1)
 			{
-				serial_input_var.MP5_DDWS_switch_2_3 = 0;
+				//serial_input_var.MP5_DDWS_switch_2_3 = 0;
+				serial_input_var.MP5_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
 			}
 
 			DDWS_switch_temp = serial_input_var.MP5_DDWS_switch_2_3<<1;
 			DDWS_switch_temp += serial_input_var.MP5_DDWS_switch;
 
+			/* if current DDWS switch state of MP5 is different from previous sate */
 			if(DDWS_switch_temp != serial_input_var.DDWS_switch)
 			{
 				serial_input_var.DDWS_switch = DDWS_switch_temp;
@@ -797,6 +816,10 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 				/* save DDWS_switch status into file-system */
 				sprintf(value_buf, "%d", serial_input_var.DDWS_switch);
 				update_node_value(PARAM_CONFIG_XML_PATH, "ddws_switch", value_buf);
+			}
+			else //if current DDWS switch state of MP5 is same with previous sate
+			{
+				;  //do nothing
 			}
 
 
@@ -1662,7 +1685,7 @@ void* serial_commu_app(void* argv)
 			    	}
 			    }
 
-			    feed_watchdog();
+			    //feed_watchdog();
 			}
 			else
 			{

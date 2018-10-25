@@ -45,7 +45,7 @@ JMC_DWS_open_deep_learning: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
 	#arm-linux-gnueabihf-g++  $(OBJS) $(USER_OBJS) $(LIBS) -o "JMC_DWS_deep_learning" -Wl,-rpath=/usr/local/arm/hf/
-	arm-linux-gnueabihf-g++  $(OBJS) $(LIB_DIR) $(LIBS) $(USER_OBJS) -o "$@" -Wl,-rpath=/usr/local/arm/hf/
+	arm-linux-gnueabihf-g++  $(OBJS) $(LIB_DIR) $(LIBS) $(USER_OBJS) -o "$@" -Wl,-rpath=/usr/local/arm/hf
 	@echo 'Finished building target: $@'
 	@echo ' '
 
