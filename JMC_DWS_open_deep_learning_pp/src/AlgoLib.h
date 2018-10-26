@@ -146,7 +146,7 @@ typedef struct _ARITH_OUTPUT
 
 
 #define OBJSEC_INITIALIZER_FOR_DAY  {80,10,2,2,3,2}
-#define OBJCONF_INITIALIZER_FOR_DAY  {0.99,0.85,0.85,0.45,0.65,0.65}
+#define OBJCONF_INITIALIZER_FOR_DAY  {0.98,0.85,0.85,0.45,0.65,0.65}
 
 
 /**************************************

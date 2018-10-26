@@ -75,7 +75,7 @@ void *algorithm_process(void *argv)
 			{
 				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d,"
 								"algorithm_output.eyeCloseEventTime: %d\n",
-						algorithm_output.drowsyLevel, algorithm_output.faceFlag,
+						algorithm_output.drowsyLevel, algorithm_output.faceFlag, \
 						algorithm_output.eyeCloseEventTime);
 
 				temp_drowsyLevel = algorithm_output.drowsyLevel;

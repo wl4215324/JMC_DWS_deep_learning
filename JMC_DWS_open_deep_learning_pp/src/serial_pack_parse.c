@@ -590,15 +590,15 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			/* if serial_input_var.IC_DDWS_switch's value is error or invalid, keep previous state */
 			if(serial_input_var.IC_DDWS_switch > 1 )
 			{
-				//serial_input_var.IC_DDWS_switch = 0;
-				serial_input_var.IC_DDWS_switch = serial_input_var.DDWS_switch&0x01;
+				serial_input_var.IC_DDWS_switch = 0;
+				//serial_input_var.IC_DDWS_switch = serial_input_var.DDWS_switch&0x01;
 			}
 
 			/* if serial_input_var.IC_DDWS_switch_2_3's value is error or invalid, keep previous state */
 			if(serial_input_var.IC_DDWS_switch_2_3 > 1)
 			{
-				//serial_input_var.IC_DDWS_switch_2_3 = 0;
-				serial_input_var.IC_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
+				serial_input_var.IC_DDWS_switch_2_3 = 0;
+				//serial_input_var.IC_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
 			}
 
 			DDWS_switch_temp = serial_input_var.IC_DDWS_switch_2_3<<1;
@@ -749,15 +749,15 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			/* if serial_input_var.MP5_DDWS_switch's value is error or invalid, keep previous state */
 			if(serial_input_var.MP5_DDWS_switch > 1)
 			{
-				//serial_input_var.MP5_DDWS_switch = 0;
-				serial_input_var.MP5_DDWS_switch = serial_input_var.DDWS_switch&0x01;
+				serial_input_var.MP5_DDWS_switch = 0;
+				//serial_input_var.MP5_DDWS_switch = serial_input_var.DDWS_switch&0x01;
 			}
 
 			/* if serial_input_var.MP5_DDWS_switch_2_3's value is error or invalid, keep previous state */
 			if(serial_input_var.MP5_DDWS_switch_2_3 > 1)
 			{
-				//serial_input_var.MP5_DDWS_switch_2_3 = 0;
-				serial_input_var.MP5_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
+				serial_input_var.MP5_DDWS_switch_2_3 = 0;
+				//serial_input_var.MP5_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
 			}
 
 			DDWS_switch_temp = serial_input_var.MP5_DDWS_switch_2_3<<1;
@@ -1685,7 +1685,7 @@ void* serial_commu_app(void* argv)
 			    	}
 			    }
 
-			    //feed_watchdog();
+//			    feed_watchdog();
 			}
 			else
 			{
