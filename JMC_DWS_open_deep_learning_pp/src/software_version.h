@@ -50,12 +50,25 @@
  *            (1) Software for production of stage PP.
  *            (2) Algorithm open configuration parameters.
  *            (3) lengthen part of recognition time, shield warning for 60 seconds, call warning for 10 seconds.
+ *
+ * Version 1.8.2.2  2018/11/09 10:15 am
+ *            (1) Soft-switch logic is modified according to the latest requirement.
+
  */
+
+/* following version information is prepared for production */
 #define MCU_APP_SOFTWARE_VER_MAJ  1
-#define MCU_APP_SOFTWARE_VER_MIN  8
+#define MCU_APP_SOFTWARE_VER_MIN  9
 
 #define ARM_APP_SOFTWARE_VER_MAJ  2
-#define ARM_APP_SOFTWARE_VER_MIN  1
+#define ARM_APP_SOFTWARE_VER_MIN  2
+
+
+//#define MCU_APP_SOFTWARE_VER_MAJ  1
+//#define MCU_APP_SOFTWARE_VER_MIN  9
+//
+//#define ARM_APP_SOFTWARE_VER_MAJ  2
+//#define ARM_APP_SOFTWARE_VER_MIN  6
 #define SOFTWARE_VERSION_FILE  "/home/user/SoftVersion"
 
 static inline int write_software_info()

@@ -12,6 +12,7 @@
  */
 #include "v4l2_tvin.h"
 #include "disp_num_on_image.h"
+#include "production_test.h"
 
 
 
@@ -206,8 +207,8 @@ int v4l_capture_setup(void)
 
 	memset(&fmt, 0, sizeof(fmt));
 	fmt.type                = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	fmt.fmt.pix.width       = 720;
-	fmt.fmt.pix.height      = 480;
+	fmt.fmt.pix.width       = IMAGE_WIDTH;
+	fmt.fmt.pix.height      = IMAGE_HEIGHT;
 	fmt.fmt.pix.pixelformat = g_fmt;
 	fmt.fmt.pix.field       = V4L2_FIELD_INTERLACED;
 
@@ -540,7 +541,7 @@ int mxc_v4l_tvin_test(void)
 	int total_time;
 	unsigned char close_camera = 0;
 	struct timeval tv_start, tv_current;
-	unsigned char local_gray_image[720*480*2] = {0,};
+	unsigned char local_gray_image[IMAGE_WIDTH*IMAGE_HEIGHT*2] = {0,};
 	int hot_plug_ret = 0;
 
 v4l2_init:
@@ -587,48 +588,62 @@ v4l2_init:
 				continue;
 			}
 
-			if(g_frame_size > 691200)
+			if(g_frame_size > YUYV_IMAGE_SIZE)
 			{
-				g_frame_size = 691200;
+				g_frame_size = YUYV_IMAGE_SIZE;
 			}
 
 			pthread_mutex_lock(&uyvy_image_mutex);
-			memcpy(YUYV_image, capture_buffers[capture_buf.index].start, g_frame_size);
+
+			/* if DDWS works in production testing mode, get image from local file */
+			if(1 == rs485_test_flag)
+			{
+				read_test_picture(YUYV_image, &g_frame_size);
+				printf("g_frame_size is %d\n", g_frame_size);
+			}
+			else // if DDWS works in normal mode, get image from camera
+			{
+				memcpy(YUYV_image, capture_buffers[capture_buf.index].start, g_frame_size);
+			}
+
 			pthread_mutex_unlock(&uyvy_image_mutex);
 
-			if(0 == detect_hot_plug(YUYV_image))
+			if(rs485_test_flag != 1)
 			{
-				if(hot_plug_ret)
+				if(0 == detect_hot_plug(YUYV_image))
 				{
-					/* close outputting image */
-					type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
-					xioctl(fd_output_v4l, VIDIOC_STREAMOFF, &type);
-
-					for(j = 0; j < g_output_num_buffers; j++)
+					if(hot_plug_ret)
 					{
-						munmap(output_buffers[j].start, output_buffers[j].length);
+						/* close outputting image */
+						type = V4L2_BUF_TYPE_VIDEO_OUTPUT;
+						xioctl(fd_output_v4l, VIDIOC_STREAMOFF, &type);
+
+						for(j = 0; j < g_output_num_buffers; j++)
+						{
+							munmap(output_buffers[j].start, output_buffers[j].length);
+						}
+
+						/* close camera image */
+						type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+						xioctl(fd_capture_v4l, VIDIOC_STREAMOFF, &type);
+
+						for(j = 0; j < g_capture_num_buffers; j++)
+						{
+							munmap(capture_buffers[j].start, capture_buffers[j].length);
+						}
+
+						hot_plug_ret = 0;
+						goto v4l2_init;
 					}
-
-					/* close camera image */
-					type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-					xioctl(fd_capture_v4l, VIDIOC_STREAMOFF, &type);
-
-					for(j = 0; j < g_capture_num_buffers; j++)
+					else
 					{
-						munmap(capture_buffers[j].start, capture_buffers[j].length);
+						hot_plug_ret = 0;
 					}
-
-					hot_plug_ret = 0;
-					goto v4l2_init;
 				}
 				else
 				{
-					hot_plug_ret = 0;
+					hot_plug_ret = 1;
 				}
-			}
-			else
-			{
-				hot_plug_ret = 1;
 			}
 
 			if (xioctl(fd_capture_v4l, VIDIOC_QBUF, &capture_buf) < 0)

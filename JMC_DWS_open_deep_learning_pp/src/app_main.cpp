@@ -309,7 +309,6 @@ static int hardware_init()
 }
 
 
-
 int main()
 {
 	//daemon(0, 0);

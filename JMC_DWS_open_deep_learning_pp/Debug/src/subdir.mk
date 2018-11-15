@@ -26,7 +26,8 @@ C_SRCS += \
 ../src/timer.c \
 ../src/watchdog.c \
 ../src/xml_operation.c \
-../src/sha_1.c
+../src/sha_1.c \
+../src/production_test.c
 
 CPP_SRCS += \
 ../src/app_main.cpp \
@@ -47,7 +48,8 @@ OBJS += \
 ./src/timer.o \
 ./src/watchdog.o \
 ./src/xml_operation.o \
-./src/sha_1.o
+./src/sha_1.o \
+./src/production_test.o
 
 C_DEPS += \
 ./src/v4l2_tvin.d \
@@ -62,7 +64,8 @@ C_DEPS += \
 ./src/timer.d \
 ./src/watchdog.d \
 ./src/xml_operation.d \
-./src/sha_1.d
+./src/sha_1.d \
+./src/production_test.d
 
 CPP_DEPS += \
 ./src/app_main.d \

@@ -25,7 +25,8 @@ src/serial_pack_parse.d: ../src/serial_pack_parse.c \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xlink.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/SAX2.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlmemory.h \
- /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/threads.h
+ /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/threads.h \
+ ../src/production_test.h
 
 ../src/serial_pack_parse.h:
 
@@ -98,3 +99,5 @@ src/serial_pack_parse.d: ../src/serial_pack_parse.c \
 /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlmemory.h:
 
 /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/threads.h:
+
+../src/production_test.h:

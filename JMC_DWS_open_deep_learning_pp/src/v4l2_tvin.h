@@ -38,6 +38,7 @@
 
 #define  IMAGE_WIDTH   720
 #define  IMAGE_HEIGHT  480
+#define  YUYV_IMAGE_SIZE  (IMAGE_WIDTH*IMAGE_HEIGHT*2)
 
 
 struct testbuffer

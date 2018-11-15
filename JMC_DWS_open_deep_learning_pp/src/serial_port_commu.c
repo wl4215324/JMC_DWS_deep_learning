@@ -118,7 +118,8 @@ static int set_parity(int fd, int databits, int stopbits, int parity)
 	{
   		options.c_iflag |= INPCK;
 	}
-    options.c_cc[VTIME] = 30; // 3S
+//    options.c_cc[VTIME] = 30; // 3S
+	options.c_cc[VTIME] = 3; // 300ms
     options.c_cc[VMIN] = 0;
 
     tcflush(fd,TCIFLUSH);  /* Update the options and do it NOW */

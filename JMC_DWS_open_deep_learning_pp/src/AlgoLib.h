@@ -119,7 +119,7 @@ typedef struct _ARITH_OUTPUT
 	Uint8    eyeCloseEventTime;		// 闭眼持续时间，单位：帧数
 }ARITH_OUTPUT;
 
-
+//int gClearBuf;
 
 // //报警阈值设置
 // //algorithm input & output variable
@@ -144,9 +144,12 @@ typedef struct _ARITH_OUTPUT
 #define OBJSEC_INITIALIZER  {80,10,3,2,3,3}
 #define OBJCONF_INITIALIZER  {0.95,0.85,0.85,0.45,0.45,0.65}
 
+#define OBJSEC_INITIALIZER_FOR_DAY  {5,5,2,2,3,2}
+#define OBJCONF_INITIALIZER_FOR_DAY  {0.85,0.85,0.85,0.65,0.7,0.65}
 
-#define OBJSEC_INITIALIZER_FOR_DAY  {80,10,2,2,3,2}
-#define OBJCONF_INITIALIZER_FOR_DAY  {0.98,0.85,0.85,0.45,0.65,0.65}
+/* stage PP production parameters */
+//#define OBJSEC_INITIALIZER_FOR_DAY  {5,10,2,2,3,2}
+//#define OBJCONF_INITIALIZER_FOR_DAY  {0.85,0.85,0.85,0.45,0.65,0.65}
 
 
 /**************************************

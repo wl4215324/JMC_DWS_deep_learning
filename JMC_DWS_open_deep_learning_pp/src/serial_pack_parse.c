@@ -8,6 +8,8 @@
 #include "serial_pack_parse.h"
 #include "user_timer.h"
 #include "xml_operation.h"
+#include "production_test.h"
+
 
 /*
  *
@@ -134,7 +136,7 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 			}
 			else
 			{
-				usleep(100000);
+				usleep(50000);
 				continue;
 			}
 		}
@@ -143,18 +145,14 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 		recv_buf += read_bytes;
 	}
 
-
-
-/*
-	printf("\n %s data: ", __func__);
-
-	for(i=0; i < spec_len - left_bytes; i++)
-	{
-		DEBUG_INFO(%2X, *(buf_begin+i));
-	}
-
-	printf("\n");
-*/
+//	printf("\n %s data: ", __func__);
+//
+//	for(i=0; i < spec_len - left_bytes; i++)
+//	{
+//		DEBUG_INFO(%2X, *(buf_begin+i));
+//	}
+//
+//	printf("\n");
 
 
 	return (spec_len - left_bytes);
@@ -186,7 +184,7 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 	int i = 0, j = 0;
 	int retry_cnt = 0;
 	int retval = 0;
-	unsigned char temp_buf[2];
+	unsigned char temp_buf[8];
 	unsigned char message_type, var_cnt;
 	unsigned short temp_var;
 	unsigned short message_head, message_len, message_len_complement, check_sum;
@@ -203,15 +201,15 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 
 	while(true)
 	{
-		if(i < 4)
+		if(i < 8)  /* receive frame header of data package */
 		{
-			retval = read_spec_len_data(fd, temp_buf, 2);
+			retval = read_spec_len_data(fd, temp_buf+i, 1);
 		}
-		else
+		else  /* receive left length of data package */
 		{
 			retval = read_spec_len_data(fd, recv_buff+8, (message_len-6));
 
-			if(retval > 0)
+			if(retval >= 0)
 			{
 				*recv_frame_leng += retval;
 				*(recv_buff+MESSAGE_HEAD_INDEX)   = GET_HIG_BYTE_FROM_WORD(message_head);
@@ -226,15 +224,15 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 
 				//DEBUG_INFO(cal check_sum: %2X\n, check_sum);
 
-//				if((0xd6 == *(recv_buff+6)) && ((0x36 == *(recv_buff+7)) || (0x37 == *(recv_buff+7))))
-//				{
+				//if((0xd6 == *(recv_buff+6)) && ((0x36 == *(recv_buff+7)) || (0x37 == *(recv_buff+7))))
+				{
 //					for(j=0; j<*recv_frame_leng; j++ )
 //					{
 //						printf("%02X", recv_buff[j]);
 //					}
 //
 //					DEBUG_INFO(cal check_sum: %4X\n, check_sum);
-//				}
+				}
 
 				if(check_sum == (((*(recv_buff+ *recv_frame_leng -2) & 0xffff) << 8) |*(recv_buff+ *recv_frame_leng -1)))
 				{
@@ -244,6 +242,10 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 				{
 					return -1;
 				}
+			}
+			else  //error
+			{
+				return -1;
 			}
 		}
 
@@ -264,54 +266,82 @@ static int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng
 		}
 		else
 		{
-			temp_var = MAKE_WORD(temp_buf[0], temp_buf[1]);
+			i += retval;
 
-			if(MESSAGE_HEAD == temp_var)
+			if(1 == i)  // check first data of received data
 			{
-				message_head = MESSAGE_HEAD;
-				*recv_frame_leng = 2;
-				retry_cnt = 0;
-				i = 1;
-				continue;
+				/* if first byte of received data is not 0xAA, continue to check next byte*/
+				if(temp_buf[i-1] != 0xAA)
+				{
+					i = 0;
+					*recv_frame_leng = 0;
+					retry_cnt = 0;
+				}
 			}
-
-			if(1 == i)
+			else if(2 == i)  // if bytes of received data is 2
 			{
+				temp_var = MAKE_WORD(temp_buf[i-2], temp_buf[i-1]);
+
+				/* if fist two bytes is 0xAA55*/
+				if(MESSAGE_HEAD == temp_var)
+				{
+					message_head = MESSAGE_HEAD;
+					*recv_frame_leng = 2;
+					retry_cnt = 0;
+					DEBUG_INFO(%2X\n, temp_var);
+				}
+				else
+				{
+					i = 0;
+					retry_cnt += 1;
+					message_len = 0;
+					*recv_frame_leng = 0;
+				}
+			}
+			else if(4 == i)
+			{
+				temp_var = MAKE_WORD(temp_buf[i-2], temp_buf[i-1]);
 				message_len = temp_var;
 				*recv_frame_leng = 4;
-				i += 1;
+				retry_cnt = 0;
+				DEBUG_INFO(%2X\n, temp_var);
 			}
-			else if(2 == i)
+			else if(6 == i)
 			{
+				temp_var = MAKE_WORD(temp_buf[i-2], temp_buf[i-1]);
 				message_len_complement = temp_var;
 
 				if(0xFFFF == (message_len + message_len_complement))
 				{
-					i += 1;
 					*recv_frame_leng = 6;
+					retry_cnt = 0;
 				}
 				else
 				{
 					i = 0;
 					retry_cnt += 1;
+					message_len = 0;
 					*recv_frame_leng = 0;
 				}
+
+				DEBUG_INFO(%2X\n, temp_var);
 			}
-			else if(3 == i)
+			else if(8 == i)
 			{
-				message_type = *temp_buf;
-				var_cnt = *(temp_buf+1);
+				message_type = temp_buf[i-2];
+				var_cnt = temp_buf[i-1];
 
 				if((message_type == D2_MESSAGE) || (message_type == D3_MESSAGE) || (message_type == D4_MESSAGE) ||\
 						(message_type == D5_MESSAGE) || (message_type == D6_MESSAGE) || (message_type == D7_MESSAGE))
 				{
-					i += 1;
 					*recv_frame_leng = 8;
+					retry_cnt = 0;
 				}
 				else
 				{
 					i = 0;
 					retry_cnt += 1;
+					message_len = 0;
 					*recv_frame_leng = 0;
 				}
 			}
@@ -362,6 +392,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+		//serial_input_var.vehicle_speed = 0x4040;
 		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
         
 		/* if vehicle is going to stop, device DDWS sends no warning message */
@@ -590,15 +621,15 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			/* if serial_input_var.IC_DDWS_switch's value is error or invalid, keep previous state */
 			if(serial_input_var.IC_DDWS_switch > 1 )
 			{
-				serial_input_var.IC_DDWS_switch = 0;
-				//serial_input_var.IC_DDWS_switch = serial_input_var.DDWS_switch&0x01;
+				//serial_input_var.IC_DDWS_switch = 0;
+				serial_input_var.IC_DDWS_switch = serial_input_var.DDWS_switch&0x01;
 			}
 
 			/* if serial_input_var.IC_DDWS_switch_2_3's value is error or invalid, keep previous state */
 			if(serial_input_var.IC_DDWS_switch_2_3 > 1)
 			{
-				serial_input_var.IC_DDWS_switch_2_3 = 0;
-				//serial_input_var.IC_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
+				//serial_input_var.IC_DDWS_switch_2_3 = 0;
+				serial_input_var.IC_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
 			}
 
 			DDWS_switch_temp = serial_input_var.IC_DDWS_switch_2_3<<1;
@@ -743,21 +774,22 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 		{
 			serial_input_var.MP5_DDWS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, 20, 2);
 			serial_input_var.MP5_DDWS_switch_2_3 = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX+4, 22, 2);
-			DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X serial_input_var.MP5_DDWS_switch_2_3: %4X\n, \
-					serial_input_var.MP5_DDWS_switch, serial_input_var.MP5_DDWS_switch_2_3);
+			DEBUG_INFO(serial_input_var.MP5_DDWS_switch: %4X serial_input_var.MP5_DDWS_switch_2_3: %4X\
+					serial_input_var.DDWS_switch: %4X\n, \
+					serial_input_var.MP5_DDWS_switch, serial_input_var.MP5_DDWS_switch_2_3, serial_input_var.DDWS_switch);
 
 			/* if serial_input_var.MP5_DDWS_switch's value is error or invalid, keep previous state */
 			if(serial_input_var.MP5_DDWS_switch > 1)
 			{
-				serial_input_var.MP5_DDWS_switch = 0;
-				//serial_input_var.MP5_DDWS_switch = serial_input_var.DDWS_switch&0x01;
+				//serial_input_var.MP5_DDWS_switch = 0;
+				serial_input_var.MP5_DDWS_switch = serial_input_var.DDWS_switch&0x01;
 			}
 
 			/* if serial_input_var.MP5_DDWS_switch_2_3's value is error or invalid, keep previous state */
 			if(serial_input_var.MP5_DDWS_switch_2_3 > 1)
 			{
-				serial_input_var.MP5_DDWS_switch_2_3 = 0;
-				//serial_input_var.MP5_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
+				//serial_input_var.MP5_DDWS_switch_2_3 = 0;
+				serial_input_var.MP5_DDWS_switch_2_3 = (serial_input_var.DDWS_switch&0x02)>>1;
 			}
 
 			DDWS_switch_temp = serial_input_var.MP5_DDWS_switch_2_3<<1;
@@ -1613,11 +1645,14 @@ void* serial_commu_app(void* argv)
 	int send_buf_len;
 	unsigned char dws_mesg_array[8] = {0};
 	struct timeval tp;
+	unsigned char work_mode_poll_cnt = 0;
 
 	struct timeval tv = {
 			.tv_sec = 1,
 			.tv_usec = 300000,
 	};
+
+	tcflush(fd, TCIOFLUSH);
 
 	while(true)
 	{
@@ -1626,6 +1661,13 @@ void* serial_commu_app(void* argv)
 
 		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
 		{
+			/* logic processing for production test mode polling */
+			if(work_mode_poll_cnt++ > 5)
+			{
+				work_mode_poll_cnt = 0;
+				get_production_test_mode();
+			}
+
 			/*read serial data from rs232 */
 			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
 			{

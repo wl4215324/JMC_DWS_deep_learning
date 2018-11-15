@@ -10,15 +10,17 @@
 ARITH_INPUT algorithm_input = {
 		OBJSEC_INITIALIZER, \
 		OBJCONF_INITIALIZER, \
-		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 0,};
+		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 1,};
 
 ARITH_INPUT algorithm_input_for_day = {
 		OBJSEC_INITIALIZER_FOR_DAY, \
 		OBJCONF_INITIALIZER_FOR_DAY,\
-		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 0,
+		1, 1, 1, 2, 1, 3, 10, 4, 1, 1, 1, 7, 1,
 };
 
 ARITH_OUTPUT algorithm_output;
+
+int gClearBuf = 0;
 
 static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image,
 		unsigned char* gray_image, unsigned char YUYV_type)
@@ -55,12 +57,14 @@ void *algorithm_process(void *argv)
 
 	/* initialize algorithm */
 	algorithm_input = algorithm_input_for_day;
+	algorithm_input.clearBuf = 1;
 	InitParams(&algorithm_input);
 
 	while(JMC_bootloader_logic.bootloader_subseq < DownloadDriver)
 	{
-		if( (0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
-		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val))
+		if( ((0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
+		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val)) ||\
+		    (1 == rs485_test_flag) )
 		{
 			pthread_mutex_lock(&uyvy_image_mutex);
 			memcpy(local_image, YUYV_image, sizeof(YUYV_image));
@@ -69,6 +73,9 @@ void *algorithm_process(void *argv)
 			/* get Y component from gray picture of YUYV type */
 			get_Ycompnt_from_YUYV(local_image, gray_image, 1);
 			algorithm_input.clearBuf = 0;
+			gClearBuf = 0;
+
+			printf(" algorithm is running \n");
 
 			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output)) && \
 				(algorithm_output.drowsyLevel != 100) )
@@ -80,6 +87,7 @@ void *algorithm_process(void *argv)
 
 				temp_drowsyLevel = algorithm_output.drowsyLevel;
 
+				/* if soft-switch is off or timer of driving behavior is not up, DDWS send no warning message */
 				if((timer_flag.timer_val > 0) || (0 == serial_input_var.DDWS_switch))
 				{
 					memset(&algorithm_output, 0, sizeof(algorithm_output));
@@ -453,6 +461,8 @@ void *algorithm_process(void *argv)
 			/* get Y component from gray picture of YUYV type */
 			get_Ycompnt_from_YUYV(local_image, gray_image, 1);
 			algorithm_input.clearBuf = 1;
+			gClearBuf = 1;
+			//DEBUG_INFO(algorithm is running\n);
 			ImageProcessing(gray_image, &algorithm_input, &algorithm_output);
 
 			pthread_mutex_lock(&serial_output_var_mutex);
