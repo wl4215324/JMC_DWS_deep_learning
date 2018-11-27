@@ -1662,11 +1662,11 @@ void* serial_commu_app(void* argv)
 		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
 		{
 			/* logic processing for production test mode polling */
-			if(work_mode_poll_cnt++ > 5)
-			{
-				work_mode_poll_cnt = 0;
-				get_production_test_mode();
-			}
+//			if(work_mode_poll_cnt++ > 5)
+//			{
+//				work_mode_poll_cnt = 0;
+//				get_production_test_mode();
+//			}
 
 			/*read serial data from rs232 */
 			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)

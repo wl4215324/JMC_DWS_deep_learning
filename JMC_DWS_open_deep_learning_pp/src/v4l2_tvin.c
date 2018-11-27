@@ -596,19 +596,19 @@ v4l2_init:
 			pthread_mutex_lock(&uyvy_image_mutex);
 
 			/* if DDWS works in production testing mode, get image from local file */
-			if(1 == rs485_test_flag)
-			{
-				read_test_picture(YUYV_image, &g_frame_size);
-				printf("g_frame_size is %d\n", g_frame_size);
-			}
-			else // if DDWS works in normal mode, get image from camera
+//			if(1 == rs485_test_flag)
+//			{
+//				read_test_picture(YUYV_image, &g_frame_size);
+//				printf("g_frame_size is %d\n", g_frame_size);
+//			}
+			//else // if DDWS works in normal mode, get image from camera
 			{
 				memcpy(YUYV_image, capture_buffers[capture_buf.index].start, g_frame_size);
 			}
 
 			pthread_mutex_unlock(&uyvy_image_mutex);
 
-			if(rs485_test_flag != 1)
+			//if(rs485_test_flag != 1)
 			{
 				if(0 == detect_hot_plug(YUYV_image))
 				{

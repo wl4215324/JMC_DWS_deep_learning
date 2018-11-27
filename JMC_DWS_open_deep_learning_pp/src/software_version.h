@@ -57,8 +57,8 @@
  */
 
 /* following version information is prepared for production */
-#define MCU_APP_SOFTWARE_VER_MAJ  1
-#define MCU_APP_SOFTWARE_VER_MIN  9
+#define MCU_APP_SOFTWARE_VER_MAJ  2
+#define MCU_APP_SOFTWARE_VER_MIN  0
 
 #define ARM_APP_SOFTWARE_VER_MAJ  2
 #define ARM_APP_SOFTWARE_VER_MIN  2
@@ -68,7 +68,7 @@
 //#define MCU_APP_SOFTWARE_VER_MIN  9
 //
 //#define ARM_APP_SOFTWARE_VER_MAJ  2
-//#define ARM_APP_SOFTWARE_VER_MIN  6
+//#define ARM_APP_SOFTWARE_VER_MIN  7
 #define SOFTWARE_VERSION_FILE  "/home/user/SoftVersion"
 
 static inline int write_software_info()

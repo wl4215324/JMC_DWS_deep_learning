@@ -16,10 +16,11 @@
 
 #include "serial_pack_parse.h"
 
-#define VEHICLE_SPEED_THRESHOLD  50
+//#define VEHICLE_SPEED_THRESHOLD  50
 
 typedef union{
 	unsigned short timer_val;
+
 	struct
 	{
 		unsigned char engine_start_afer_15min_flag:1;
@@ -48,6 +49,10 @@ typedef enum{
 	accelerator_active_after_20s,
 	OK_Switch_timer_3s,
 	level2_closing_eye_timer_1s,  // added on 05-21
+	smoking_warning_freezing_5min,  // added on 11-20
+	phoning_warning_freezing_5min,  // added on 11-20
+    covering_warning_freezing_5min,  // added on 11-20
+
 } TimerEventType;
 
 extern TimerFlag timer_flag ;

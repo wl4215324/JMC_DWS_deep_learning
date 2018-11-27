@@ -22,7 +22,7 @@ ARITH_OUTPUT algorithm_output;
 
 int gClearBuf = 0;
 
-static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image,
+static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image, \
 		unsigned char* gray_image, unsigned char YUYV_type)
 {
 	int i = 0;
@@ -62,26 +62,26 @@ void *algorithm_process(void *argv)
 
 	while(JMC_bootloader_logic.bootloader_subseq < DownloadDriver)
 	{
+//		if( ((0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
+//		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val)) ||\
+//		    (1 == rs485_test_flag) )
 		if( ((0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
-		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val)) ||\
-		    (1 == rs485_test_flag) )
+		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val)) )
 		{
 			pthread_mutex_lock(&uyvy_image_mutex);
 			memcpy(local_image, YUYV_image, sizeof(YUYV_image));
-			pthread_mutex_unlock(&uyvy_image_mutex);
 
 			/* get Y component from gray picture of YUYV type */
 			get_Ycompnt_from_YUYV(local_image, gray_image, 1);
 			algorithm_input.clearBuf = 0;
 			gClearBuf = 0;
-
-			printf(" algorithm is running \n");
+			pthread_mutex_unlock(&uyvy_image_mutex);
 
 			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output)) && \
 				(algorithm_output.drowsyLevel != 100) )
 			{
-				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d,"
-								"algorithm_output.eyeCloseEventTime: %d\n",
+				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d," \
+								"algorithm_output.eyeCloseEventTime: %d\n", \
 						algorithm_output.drowsyLevel, algorithm_output.faceFlag, \
 						algorithm_output.eyeCloseEventTime);
 
@@ -462,7 +462,6 @@ void *algorithm_process(void *argv)
 			get_Ycompnt_from_YUYV(local_image, gray_image, 1);
 			algorithm_input.clearBuf = 1;
 			gClearBuf = 1;
-			//DEBUG_INFO(algorithm is running\n);
 			ImageProcessing(gray_image, &algorithm_input, &algorithm_output);
 
 			pthread_mutex_lock(&serial_output_var_mutex);

@@ -18,7 +18,7 @@
 static FILE *fpHzk = NULL;
 static unsigned char hz32Buffer[50][32][4];
 
-static unsigned char hzHead[50][2] =
+static unsigned char hzHead[50][2] = \
 {
 		{0xA3,0xB0},	// 0
 		{0xA3,0xb1},	// 1
@@ -122,8 +122,6 @@ inline void DrawNums32(int posX, int posY, int num, unsigned char* imgBuff)
 	hzID = num;
 	DrawHz32(posX+64, posY, A_IMAGE_WIDTH, hzID, imgBuff);
 }
-
-
 
 
 static inline void uyvy_2_gray(unsigned char *uyvy,  unsigned char *gray)
