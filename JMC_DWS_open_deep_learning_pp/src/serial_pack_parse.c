@@ -9,6 +9,7 @@
 #include "user_timer.h"
 #include "xml_operation.h"
 #include "production_test.h"
+#include "v4l2_tvin.h"
 
 
 /*
@@ -30,7 +31,6 @@ SerialInputVar serial_input_var = {
 	    .IC_DDWS_switch_2_3 = 1,
 	    .MP5_DDWS_switch_2_3 = 0,
 };
-
 
 SerialOutputVar serial_output_var = {0, 0, 0,}, serial_output_var_test;
 pthread_mutex_t serial_output_var_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -392,7 +392,7 @@ static int parse_serial_input_var(unsigned char* recv_buf, int recv_buf_len)
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
-		//serial_input_var.vehicle_speed = 0x4040;
+		//serial_input_var.vehicle_speed = 0x4040;  /* for test */
 		DEBUG_INFO(vehicle_speed is: %4X\n, serial_input_var.vehicle_speed);
         
 		/* if vehicle is going to stop, device DDWS sends no warning message */
@@ -1056,7 +1056,29 @@ static int D2_message_process(unsigned char* recv_buf, int recv_buf_len,\
 		return -1;
 	}
 
+	//serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
+
+	pthread_mutex_lock(&serial_output_var_mutex);
+
+	/* added on Nov. 27th*/
+//	if(somking_freezing_5min_flag.timer_val == WARNING_FREEZE)
+//	{
+//		serial_output_var.warnning_level.somking_warn = 0;
+//	}
+//
+//	if(phoning_freezing_5min_flag.timer_val == WARNING_FREEZE)
+//	{
+//		serial_output_var.calling_warn = 0;
+//	}
+//
+//	if(covering_freezing_5min_flag.timer_val == WARNING_FREEZE)
+//	{
+//		serial_output_var.warnning_level.warning_state = NO_WARNING;
+//	}
+
 	serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
+	pthread_mutex_unlock(&serial_output_var_mutex);
+
 	return pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, send_buf, send_buf_len);
 }
 
@@ -1662,11 +1684,11 @@ void* serial_commu_app(void* argv)
 		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
 		{
 			/* logic processing for production test mode polling */
-//			if(work_mode_poll_cnt++ > 5)
-//			{
-//				work_mode_poll_cnt = 0;
-//				get_production_test_mode();
-//			}
+			if(work_mode_poll_cnt++ > 5)
+			{
+				work_mode_poll_cnt = 0;
+				get_production_test_mode();
+			}
 
 			/*read serial data from rs232 */
 			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
@@ -1692,6 +1714,35 @@ void* serial_commu_app(void* argv)
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 			    {
 			    	serial_input_var_judge_2(serial_input_var);
+
+			    	/*get dws warning message from cache fifo*/
+			    	if(kfifo_len(dws_warn_fifo) > 0)
+			    	{
+			    		if((0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch))
+			    		{
+				    		kfifo_get(dws_warn_fifo, dws_mesg_array, sizeof(dws_mesg_array));
+				    		pack_serial_send_message(D2_MESSAGE, dws_mesg_array, serial_send_buf, &send_buf_len);
+			    		}
+			    		else
+			    		{
+			    			kfifo_reset(dws_warn_fifo);
+			    		}
+			    	}
+			    	else
+			    	{
+			    		if((covering_freezing_5min_flag.timer_val == WARNING_FREEZE) && \
+			    		   (temp_drowsyLevel == 6))
+			    		{
+							serial_output_var.calling_warn = 0;
+							serial_output_var.close_eye_one_level_warn = 0;
+							serial_output_var.close_eye_two_level_warn = 0;
+							serial_output_var.close_eye_time = 0;
+							serial_output_var.distract_warn = 0;
+							serial_output_var.yawn_warn = 0;
+							serial_output_var.warnning_level.somking_warn = 0;
+							serial_output_var.warnning_level.warning_state = NO_WARNING;
+			    		}
+			    	}
 
 			    	if(send_buf_len > 0)
 				    {

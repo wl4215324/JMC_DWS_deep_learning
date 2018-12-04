@@ -29,7 +29,7 @@
 
 #include "mxcfb.h"
 #include "mxc_v4l2.h"
-#include "ipu.h"
+//#include "ipu.h"
 #include "serial_pack_parse.h"
 
 

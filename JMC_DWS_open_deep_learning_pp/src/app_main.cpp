@@ -64,7 +64,8 @@ static void param_validity_detect(KeyValuePair* key_value_list)
 		}
 		else if(!strcmp((key_value_list+i)->key_name, "fun_config"))
 		{
-			dws_alg_init_val.dws_warning_enable_config.byte_val = (key_value_list+i)->value;
+			dws_alg_init_val.dws_warning_enable_config.byte_val = \
+					((key_value_list+i)->value > 127) ? 127: (key_value_list+i)->value;
 		}
 		else if(!strcmp((key_value_list+i)->key_name, "level1_closing_eye_time"))
 		{
@@ -307,6 +308,7 @@ static int hardware_init()
 
 	return 0;
 }
+
 
 
 int main()

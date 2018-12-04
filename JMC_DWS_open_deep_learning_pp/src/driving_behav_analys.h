@@ -18,6 +18,9 @@
 
 //#define VEHICLE_SPEED_THRESHOLD  50
 
+#define  WARNING_FREEZE    1
+#define  WARNING_UNFREEZE  0
+
 typedef union{
 	unsigned short timer_val;
 
@@ -40,7 +43,6 @@ typedef union{
 
 } TimerFlag;
 
-
 typedef enum{
 	engine_start_after_15min = 0,
 	brake_active_after_20s,
@@ -55,11 +57,19 @@ typedef enum{
 
 } TimerEventType;
 
+
+
 extern TimerFlag timer_flag ;
 
 extern TimerFlag OK_Switch_timer_flag ;
 
 extern TimerFlag level2_closing_eye_timer_flag; // added on 05-21
+
+extern TimerFlag somking_freezing_5min_flag;  //added on Nov. 27th
+
+extern TimerFlag phoning_freezing_5min_flag;  //added on Nov. 27th
+
+extern TimerFlag covering_freezing_5min_flag;  //added on Nov. 27th
 
 extern void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_type);
 

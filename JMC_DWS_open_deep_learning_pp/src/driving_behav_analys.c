@@ -17,6 +17,12 @@ TimerFlag OK_Switch_timer_flag = {0};
 
 TimerFlag level2_closing_eye_timer_flag = {0};
 
+TimerFlag somking_freezing_5min_flag = {WARNING_UNFREEZE};  //added on Nov. 27th
+
+TimerFlag phoning_freezing_5min_flag = {WARNING_UNFREEZE};  //added on Nov. 27th
+
+TimerFlag covering_freezing_5min_flag = {WARNING_UNFREEZE};  //added on Nov. 27th
+
 
 /* callback function for timer, if timeout happened this function will be executed */
 void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_type)
@@ -64,6 +70,21 @@ void timeout_execute_activity(TimerFlag* timer_flag, TimerEventType timer_event_
 		timer_flag->timer_val = 2;
 		serial_output_var.close_eye_time += 1;
 		printf("serial_output_var.close_eye_time: %d\n", serial_output_var.close_eye_time);
+		break;
+
+    /* smoking freezing 5 mins flag added on Nov. 27th*/
+	case smoking_warning_freezing_5min:
+		timer_flag->timer_val = WARNING_UNFREEZE;
+		break;
+
+    /* phoning freezing 5 mins flag added on Nov. 27th */
+	case phoning_warning_freezing_5min:
+		timer_flag->timer_val = WARNING_UNFREEZE;
+		break;
+
+    /* covering freezing 5 mins flag added on Nov. 27th */
+	case covering_warning_freezing_5min:
+		timer_flag->timer_val = WARNING_UNFREEZE;
 		break;
 	}
 }

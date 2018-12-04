@@ -153,7 +153,7 @@ int init_xml_file(char* path_name, KeyValuePair* key_value_array)
 	if(lstat(path_name, &buf) < 0)
 	{
 		create_new_xml_file(key_value_array);  // create a new xml file
-		*path_name = PARAM_CONFIG_XML_PATH;
+		path_name = PARAM_CONFIG_XML_PATH;
 		return 1;
 	}
 	else  // if get file or directory information successfully
