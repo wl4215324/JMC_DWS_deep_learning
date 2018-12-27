@@ -58,10 +58,10 @@
 
 /* following version information is prepared for production */
 #define MCU_APP_SOFTWARE_VER_MAJ  2
-#define MCU_APP_SOFTWARE_VER_MIN  1
+#define MCU_APP_SOFTWARE_VER_MIN  2
 
 #define ARM_APP_SOFTWARE_VER_MAJ  2
-#define ARM_APP_SOFTWARE_VER_MIN  4
+#define ARM_APP_SOFTWARE_VER_MIN  5
 
 
 //#define MCU_APP_SOFTWARE_VER_MAJ  1

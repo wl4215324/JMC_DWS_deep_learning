@@ -27,7 +27,9 @@ C_SRCS += \
 ../src/watchdog.c \
 ../src/xml_operation.c \
 ../src/sha_1.c \
-../src/production_test.c
+../src/production_test.c \
+../src/bootloader_new.c \
+../src/file_operate.c
 
 CPP_SRCS += \
 ../src/app_main.cpp \
@@ -49,7 +51,9 @@ OBJS += \
 ./src/watchdog.o \
 ./src/xml_operation.o \
 ./src/sha_1.o \
-./src/production_test.o
+./src/production_test.o \
+./src/bootloader_new.o \
+./src/file_operate.o
 
 C_DEPS += \
 ./src/v4l2_tvin.d \
@@ -65,7 +69,9 @@ C_DEPS += \
 ./src/watchdog.d \
 ./src/xml_operation.d \
 ./src/sha_1.d \
-./src/production_test.d
+./src/production_test.d \
+./src/bootloader_new.d \
+./src/file_operate.d
 
 CPP_DEPS += \
 ./src/app_main.d \

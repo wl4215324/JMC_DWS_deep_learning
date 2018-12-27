@@ -59,7 +59,7 @@ void* vibrate_motor(void* argv)
 
 			/* vibration motor control logic */
 			if((OK_SWITCH_DISABLE == serial_input_var.OK_switch) && \
-					(0 == OK_Switch_timer_flag.timer_val)) /* if OK_switch is enabled */
+			   (0 == OK_Switch_timer_flag.timer_val)) /* if OK_switch is enabled */
 			{
 				/*if level 3 warning occurred now, motor begin to vibrate*/
 				if(LEVEL_THREE_WARNING == serial_output_var.warnning_level.warning_state)

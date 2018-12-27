@@ -230,6 +230,134 @@ static int save_app_list_as_file(BootloaderBusinessLogic *bootloader_logic)
 }
 
 
+static int save_data_as_specified_file(BootloaderBusinessLogic *bootloader_logic)
+{
+	LogicBlockNode *logicblock_node_1 = NULL;
+	LogicBlockNode *logicblock_node_2 = NULL;
+
+	DataSegment *data_seg_1 = NULL;
+	DataSegment *data_seg_2 = NULL;
+
+	FILE *src_file = NULL;
+	unsigned short file_mode = 777;
+	unsigned char first_flag = 0;
+	unsigned char i = 0;
+	char file_path_name[HEADER_FILE_FULL_NAME_SIZE];
+	char file_path_name_bak[HEADER_FILE_FULL_NAME_SIZE+8];
+
+	memset(file_path_name, '\0', sizeof(file_path_name));
+	memset(file_path_name_bak, '\0', sizeof(file_path_name));
+
+	if(NULL == bootloader_logic)
+	{
+		return -1;
+	}
+
+	if(list_empty(&bootloader_logic->app_list_head))
+	{
+		return -1;
+	}
+
+	/* traverse the list */
+	list_for_each_entry_safe(logicblock_node_1, logicblock_node_2, \
+				&bootloader_logic->app_list_head, logic_block_list)
+	{
+		if(list_empty(&logicblock_node_1->logic_block_data.data_segment_head))
+		{
+			continue;
+		}
+
+		list_for_each_entry_safe(data_seg_1, data_seg_2, \
+				&logicblock_node_1->logic_block_data.data_segment_head, segment_list)
+		{
+			if((1 == logicblock_node_1->logic_block_data.block_download_result) && \
+					(data_seg_1->data != NULL) && (data_seg_1->segment_len > 0))
+			{
+				if(0 == first_flag)
+				{
+					if(*data_seg_1->data == FILE_IS_FOR_ARM)
+					{
+						file_mode = (*(data_seg_1->data+HEADER_FILE_TYPE_START)<<8)|\
+								*(data_seg_1->data+HEADER_FILE_TYPE_START+1);
+
+						/* check length of file full name */
+						if(strlen(data_seg_1->data+HEADER_FILE_FULL_NAME_START) >= HEADER_FILE_FULL_NAME_SIZE)
+						{
+							return -1;
+						}
+						else
+						{
+							/* divide file full name into path and file name */
+							i = HEADER_FILE_FULL_NAME_START + HEADER_FILE_FULL_NAME_SIZE -1;
+
+							while((i >= HEADER_FILE_FULL_NAME_START) && (*(data_seg_1->data+i) != '/'))
+							{
+								i--;
+							}
+
+							strncpy(file_path_name, data_seg_1->data+HEADER_FILE_FULL_NAME_START, i+1-HEADER_FILE_FULL_NAME_START);
+							DEBUG_INFO(file full name is: %s\n, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
+							DEBUG_INFO(path name is: %s\n, file_path_name);
+							DEBUG_INFO(file name is: %s\n, data_seg_1->data+i+1);
+
+							/* create path for file */
+							createMultiLevelDir(file_path_name);
+							DEBUG_INFO(already create dir: %s\n, file_path_name);
+
+							/* file already exist */
+							if(access(data_seg_1->data+HEADER_FILE_FULL_NAME_START, F_OK) == 0)
+							{
+								strcpy(file_path_name_bak, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
+								strcat(file_path_name_bak, "_bakup");
+								rename(data_seg_1->data+HEADER_FILE_FULL_NAME_START, file_path_name_bak);
+							}
+
+							/* create file */
+							if((src_file = fopen(data_seg_1->data+HEADER_FILE_FULL_NAME_START, "w+")) == NULL)
+							{
+								perror("create file error:");
+								return -1;
+							}
+
+							DEBUG_INFO(already create file: %s\n, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
+							fseek(src_file, 0L, SEEK_SET);  //go to head of file
+
+							if(fwrite(data_seg_1->data+CUSTOMIZED_HEADER_SIZE, data_seg_1->segment_len-CUSTOMIZED_HEADER_SIZE, \
+									1, src_file) < 1)
+							{
+								perror("fwrite error:");
+								return -1;
+							}
+
+//							printf("write bytes: %d\n", fwrite(data_seg_1->data+CUSTOMIZED_HEADER_SIZE, 1, data_seg_1->segment_len-CUSTOMIZED_HEADER_SIZE, \
+//									src_file));
+
+							DEBUG_INFO(already write file: %s\n, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
+							strcpy(file_path_name, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
+						}
+					}
+					else
+					{
+						return -1;
+					}
+
+					first_flag = 1;
+				}
+				else
+				{
+					//fwrite(data_seg_1->data, data_seg_1->segment_len, 1, src_file);
+				}
+			}
+		}
+	}
+
+	fclose(src_file);
+	sync();
+	sync();
+	chmod(file_path_name, 0777);
+	DEBUG_INFO(write file finished\n);
+	return 0;
+}
 
 /*
  * This function is used to download driver segment data according to specified steps
@@ -585,6 +713,9 @@ static int compare_array(const unsigned char *array_one, const unsigned char *ar
 static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic);
 
 
+
+
+
 static int download_program_process(BootloaderBusinessLogic *bootloader_logic, \
 		const unsigned char* can_mesg, unsigned short mesg_len, \
 		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
@@ -699,8 +830,6 @@ create_app_logicblock:
 					}
 
 					bootloader_logic->bootloader_subseq = DownloadApplication;
-					/**/
-					SHA1Reset(&file_sha);
 
 					/* positive response */
 					*reply_mesg = 0x71;
@@ -733,72 +862,6 @@ create_app_logicblock:
 				}
 			}
 
-#if 0
-			/* if app_list_head is empty*/
-			if(list_empty(&bootloader_logic->app_list_head))
-			{
-				/* negative response */
-				*reply_mesg = 0x7F;
-				*(reply_mesg+1) = 0x31;
-				*(reply_mesg+2) = 0x72;  //general programming error
-				*reply_mesg_len = 3;
-			}
-			else
-			{
-				app_logicblock_node = \
-						list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
-				app_logicblock_node->logic_block_data.block_state = ErasingMemory;
-
-				/* get memory address bytes */
-				mem_addr_bytes = *(can_mesg+4)&0x0F;
-				/* get memory size bytes */
-				mem_size_bytes = (*(can_mesg+4)&0xF0)>>4;
-
-				if((mem_addr_bytes > 4) || (mem_size_bytes > 4))
-				{
-					/* negative response */
-					*reply_mesg = 0x7F;
-					*(reply_mesg+1) = 0x31;
-					*(reply_mesg+2) = 0x72;  //general programming error
-					*reply_mesg_len = 3;
-					return 0;
-				}
-
-				/* get memory address */
-				for(i=0; i<mem_addr_bytes; i++)
-				{
-					if(i > 0)
-					{
-						app_logicblock_node->logic_block_data.mem_addr <<= 8;
-					}
-
-					app_logicblock_node->logic_block_data.mem_addr |= \
-							*(can_mesg+5+i);
-				}
-
-				/* get memory size */
-				for(i=0; i<mem_size_bytes; i++)
-				{
-					if(i > 0)
-					{
-						app_logicblock_node->logic_block_data.mem_size <<= 8;
-					}
-
-					app_logicblock_node->logic_block_data.mem_size |= \
-							*(can_mesg+5+mem_addr_bytes+i);
-				}
-
-				bootloader_logic->bootloader_subseq = DownloadApplication;
-
-				/* positive response */
-				*reply_mesg = 0x71;
-				*(reply_mesg+1) = 0x01;
-				*(reply_mesg+2) = 0xFF;
-				*(reply_mesg+3) = 0x00;
-				*(reply_mesg+4) = 0x00;
-				*reply_mesg_len = 5;
-			}
-#endif
 			return 0;
 		}
 		/* 0x34 for request download */
@@ -899,6 +962,8 @@ create_app_logicblock:
 					*(reply_mesg+1) = 0x34;
 					*(reply_mesg+2) = 0x31;  //address or size invalid
 					*reply_mesg_len = 3;
+					DEBUG_INFO(download app mem_addr: %8x mem_size: %8x\n, \
+							ptr_datasegment->mem_addr, ptr_datasegment->mem_size);
 					return 0;
 				}
 
@@ -1204,18 +1269,33 @@ create_app_logicblock:
 
 				ptr_datasegment = list_entry(app_logicblock_node->logic_block_data.data_segment_head.prev, \
 						DataSegment, segment_list);
-				SHA1Input(&file_sha, ptr_datasegment->data, ptr_datasegment->segment_len-SHA1HashSize);
+				SHA1Reset(&file_sha);
+				SHA1Input(&file_sha, ptr_datasegment->data, ptr_datasegment->segment_len - SHA1HashSize);
 				SHA1Result(&file_sha, cal_sha1_result);
 
+				DEBUG_INFO(ptr_datasegment->segment_len is: %d\n, ptr_datasegment->segment_len);
+
+				printf("Receive sha1 result: ");
+
+				for(i=0; i<SHA1HashSize; i++)
+				{
+					printf("%2x ", *(ptr_datasegment->data + ptr_datasegment->segment_len - SHA1HashSize+i));
+				}
+				puts("");
+
+				printf("Calculate sha1 result: ");
 				for(i=0; i<SHA1HashSize; i++)
 				{
 					printf("%2x ", *(cal_sha1_result+i));
 				}
+
 				puts("");
 
-				if((compare_array(ptr_datasegment->data, elf_magic, sizeof(elf_magic)) != 0) || \
-				   ((compare_array((ptr_datasegment->data + ptr_datasegment->segment_len - SHA1HashSize), \
-						   cal_sha1_result, SHA1HashSize)) != 0) )
+//				if((compare_array(ptr_datasegment->data, elf_magic, sizeof(elf_magic)) != 0) || \
+//				   ((compare_array((ptr_datasegment->data + ptr_datasegment->segment_len - SHA1HashSize), \
+//						   cal_sha1_result, SHA1HashSize)) != 0) )
+				if((compare_array((ptr_datasegment->data + ptr_datasegment->segment_len - SHA1HashSize),
+						cal_sha1_result, SHA1HashSize)) != 0)
 				{
 					/* negative response */
 					*reply_mesg = 0x71;
@@ -1271,6 +1351,7 @@ create_app_logicblock:
 }
 
 
+
 static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 {
 	LogicBlockNode *logicblock_node_1 = NULL;
@@ -1304,10 +1385,6 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 			logicblock_node_1->logic_block_data.mem_addr = 0;
 			logicblock_node_1->logic_block_data.mem_size = 0;
 
-//			if(!list_empty(&(logicblock_node_1->logic_block_data.data_segment_head)))
-//			{
-//
-//			}
 
 			list_for_each_entry_safe(data_seg_1, data_seg_2, \
 					&logicblock_node_1->logic_block_data.data_segment_head, segment_list)
@@ -1322,7 +1399,6 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 					free(data_seg_1->data);
 				}
 
-
 				list_del(&data_seg_1->segment_list);
 				free(data_seg_1);
 				data_seg_1 = NULL;
@@ -1333,6 +1409,7 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 			logicblock_node_1 = NULL;
 		}
 	}
+
 
 	if(!list_empty(&bootloader_logic->app_list_head))
 	{
@@ -1757,6 +1834,7 @@ static int copy_file(const char *src_file, const char *dest_file)
 }
 
 
+
 int bootloader_completetion(BootloaderBusinessLogic *bootloader_logic)
 {
 	struct list_head *temp_list_head = NULL;
@@ -1768,24 +1846,13 @@ int bootloader_completetion(BootloaderBusinessLogic *bootloader_logic)
 		return -1;
 	}
 
-	rename(APPLICATION_NAME, APPLICATION_NAME_BAKUP);
+//	rename(APPLICATION_NAME, APPLICATION_NAME_BAKUP);
+//	save_app_list_as_file(bootloader_logic);
 
-	save_app_list_as_file(bootloader_logic);
-
-
-//	list_for_each(temp_list_head, &bootloader_logic->app_list_head)
-//	{
-//		app_logicblock_node = list_entry(temp_list_head, \
-//				LogicBlockNode, logic_block_list);
-//
-//		if(app_logicblock_node->logic_block_data.block_download_result == 1)
-//		{
-//			/* save file*/
-//			save_app_list_as_file(bootloader_logic);
-//		}
-//	}
+	save_data_as_specified_file(bootloader_logic);
 
 	/* clear memory */
 	bootloader_free_mem(bootloader_logic);
+
 	return 0;
 }

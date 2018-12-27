@@ -1750,7 +1750,7 @@ void* serial_commu_app(void* argv)
 						{
 							//printf("periodic serial port send_length is: %d, data: ", send_buf_len);
 
-							//if(0xd6 == *(serial_send_buf+6))
+							if(0xd6 == *(serial_send_buf+6))
 							{
 								gettimeofday(&tp, NULL);
 								printf("%d ms periodic serial port send_length is: %d, data: ", (tp.tv_sec*1000+tp.tv_usec/1000), \

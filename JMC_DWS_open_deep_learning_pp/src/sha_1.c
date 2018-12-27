@@ -48,6 +48,7 @@ SHA1Context file_sha;
 /* Local Function Prototyptes */
 void SHA1PadMessage(SHA1Context *);
 void SHA1ProcessMessageBlock(SHA1Context *);
+
 /*
 * SHA1Reset
 *
@@ -73,7 +74,7 @@ int SHA1Reset(SHA1Context *context)//初始化状态
 	context->Length_Low = 0;
 	context->Length_High = 0;
 	context->Message_Block_Index = 0;
-	context->Intermediate_Hash[0] = 0x67452301;//取得的HASH结果（中间数据）
+	context->Intermediate_Hash[0] = 0x67452301; //取得的HASH结果（中间数据）
 	context->Intermediate_Hash[1] = 0xEFCDAB89;
 	context->Intermediate_Hash[2] = 0x98BADCFE;
 	context->Intermediate_Hash[3] = 0x10325476;
@@ -104,7 +105,8 @@ int SHA1Reset(SHA1Context *context)//初始化状态
 * sha Error Code.
 *
 */
-int SHA1Result( SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
+//int SHA1Result( SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
+int SHA1Result( SHA1Context *context, uint8_t *Message_Digest)
 {
 	int i;
 
@@ -132,11 +134,16 @@ int SHA1Result( SHA1Context *context, uint8_t Message_Digest[SHA1HashSize])
 		context->Computed = 1;
 	}
 
+	puts("");
+
 	for(i = 0; i < SHA1HashSize; ++i)
 	{
 		Message_Digest[i] = context->Intermediate_Hash[i>>2] \
 		>> 8 * ( 3 - ( i & 0x03 ) );
+		printf("%2x ", Message_Digest[i]);
 	}
+
+	puts("");
 
 	return shaSuccess;
 }
@@ -195,6 +202,7 @@ int SHA1Input(SHA1Context *context, const uint8_t *message_array, unsigned int l
 		if (context->Length_Low == 0)
 		{
 			context->Length_High++;
+
 			if (context->Length_High == 0)
 			{
 				/* Message is too long */
