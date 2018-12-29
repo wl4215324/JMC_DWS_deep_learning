@@ -262,14 +262,21 @@ static int save_data_as_specified_file(BootloaderBusinessLogic *bootloader_logic
 	list_for_each_entry_safe(logicblock_node_1, logicblock_node_2, \
 				&bootloader_logic->app_list_head, logic_block_list)
 	{
-		if(list_empty(&logicblock_node_1->logic_block_data.data_segment_head))
+		if((!logicblock_node_1) || list_empty(&logicblock_node_1->logic_block_data.data_segment_head))
 		{
 			continue;
 		}
 
+		first_flag = 0;
+
 		list_for_each_entry_safe(data_seg_1, data_seg_2, \
 				&logicblock_node_1->logic_block_data.data_segment_head, segment_list)
 		{
+			if(!data_seg_1)
+			{
+				continue;
+			}
+
 			if((1 == logicblock_node_1->logic_block_data.block_download_result) && \
 					(data_seg_1->data != NULL) && (data_seg_1->segment_len > 0))
 			{
@@ -345,19 +352,24 @@ static int save_data_as_specified_file(BootloaderBusinessLogic *bootloader_logic
 				}
 				else
 				{
-					//fwrite(data_seg_1->data, data_seg_1->segment_len, 1, src_file);
+					fwrite(data_seg_1->data, data_seg_1->segment_len, 1, src_file);
 				}
+			}
+
+			if(src_file)
+			{
+				fclose(src_file);
+				sync();
+				sync();
+				chmod(file_path_name, 0777);
+				DEBUG_INFO(write file finished\n);
 			}
 		}
 	}
 
-	fclose(src_file);
-	sync();
-	sync();
-	chmod(file_path_name, 0777);
-	DEBUG_INFO(write file finished\n);
 	return 0;
 }
+
 
 /*
  * This function is used to download driver segment data according to specified steps
@@ -747,7 +759,7 @@ static int download_program_process(BootloaderBusinessLogic *bootloader_logic, \
 		else if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && \
 				(0xFF == *(can_mesg+2)) && (0x00 == *(can_mesg+3)))
 		{
-			/* if app_list_head is empty*/
+			/* if app_list_head is empty */
 			if(list_empty(&bootloader_logic->app_list_head))
 			{
 create_app_logicblock:
@@ -1136,6 +1148,7 @@ create_app_logicblock:
 				*(reply_mesg+1) = 0x37;
 				*(reply_mesg+2) = 0x24;
 				*reply_mesg_len = 3;
+
 				/* clear memory */
 				bootloader_free_mem(bootloader_logic);
 				return 0;
@@ -1193,6 +1206,7 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x01;
 				*reply_mesg_len = 5;
+
 				/* clear memory */
 				bootloader_free_mem(bootloader_logic);
 				return 0;
@@ -1201,14 +1215,17 @@ create_app_logicblock:
 			app_logicblock_node = \
 					list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
 
-			if(app_logicblock_node->logic_block_data.block_state != FinishDownload)
+			if((!app_logicblock_node) || (app_logicblock_node->logic_block_data.block_state != FinishDownload))
 			{
+				/* negative response */
 				*reply_mesg = 0x71;
 				*(reply_mesg+1) = 0x01;
 				*(reply_mesg+2) = 0x02;
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x01;
 				*reply_mesg_len = 5;
+
+				/* clear memory */
 				bootloader_free_mem(bootloader_logic);
 				return 0;
 			}
@@ -1221,6 +1238,7 @@ create_app_logicblock:
 			{
 				app_logicblock_node->logic_block_data.block_download_result = 1;
 				app_logicblock_node->logic_block_data.block_state = CheckingIntegrity;
+
 				/* positive response */
 				*reply_mesg = 0x71;
 				*(reply_mesg+1) = 0x01;
@@ -1459,6 +1477,7 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 		}
 	}
 }
+
 
 
 
