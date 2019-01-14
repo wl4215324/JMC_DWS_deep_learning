@@ -112,7 +112,11 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 	{
 		read_bytes = read(fd, recv_buf, left_bytes);
 
-		if(read_bytes < 0)
+		if(read_bytes > 0)
+		{
+			retry_cnt = 0;
+		}
+		else if(read_bytes < 0)
 		{
 			if(left_bytes == spec_len)
 			{
@@ -123,7 +127,7 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 				break;
 			}
 		}
-		else if(0 == read_bytes)
+		else
 		{
 			if(left_bytes <= 0)
 			{
@@ -136,7 +140,7 @@ static int read_spec_len_data(int fd, unsigned char* recv_buf, int spec_len)
 			}
 			else
 			{
-				usleep(50000);
+				usleep(30000);
 				continue;
 			}
 		}
@@ -1714,6 +1718,7 @@ void* serial_commu_app(void* argv)
 			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
 			    {
 			    	serial_input_var_judge_2(serial_input_var);
+			    	//timer_flag.timer_val = 0;
 
 			    	/*get dws warning message from cache fifo*/
 			    	if(kfifo_len(dws_warn_fifo) > 0)
