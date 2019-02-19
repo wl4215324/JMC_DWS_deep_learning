@@ -29,7 +29,8 @@ C_SRCS += \
 ../src/sha_1.c \
 ../src/production_test.c \
 ../src/bootloader_new.c \
-../src/file_operate.c
+../src/file_operate.c \
+../src/eol_funct_test.c
 
 CPP_SRCS += \
 ../src/app_main.cpp \
@@ -53,7 +54,8 @@ OBJS += \
 ./src/sha_1.o \
 ./src/production_test.o \
 ./src/bootloader_new.o \
-./src/file_operate.o
+./src/file_operate.o \
+./src/eol_funct_test.o
 
 C_DEPS += \
 ./src/v4l2_tvin.d \
@@ -71,7 +73,8 @@ C_DEPS += \
 ./src/sha_1.d \
 ./src/production_test.d \
 ./src/bootloader_new.d \
-./src/file_operate.d
+./src/file_operate.d \
+./src/eol_funct_test.d
 
 CPP_DEPS += \
 ./src/app_main.d \
