@@ -23,6 +23,7 @@
 #include "watchdog.h"
 #include "kfifo.h"
 #include "bootloader.h"
+#include "eol_funct_test.h"
 
 
 #define MAKE_WORD(hig_byte, low_byte) (unsigned short) (((hig_byte&0x00FF)<<8) |(low_byte&0x00ff))
@@ -60,6 +61,8 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_LEN_COMPL_INDEX  4
 #define MESSAGE_TYPE_ID  6
 #define MESSAGE_VAR_NUM  7
+
+#define HEAD_AND_TAIL_LENGTH  9
 
 /*
  *  message type macro

@@ -76,6 +76,8 @@
 
 #define  FILE_IS_FOR_ARM  1
 
+#define  BT_RESULT_SAVE_FILE  "/home/user/BT_mode"
+
 
 
 struct BootloaderData{

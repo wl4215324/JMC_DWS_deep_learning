@@ -1278,7 +1278,13 @@ static int D6_message_process(unsigned char* recv_buf, int recv_buf_len,\
 		return -1;
 	}
 
-	if (bootloader_main_process(&JMC_bootloader_logic, recv_buf+MESSAGE_TYPE_ID+1, \
+	/* EOL function testing */
+	if((*(recv_buf+MESSAGE_TYPE_ID+1) == 0x31) && (*(unsigned short *)(recv_buf+MESSAGE_TYPE_ID+3) == EOL_ROUTINE_ID))
+	{
+		EOL_routine_ctl(recv_buf+MESSAGE_TYPE_ID+1, recv_buf_len-HEAD_AND_TAIL_LENGTH, \
+				(send_buf+7), (unsigned short*)send_buf_len);
+	}
+	else if (bootloader_main_process(&JMC_bootloader_logic, recv_buf+MESSAGE_TYPE_ID+1, \
 			recv_buf_len, (send_buf+7), (unsigned short*)send_buf_len) < 0)
 	{
 		return -1;

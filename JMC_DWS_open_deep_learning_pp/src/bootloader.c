@@ -20,6 +20,8 @@ SecretKey secret_key = {
 		.level_FBL = 0
 };
 
+unsigned int last_BT_result = 0;
+
 
 BootloaderBusinessLogic  JMC_bootloader_logic;
 
@@ -37,7 +39,7 @@ static unsigned char ASAP1A_CCP_ComputeKeyFromSeed(unsigned char *seed, unsigned
     char calData[4];
     char xorArray[4] = {0x48, 0x55, 0x44, 0x20}; // NL-5 Level 11 Array for
 
-    //For avoid compiler warring
+    //For avoid compiler warning
     //sizeSeed = sizeSeed;
     //maxSizeKey = maxSizeKey;
 
@@ -60,13 +62,66 @@ static unsigned char ASAP1A_CCP_ComputeKeyFromSeed(unsigned char *seed, unsigned
 }
 
 
-
 static int get_random(int start, int end)
 {
 	int dis = end - start;
 	srand((unsigned)time(NULL));
 
 	return (rand()%dis + start);
+}
+
+
+int get_BT_state_before_reboot()
+{
+	int fd = 0, flags;
+	char read_buffer[8] = "";
+
+	last_BT_result = 0;
+
+	/* if BT state file is existent */
+	if(access(BT_RESULT_SAVE_FILE, F_OK) == 0)
+	{
+		if((fd = open(BT_RESULT_SAVE_FILE, O_RDWR)) < 0)
+		{
+			return -1;
+		}
+
+		lseek(fd, 0, SEEK_SET);
+
+		if(read(fd, read_buffer, sizeof(read_buffer)) < 0 )
+		{
+			close(fd);
+			return -1;
+		}
+		else  // if successfully read working mode
+		{
+			close(fd);
+			last_BT_result = atoi(read_buffer);
+			return last_BT_result;
+		}
+	}
+	else  // if BT state file is not existent
+	{
+		if((fd = open(BT_RESULT_SAVE_FILE, O_RDWR|O_CREAT)) < 0)
+		{
+			return -1;
+		}
+
+		lseek(fd, 0, SEEK_SET);
+		strcpy(read_buffer, "0");
+
+		/* if failed to write working mode flag, return -1*/
+		if(write(fd, read_buffer, strlen(read_buffer)) < 0 )
+		{
+			close(fd);
+			return -1;
+		}
+		else  // if successfully write working mode
+		{
+			close(fd);
+			return 0;
+		}
+	}
 }
 
 
@@ -83,7 +138,8 @@ int bootloader_logic_init(BootloaderBusinessLogic *bootloader_logic)
 		return -1;
 	}
 
-	bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
+	//bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
+	bootloader_logic->bootloader_subseq = DownloadDriver;
 	bootloader_logic->seed.level_FBL = 0;
 	bootloader_logic->seed.level_one = 0;
 	bootloader_logic->secret_key.level_FBL = 0;
@@ -91,6 +147,8 @@ int bootloader_logic_init(BootloaderBusinessLogic *bootloader_logic)
 
 	INIT_LIST_HEAD(&bootloader_logic->driver_list_head);
 	INIT_LIST_HEAD(&bootloader_logic->app_list_head);
+
+	get_BT_state_before_reboot();
 
 	return 0;
 }
@@ -388,6 +446,9 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 	LogicBlockNode *driver_logicblock_node = NULL;
 	DataSegment *ptr_datasegment = NULL;
 
+	int fd = 0;
+	char write_buffer[8] = "";
+
 	/* Following lines just return positive response but do nothing */
 	if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && \
 			(0x02 == *(can_mesg+2)) && (0x03 == *(can_mesg+3)))
@@ -398,6 +459,63 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 		*(reply_mesg+3) = 0x03;
 		*(reply_mesg+4) = 0x00;
 		*reply_mesg_len = 5;
+		return 0;
+	}
+	/* check programming dependency */
+	else if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && \
+			(0xFF == *(can_mesg+2)) && (0x01 == *(can_mesg+3)))
+	{
+		if(0 == last_BT_result)  //last BT result unknown
+		{
+			*reply_mesg = 0x71;
+			*(reply_mesg+1) = 0x01;
+			*(reply_mesg+2) = 0xFF;
+			*(reply_mesg+3) = 0x01;
+			*(reply_mesg+4) = 0x02;
+			*reply_mesg_len = 5;
+		}
+	    else if(1 == last_BT_result)  //last BT OK
+		{
+			/* positive response */
+			*reply_mesg = 0x71;
+			*(reply_mesg+1) = 0x01;
+			*(reply_mesg+2) = 0xFF;
+			*(reply_mesg+3) = 0x01;
+			*(reply_mesg+4) = 0x00;
+			*reply_mesg_len = 5;
+		}
+		else if(2 == last_BT_result)  //last BT error
+		{
+			/* negative response */
+			*reply_mesg = 0x71;
+			*(reply_mesg+1) = 0x01;
+			*(reply_mesg+2) = 0xFF;
+			*(reply_mesg+3) = 0x01;
+			*(reply_mesg+4) = 0x01;
+			*reply_mesg_len = 5;
+		}
+
+		last_BT_result = 0;
+
+		if((fd = open(BT_RESULT_SAVE_FILE, O_RDWR|O_CREAT)) < 0)
+		{
+			return -1;
+		}
+
+		lseek(fd, 0, SEEK_SET);
+		strcpy(write_buffer, "0");
+
+		if(write(fd, write_buffer, strlen(write_buffer)) < 0 )
+		{
+			close(fd);
+			return -1;
+		}
+		else
+		{
+			close(fd);
+			return 0;
+		}
+
 		return 0;
 	}
 
@@ -436,10 +554,11 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 
 			mem_addr_bytes = *(can_mesg+2)&0x0F; //get memory address bytes
 			mem_size_bytes = (*(can_mesg+2)&0xF0)>>4; //get memory size bytes
-
 			DEBUG_INFO(mem_addr: %x mem_size: %x \n, mem_addr_bytes, mem_size_bytes);
+			DEBUG_INFO(*(can_mesg+1): %x\n, *(can_mesg+1));
 
-			if((*(can_mesg+1) != 0) || (mem_addr_bytes > 4) || (mem_size_bytes > 4))
+			//if(( *(can_mesg+1) != 0 ) || (mem_addr_bytes > 4) || (mem_size_bytes > 4))
+			if((mem_addr_bytes > 4) || (mem_size_bytes > 4))
 			{
 				/* negative response */
 				*reply_mesg = 0x7F;
@@ -485,7 +604,10 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 				return 0;
 			}
 
-			if((driver_logicblock_node->logic_block_data.mem_addr != 0x01) || \
+			DEBUG_INFO(mem_addr: %x mem_size: %x \n, driver_logicblock_node->logic_block_data.mem_addr,\
+					driver_logicblock_node->logic_block_data.mem_size);
+
+			if((driver_logicblock_node->logic_block_data.mem_addr != 0xF000) || \
 			   (0 == driver_logicblock_node->logic_block_data.mem_size) )
 			{
 				/* negative response */
@@ -654,11 +776,10 @@ static int download_driver_process(BootloaderBusinessLogic *bootloader_logic, \
 
 			DEBUG_INFO(recv CRC32: %4x calc CRC32: %4x\n, crc32_temp, \
 					driver_logicblock_node->logic_block_data.crc32_cal^0xffffffff);
+			bootloader_logic->bootloader_subseq = DownloadApplication;
 
 			if(crc32_temp == driver_logicblock_node->logic_block_data.crc32_cal^0xffffffff)
 			{
-				driver_logicblock_node->logic_block_data.block_download_result = 1;
-				bootloader_logic->bootloader_subseq = DownloadApplication;
 				/* positive response */
 				*reply_mesg = 0x71;
 				*(reply_mesg+1) = 0x01;
@@ -728,6 +849,7 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic);
 
 
 
+
 static int download_program_process(BootloaderBusinessLogic *bootloader_logic, \
 		const unsigned char* can_mesg, unsigned short mesg_len, \
 		unsigned char* reply_mesg, unsigned short* reply_mesg_len)
@@ -740,6 +862,9 @@ static int download_program_process(BootloaderBusinessLogic *bootloader_logic, \
 	unsigned int crc32_temp = 0;
 	struct list_head *temp_list_head = NULL;
 	unsigned char cal_sha1_result[SHA1HashSize];
+
+	int fd = 0;
+	char write_buffer[8] = "";
 
 	if(DownloadApplication == bootloader_logic->bootloader_subseq)
 	{
@@ -771,7 +896,7 @@ create_app_logicblock:
 				{
 					*reply_mesg = 0x7F;
 					*(reply_mesg+1) = 0x31;
-					*(reply_mesg+2) = 0x72;  //general programming error
+					*(reply_mesg+2) = 0x72;  //error code: general programming error
 					*reply_mesg_len = 3;
 				}
 				else
@@ -792,7 +917,6 @@ create_app_logicblock:
 	//				app_logicblock_node->logic_block_data.finger_print.YY = *(can_mesg+3);  //year
 	//				app_logicblock_node->logic_block_data.finger_print.MM = *(can_mesg+4);  //month
 	//				app_logicblock_node->logic_block_data.finger_print.DD = *(can_mesg+5);  //date
-	//
 	//				/* OBD serial number */
 	//				memcpy(app_logicblock_node->logic_block_data.finger_print.serial_num, (can_mesg+6), 6);
 
@@ -812,7 +936,7 @@ create_app_logicblock:
 						/* negative response */
 						*reply_mesg = 0x7F;
 						*(reply_mesg+1) = 0x31;
-						*(reply_mesg+2) = 0x72;  //general programming error
+						*(reply_mesg+2) = 0x72;  //error code: general programming error
 						*reply_mesg_len = 3;
 						return 0;
 					}
@@ -857,12 +981,12 @@ create_app_logicblock:
 				app_logicblock_node = \
 						list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
 
-				/* if logic node of application has been downloaded already, then a new node need to be created */
+				/* if existent logic node(s) of application has been download already, then a new node need to be created */
 				if(1 == app_logicblock_node->logic_block_data.block_download_result)
 				{
 					goto create_app_logicblock;
 				}
-				else  /*if logic node was created but not downloaded completely */
+				else  /* if logic node was created but not download completely */
 				{
 					/* positive response */
 					*reply_mesg = 0x71;
@@ -879,7 +1003,7 @@ create_app_logicblock:
 		/* 0x34 for request download */
 		else if(0x34 == *can_mesg)
 		{
-			/* if app_list_head is empty*/
+			/* if app_list_head is empty */
 			if(list_empty(&bootloader_logic->app_list_head))
 			{
 				/* negative response */
@@ -966,7 +1090,7 @@ create_app_logicblock:
 				}
 
 				/* if address or size is invalid, then reply negative response */
-				if( (ptr_datasegment->mem_addr != APP_DOWNLOAD_ADDR) || \
+				if((ptr_datasegment->mem_addr != APP_DOWNLOAD_ADDR) || \
 					(ptr_datasegment->mem_size < APP_LENGTH_OF_BYTES))
 				{
 					/* negative response */
@@ -1011,7 +1135,7 @@ create_app_logicblock:
 		/* download transfer */
 		else if(0x36 == *can_mesg)
 		{
-			/* if app_list_head is empty*/
+			/* if app_list_head is empty */
 			if(list_empty(&bootloader_logic->app_list_head))
 			{
 				/* negative response */
@@ -1141,6 +1265,7 @@ create_app_logicblock:
 			bootloader_logic->bootloader_subseq = DownloadApplication;
 			app_logicblock_node = \
 					list_entry(bootloader_logic->app_list_head.prev, LogicBlockNode, logic_block_list);
+
 			if((NULL == app_logicblock_node) || (app_logicblock_node->logic_block_data.block_state != DownloadData))
 			{
 				/* negative response */
@@ -1206,10 +1331,7 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x01;
 				*reply_mesg_len = 5;
-
-				/* clear memory */
-				bootloader_free_mem(bootloader_logic);
-				return 0;
+				goto error_exit;
 			}
 
 			app_logicblock_node = \
@@ -1224,10 +1346,7 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x01;
 				*reply_mesg_len = 5;
-
-				/* clear memory */
-				bootloader_free_mem(bootloader_logic);
-				return 0;
+				goto error_exit;
 			}
 
 			crc32_temp = (*(can_mesg+4)<<24)|(*(can_mesg+5)<<16)|(*(can_mesg+6)<<8)|*(can_mesg+7);
@@ -1246,6 +1365,18 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x00;
 				*reply_mesg_len = 5;
+
+				if((fd = open(BT_RESULT_SAVE_FILE, O_RDWR|O_CREAT)) < 0)
+				{
+					return -1;
+				}
+
+				lseek(fd, 0, SEEK_SET);
+				strcpy(write_buffer, "1");
+
+				/* if failed to write working mode flag, return -1*/
+				write(fd, write_buffer, strlen(write_buffer));
+				close(fd);
 				return 0;
 			}
 			else
@@ -1257,9 +1388,24 @@ create_app_logicblock:
 				*(reply_mesg+3) = 0x02;
 				*(reply_mesg+4) = 0x01;
 				*reply_mesg_len = 5;
-				bootloader_free_mem(bootloader_logic);
-				return 0;
 			}
+
+error_exit:
+			bootloader_free_mem(bootloader_logic);
+
+			if((fd = open(BT_RESULT_SAVE_FILE, O_RDWR|O_CREAT)) < 0)
+			{
+				return -1;
+			}
+
+			lseek(fd, 0, SEEK_SET);
+			strcpy(write_buffer, "2");
+
+			/* if failed to write working mode flag, return -1*/
+			write(fd, write_buffer, strlen(write_buffer));
+			close(fd);
+
+			return 0;
 		}
 		/* check programming dependency */
 		else if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && \
@@ -1477,7 +1623,6 @@ static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
 		}
 	}
 }
-
 
 
 
