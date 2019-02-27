@@ -170,6 +170,7 @@ void InitParams(ARITH_INPUT* initInput);
 	  ArithInput-输入参数,包括灵敏度、工作模式等；
       ArithOutput-输出参数,包括疲劳结果，人脸标识等。
 ***************************************/
-int ImageProcessing(unsigned char * pDisp, ARITH_INPUT* ArithInput, ARITH_OUTPUT* ArithOuput);
+//int ImageProcessing(unsigned char * pDisp, ARITH_INPUT* ArithInput, ARITH_OUTPUT* ArithOuput);
+int ImageProcessing(unsigned char * pDisp, ARITH_INPUT* ArithInput, ARITH_OUTPUT* ArithOuput, int &dtNoFace);
 //void uyvy_2_gray(unsigned char *uyvy, unsigned char *gray);
 #endif

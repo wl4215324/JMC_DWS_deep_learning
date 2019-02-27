@@ -22,8 +22,7 @@ void EOL_routine_ctl(unsigned char *recv_buf, unsigned short recv_buf_len, \
 		return ;
 	}
 
-	/* EOL routine start */
-	if(START == *(unsigned char*)(recv_buf+1))
+	if(START == *(unsigned char*)(recv_buf+1)) /* EOL routine start */
 	{
 		eol_working_state = EOL_WORKING;
 		*send_buf = 0x71;

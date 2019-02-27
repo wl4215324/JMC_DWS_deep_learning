@@ -3,8 +3,8 @@ src/serial_pack_parse.d: ../src/serial_pack_parse.c \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/timerscfg.h ../src/bootloader.h \
  ../src/list.h ../src/crc32.h ../src/software_version.h ../src/watchdog.h \
- ../src/kfifo.h ../src/user_timer.h ../src/applicfg.h \
- ../src/xml_operation.h \
+ ../src/kfifo.h ../src/eol_funct_test.h ../src/user_timer.h \
+ ../src/applicfg.h ../src/xml_operation.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/parser.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlversion.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlexports.h \
@@ -52,6 +52,8 @@ src/serial_pack_parse.d: ../src/serial_pack_parse.c \
 ../src/watchdog.h:
 
 ../src/kfifo.h:
+
+../src/eol_funct_test.h:
 
 ../src/user_timer.h:
 

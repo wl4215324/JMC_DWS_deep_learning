@@ -54,6 +54,7 @@ void *algorithm_process(void *argv)
 	unsigned char local_image[IMAGE_HEIGHT*IMAGE_WIDTH*2];
 	unsigned char last_drowsyLevel = 0;
 	int send_buf_len = 0;
+	int face_detect = 1000;
 
 	/* initialize algorithm */
 	algorithm_input = algorithm_input_for_day;
@@ -64,7 +65,8 @@ void *algorithm_process(void *argv)
 	{
 		if( ((0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
 		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val)) ||\
-		    (1 == rs485_test_flag) )
+		    (1 == rs485_test_flag) ||\
+		    (EOL_WORKING == eol_working_state) )
 //		if( ((0 == timer_flag.timer_val) && (0 < serial_input_var.DDWS_switch) && (0 == serial_commu_recv_state) && \
 //		    ((serial_input_var.vehicle_speed>>8) > config_param.vehicle_speed) && (0 == OK_Switch_timer_flag.timer_val)) )
 		{
@@ -78,7 +80,7 @@ void *algorithm_process(void *argv)
 			pthread_mutex_unlock(&uyvy_image_mutex);
 
 			/* The algorithm is executed for every second frame */
-			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output)) && \
+			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output, face_detect)) && \
 				(algorithm_output.drowsyLevel != 100) )
 			{
 				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d," \
@@ -625,7 +627,7 @@ void *algorithm_process(void *argv)
 			get_Ycompnt_from_YUYV(local_image, gray_image, 1);
 			algorithm_input.clearBuf = 1;
 			gClearBuf = 1;
-			ImageProcessing(gray_image, &algorithm_input, &algorithm_output);
+			ImageProcessing(gray_image, &algorithm_input, &algorithm_output, face_detect);
 
 			pthread_mutex_lock(&serial_output_var_mutex);
 			serial_output_var.calling_warn = 0;
@@ -646,6 +648,19 @@ void *algorithm_process(void *argv)
 
 exit_detect:
 			usleep(10000);
+		}
+
+		if(1000 == face_detect) // no face is detected
+		{
+			eol_testing_ret = FACE_NOT_FOUND;
+		}
+		else if(0 == face_detect) // face is detected
+		{
+			eol_testing_ret = FACE_FOUND;
+		}
+		else
+		{
+			eol_testing_ret = FACE_NOT_FOUND;
 		}
 	}
 

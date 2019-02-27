@@ -74,6 +74,7 @@ unsigned int __kfifo_get(struct kfifo *fifo,
     len = min(len, fifo->in - fifo->out);
     l = min(len, fifo->size - (fifo->out & (fifo->size - 1)));
     memcpy(buffer, fifo->buffer + (fifo->out & (fifo->size - 1)), l);
+    memcpy(buffer+l, fifo->buffer, len-l);
 
     fifo->out += len;
     return len;

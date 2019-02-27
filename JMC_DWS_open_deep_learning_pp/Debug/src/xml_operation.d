@@ -24,7 +24,7 @@ src/xml_operation.d: ../src/xml_operation.c ../src/xml_operation.h \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/timerscfg.h ../src/bootloader.h \
  ../src/list.h ../src/crc32.h ../src/software_version.h ../src/watchdog.h \
- ../src/kfifo.h
+ ../src/kfifo.h ../src/eol_funct_test.h
 
 ../src/xml_operation.h:
 
@@ -93,3 +93,5 @@ src/xml_operation.d: ../src/xml_operation.c ../src/xml_operation.h \
 ../src/watchdog.h:
 
 ../src/kfifo.h:
+
+../src/eol_funct_test.h:

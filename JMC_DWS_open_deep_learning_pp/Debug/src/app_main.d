@@ -4,8 +4,8 @@ src/app_main.d: ../src/app_main.cpp ../src/algorithm.hpp ../src/AlgoLib.h \
  ../src/driving_behav_analys.h ../src/gpio_operation.h \
  ../src/timer_delay.h ../src/timerscfg.h ../src/bootloader.h \
  ../src/list.h ../src/crc32.h ../src/software_version.h ../src/watchdog.h \
- ../src/kfifo.h ../src/applicfg.h ../src/user_timer.h \
- ../src/production_test.h ../src/timers_driver.h \
+ ../src/kfifo.h ../src/eol_funct_test.h ../src/applicfg.h \
+ ../src/user_timer.h ../src/production_test.h ../src/timers_driver.h \
  ../src/single_daemon_running.h ../src/xml_operation.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/parser.h \
  /home/tony/Downloads/libxml2-2.7.2/install/include/libxml2/libxml/xmlversion.h \
@@ -63,6 +63,8 @@ src/app_main.d: ../src/app_main.cpp ../src/algorithm.hpp ../src/AlgoLib.h \
 ../src/watchdog.h:
 
 ../src/kfifo.h:
+
+../src/eol_funct_test.h:
 
 ../src/applicfg.h:
 
