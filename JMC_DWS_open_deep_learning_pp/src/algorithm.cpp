@@ -48,6 +48,7 @@ static void get_Ycompnt_from_YUYV(const unsigned char* YUYV_image, \
 
 
 
+
 void *algorithm_process(void *argv)
 {
 	unsigned char gray_image[IMAGE_HEIGHT*IMAGE_WIDTH];
@@ -83,10 +84,12 @@ void *algorithm_process(void *argv)
 			if( (0 == ImageProcessing(gray_image, &algorithm_input, &algorithm_output, face_detect)) && \
 				(algorithm_output.drowsyLevel != 100) )
 			{
-				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d," \
-								"algorithm_output.eyeCloseEventTime: %d\n", \
+				printf("DWS algorithm_output.drowsyLevel: %d, algorithm_output.faceFlag: %d, " \
+						"algorithm_output.eyeCloseEventTime: %d "
+						"face_detect: %d\n", \
 						algorithm_output.drowsyLevel, algorithm_output.faceFlag, \
-						algorithm_output.eyeCloseEventTime);
+						algorithm_output.eyeCloseEventTime, \
+						face_detect);
 
 				temp_drowsyLevel = algorithm_output.drowsyLevel;
 

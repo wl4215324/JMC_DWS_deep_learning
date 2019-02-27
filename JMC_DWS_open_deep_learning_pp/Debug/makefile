@@ -38,10 +38,10 @@ endif
 # Add inputs and outputs from these tool invocations to the build variables 
 
 # All Target
-all: JMC_DWS_open_deep_learning
+all: JMC_DWS_open_deep_learning_pp
 
 # Tool invocations
-JMC_DWS_open_deep_learning: $(OBJS) $(USER_OBJS)
+JMC_DWS_open_deep_learning_pp: $(OBJS) $(USER_OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: Cross G++ Linker'
 	#arm-linux-gnueabihf-g++  $(OBJS) $(USER_OBJS) $(LIBS) -o "JMC_DWS_deep_learning" -Wl,-rpath=/usr/local/arm/hf/
@@ -51,7 +51,7 @@ JMC_DWS_open_deep_learning: $(OBJS) $(USER_OBJS)
 
 # Other Targets
 clean:
-	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(OBJS)$(C_UPPER_DEPS)$(CXX_DEPS)$(C_DEPS)$(CPP_DEPS) JMC_DWS_open_deep_learning
+	-$(RM) $(CC_DEPS)$(C++_DEPS)$(EXECUTABLES)$(OBJS)$(C_UPPER_DEPS)$(CXX_DEPS)$(C_DEPS)$(CPP_DEPS) JMC_DWS_open_deep_learning_pp
 	-@echo ' '
 
 .PHONY: all clean dependents
