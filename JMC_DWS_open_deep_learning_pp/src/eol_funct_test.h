@@ -11,6 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include "applicfg.h"
+
 
 #define  EOL_ROUTINE_ID  0x5A00
 

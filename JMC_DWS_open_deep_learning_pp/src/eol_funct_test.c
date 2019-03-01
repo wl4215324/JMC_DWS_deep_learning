@@ -13,12 +13,20 @@ EOL_Testing_Result eol_testing_ret = FACE_NOT_FOUND;
 void EOL_routine_ctl(unsigned char *recv_buf, unsigned short recv_buf_len, \
 		unsigned char *send_buf, unsigned short *send_buf_len)
 {
+	int i = 0;
+
 	if(!recv_buf || recv_buf_len < 4)
 	{
+		DEBUG_INFO(recv_buf_len: %d\n, recv_buf_len);
 		*send_buf = 0x7F;
 		*(send_buf+1) = 0x31;
 		*(send_buf+2) = 0x13; //negative code: message length error
 		*send_buf_len = 3;
+
+		for(i=0; i<recv_buf_len; i++)
+			printf("  %X", *(recv_buf+i));
+		printf("\n");
+
 		return ;
 	}
 

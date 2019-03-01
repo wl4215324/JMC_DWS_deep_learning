@@ -1279,7 +1279,8 @@ static int D6_message_process(unsigned char* recv_buf, int recv_buf_len,\
 	}
 
 	/* EOL function testing */
-	if((*(recv_buf+MESSAGE_TYPE_ID+1) == 0x31) && (*(unsigned short *)(recv_buf+MESSAGE_TYPE_ID+3) == EOL_ROUTINE_ID))
+	if((*(recv_buf+MESSAGE_TYPE_ID+1) == 0x31) && \
+	   (MAKE_WORD(*(recv_buf+MESSAGE_TYPE_ID+3), *(recv_buf+MESSAGE_TYPE_ID+4)) == EOL_ROUTINE_ID))
 	{
 		EOL_routine_ctl(recv_buf+MESSAGE_TYPE_ID+1, recv_buf_len-HEAD_AND_TAIL_LENGTH, \
 				(send_buf+7), (unsigned short*)send_buf_len);

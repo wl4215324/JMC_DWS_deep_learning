@@ -138,8 +138,8 @@ int bootloader_logic_init(BootloaderBusinessLogic *bootloader_logic)
 		return -1;
 	}
 
-	bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
-	//bootloader_logic->bootloader_subseq = DownloadDriver;
+	//bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
+	bootloader_logic->bootloader_subseq = DownloadDriver;
 	bootloader_logic->seed.level_FBL = 0;
 	bootloader_logic->seed.level_one = 0;
 	bootloader_logic->secret_key.level_FBL = 0;
