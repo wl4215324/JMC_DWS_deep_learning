@@ -28,7 +28,6 @@
 #include <pthread.h>
 #include "sunxi_camera.h"
 
-
 #define LOG_OUT(fmt, arg...) printf(fmt, ##arg)
 #define LOGD LOG_OUT
 #define LOGW LOG_OUT
@@ -40,6 +39,8 @@
 
 
 typedef int (*video_callback)(char *buf, int size);
+
+typedef int (*disp_callback)(char *buf);
 
 enum CAMERA_TYPE {
 	CAMERA_TYPE_CSI,
@@ -75,10 +76,13 @@ typedef struct v4l2_mem_map_t
 } v4l2_mem_map_t;
 
 
-video_callback callback;
+extern char YUV420_buf[1280*720*3/2];
+
+extern video_callback callback;
+//extern disp_callback disp_image;
 //extern int openCameraDev(int camera_index);
 //extern int startDevice(int width, int height, unsigned int pix_fmt);
 //extern int startStream();
-void* capture_video(void* para);
+extern void* capture_video(void* para);
 
 #endif /* T7_CAMERA_V4L2_H_ */

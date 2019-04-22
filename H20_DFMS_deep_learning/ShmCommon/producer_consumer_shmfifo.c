@@ -7,6 +7,9 @@
 
 #include "producer_consumer_shmfifo.h"
 
+shmfifo *pRecvComFifo = NULL;
+shmfifo *pSendComFifo = NULL;
+
 //sem_id 表示信号量集合的 id
 //sem_num 表示要处理的信号量在信号量集合中的索引
 //P操作
@@ -62,6 +65,10 @@ shmfifo *shmfifo_init(key_t key, unsigned int shm_size)
 		if(!is_power_of_2(shm_size))
 		{
 			app_shm_size = roundup_pow_of_two(shm_size);
+		}
+		else
+		{
+			app_shm_size = shm_size;
 		}
 
 		app_shm_size += sizeof(ShmSegment);
@@ -173,6 +180,11 @@ unsigned int shmfifo_put(shmfifo *p_shmfifo, const BYTE *wr_buffer, unsigned int
     //printf("\n p_shmfifo->shm_segment->in: %ld\n", p_shmfifo->shm_segment->in);
 
 	sigSem(p_shmfifo->sem_id, MUTEX_INDEX);
+
+//	for(i=0; i<len; i++)
+//		printf("%2X", wr_buffer[i]);
+//	printf("\n");
+
 	return len;
 }
 
@@ -190,7 +202,7 @@ unsigned int shmfifo_get(shmfifo *p_shmfifo, BYTE *rd_buffer, unsigned int len)
 	waitSem(p_shmfifo->sem_id, MUTEX_INDEX);
 
     len = min(len, (p_shmfifo->shm_segment->in - p_shmfifo->shm_segment->out));
-    printf("%ld, len: %d\n", p_shmfifo->shm_segment->in - p_shmfifo->shm_segment->out, len);
+    //printf("%ld, len: %d\n", p_shmfifo->shm_segment->in - p_shmfifo->shm_segment->out, len);
     l = min(len, p_shmfifo->shm_segment->size - (p_shmfifo->shm_segment->out & (p_shmfifo->shm_segment->size-1)));
 
     memcpy(rd_buffer, p_shmfifo->shm_data + (p_shmfifo->shm_segment->out&(p_shmfifo->shm_segment->size - 1)), l);

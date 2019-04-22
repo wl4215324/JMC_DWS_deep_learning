@@ -17,7 +17,11 @@
 #include <string.h>
 #include <fcntl.h>
 
+#ifdef IMX6SOLO
 #define  RS232_DEV_NAME "/dev/ttymxc1"
+#else
+#define  RS232_DEV_NAME "/dev/ttyS1"
+#endif
 
 int open_set_serial_port( );
 

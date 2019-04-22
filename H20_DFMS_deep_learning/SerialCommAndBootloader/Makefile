@@ -8,7 +8,7 @@ all: SerialCommAndBootloader
 SerialCommAndBootloader: $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	$(CC) -o $@ $(OBJS) $(USER_OBJS) $(LIB_DIR) $(LIBS)
+	$(CC) -o $@  $(OBJS)  $(USER_OBJS)  $(LIB_DIR) $(LIBS) ../ShmCommon/CommLib.a
 	@echo 'Finished building target: $@'
 	@echo ' '
 	

@@ -5,60 +5,77 @@
  *      Author: tony
  */
 
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/time.h>
 #include "serial_pack_parse.h"
 #include "serial_port_commu.h"
 #include "bootloader.h"
 #include "producer_consumer_shmfifo.h"
 
 //shmfifo *p_shmfifo = shmfifo_init(10000, 2000);
-shmfifo *pRecvComFifo = NULL;
-shmfifo *pSendComFifo = NULL;
 
 int main(int argc, char* argv[])
 {
 	int i  = 0, retry_cnt = 0;
+	int read_ret = 0;
 	int fd = 0;
 	fd_set rfds;
 	int recv_length, spec_recv_len;
-	unsigned short ret_send_length = 0, spec_send_length = 0;
-	unsigned char serial_recv_buf[256];
+	int ret_send_length = 0;
+	unsigned char recv_buf[512];
 	unsigned char send_buf[256];
-	int send_buf_len;
 	struct timeval tp;
-	unsigned short check_sum = 0;
 
 	struct timeval tv = {
-			.tv_sec = 1,
-			.tv_usec = 300000,
+			.tv_sec = 3,
+			.tv_usec = 500000,
 	};
 
 	if((fd = open_set_serial_port()) < 0)
 	{
-		DEBUG_INFO("open internal serial com error!\n");
+		DEBUG_INFO(open internal serial com error!\n);
 		return -1;
+	}
+	else
+	{
+		DEBUG_INFO(open_set_serial_port success!\n);
 	}
 
 	tcflush(fd, TCIOFLUSH);
 
-	if(!bootloader_logic_init(&JMC_bootloader_logic))
+	if(bootloader_logic_init(&JMC_bootloader_logic))
 	{
-		DEBUG_INFO("bootloader_logic_init error!\n");
+		DEBUG_INFO(bootloader_logic_init error!\n);
 		return -1;
 	}
-
-	pRecvComFifo = shmfifo_init(10000, 1024);
-	pSendComFifo = shmfifo_init(10000, 512);
-
-	if(pRecvComFifo == (void*)-1)
+	else
 	{
-		DEBUG_INFO("pRecvComFifo init error!\n");
-		return -1;
+		DEBUG_INFO(bootloader_logic_init success!\n);
 	}
 
-	if(pSendComFifo == (void*)-1)
+	pRecvComFifo = shmfifo_init(RECV_BUF_SHM_KEY, RECV_BUF_SIZE);
+	pSendComFifo = shmfifo_init(SEND_BUF_SHM_KEY, SEND_BUF_SIZE);
+
+	if((pRecvComFifo == (void*)-1) || !pRecvComFifo)
 	{
-		DEBUG_INFO("pSendComFifo init error!\n");
+		DEBUG_INFO(pRecvComFifo init error!\n);
 		return -1;
+	}
+	else
+	{
+		DEBUG_INFO(pRecvComFifo init success!\n);
+	}
+
+	if((pSendComFifo == (void*)-1) || !pRecvComFifo)
+	{
+		DEBUG_INFO(pSendComFifo init error!\n);
+		return -1;
+	}
+	else
+	{
+		DEBUG_INFO(pSendComFifo init success!\n);
 	}
 
 	while(true)
@@ -66,68 +83,85 @@ int main(int argc, char* argv[])
 		FD_ZERO(&rfds);
 		FD_SET(fd, &rfds);
 
-		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
+		if((read_ret = select(fd+1, &rfds, NULL, NULL, &tv)) > 0)
 		{
 			/*read serial data from rs232 */
-			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
+			if((recv_length = read_one_frame(fd, recv_buf, &spec_recv_len)) > 0)
 			{
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
-
 				gettimeofday(&tp, NULL);
 				printf("%ld ms recv_length is: %d data:", (tp.tv_sec*1000+tp.tv_usec/1000), recv_length);
 
 				for(i=0; i<recv_length; i++ )
 				{
-					printf("%02X", serial_recv_buf[i]);
+					printf("%02X", recv_buf[i]);
 				}
 
 			    printf("\n");
 
-				if(D6_MESSAGE == *(serial_recv_buf + MESSAGE_TYPE_ID))
+			    if(D2_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID))  // type D2 message processing
 				{
-					bootloader_main_process(&JMC_bootloader_logic, serial_recv_buf+MESSAGE_TYPE_ID+1, \
-							recv_length, (send_buf+MESSAGE_VAR_NUM), &ret_send_length);
-					ret_send_length = ret_send_length + 7;
-					*(send_buf+0) = 0xAA;
-					*(send_buf+1) = 0x55;
-					*(send_buf+2) = GET_HIG_BYTE_FROM_WORD(ret_send_length);
-					*(send_buf+3) = GET_LOW_BYTE_FROM_WORD(ret_send_length);
-					*(send_buf+4) = GET_HIG_BYTE_FROM_WORD(~ret_send_length);
-					*(send_buf+5) = GET_LOW_BYTE_FROM_WORD(~ret_send_length);
-					*(send_buf+6) = D6_MESSAGE;
-					check_sum = calc_check_sum(send_buf+2, ret_send_length-2);
-					*(send_buf+ret_send_length) = GET_HIG_BYTE_FROM_WORD(check_sum);
-					*(send_buf+ret_send_length+1) = GET_LOW_BYTE_FROM_WORD(check_sum);
-					ret_send_length += 2;
+					DEBUG_INFO(spec_recv_len: %d\n, spec_recv_len);
+					shmfifo_put(pRecvComFifo, recv_buf, spec_recv_len);
+					ret_send_length = D2_MESSAGE_LENGTH;
+					shmfifo_get(pSendComFifo, send_buf, ret_send_length);
+					send_spec_len_data(fd, send_buf, ret_send_length);
 
-					send_spec_len_data(fd, ret_send_length, &ret_send_length);
+					gettimeofday(&tp, NULL);
+					printf("%ld ms send_length is: %d data:", (tp.tv_sec*1000+tp.tv_usec/1000), ret_send_length);
+
+					for(i=0; i<ret_send_length; i++ )
+					{
+						printf("%02X", send_buf[i]);
+					}
+
+					printf("\n");
 				}
-				else
+			    else if((D6_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) || \
+				   (D3_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) || \
+				   (D5_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) )
 				{
-					shmfifo_put(pRecvComFifo, serial_recv_buf, spec_recv_len);
+					parse_recv_pack_send(recv_buf, spec_recv_len, send_buf, &ret_send_length);
+					send_spec_len_data(fd, send_buf, ret_send_length);
 				}
+			}
+//			else
+//			{
+//				goto recv_error;
+//			}
+		}
+		else if(0 == read_ret)
+		{
+			DEBUG_INFO(serial port receiving timeout!\n);
 
-
+			if(retry_cnt++ > 1000)
+			{
+				retry_cnt = 0;
+				serial_commu_recv_state = -1;
+				tcflush(fd, TCIFLUSH);
 			}
 			else
 			{
-				goto recv_error;
+				usleep(500000);
 			}
 		}
 		else
 		{
-recv_error:
-			if(retry_cnt++ > 1000)
-			{
-				serial_commu_recv_state = -1;
-				tcflush(fd, TCIFLUSH);
-				retry_cnt = 0;
-			}
-			else
-			{
-				usleep(10000);
-			}
+			DEBUG_INFO(serial port receiving error!\n);
+			serial_commu_recv_state = -1;
+			usleep(200000);
+//recv_error:
+//			if(retry_cnt++ > 1000)
+//			{
+//				serial_commu_recv_state = -1;
+//				tcflush(fd, TCIFLUSH);
+//				retry_cnt = 0;
+//			}
+//			else
+//			{
+//				usleep(10000);
+//			}
 		}
 	}
 

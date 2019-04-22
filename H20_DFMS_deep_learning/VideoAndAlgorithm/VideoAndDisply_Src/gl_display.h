@@ -9,4 +9,9 @@ public:
     int display_buffer(char *buffer);
 private:
 };
+
+int display_init();
+int display_buffer(char *buffer);
+void* disp_image(void* argv);
+
 #endif

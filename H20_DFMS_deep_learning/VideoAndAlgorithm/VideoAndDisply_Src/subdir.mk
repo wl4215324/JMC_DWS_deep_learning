@@ -16,22 +16,23 @@ CPP_DEPS := \
 ./debug/gl_display.d
 
 USER_OBJS +=
-INC_DIR += ./VideoAndDisply_Src/fbdev/include
 
-LIB_DIR += -L ./VideoAndDisply_Src/fbdev/lib
-LIBS += -lpthread -lEGL -lGLESv2
+INC_DIR := -I./VideoAndDisply_Src/fbdev/include -I../ShmCommon/
+
+LIBS += -L ./VideoAndDisply_Src/fbdev/lib -lpthread -lEGL -lGLESv2
+
 
 # Each subdirectory must supply rules for building sources it contributes
 ./debug/%.o: ./VideoAndDisply_Src/%.c
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross GCC Compiler'
-	$(CC) -O0 -g3 -Wall -c -I$(INC_DIR) -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
+	$(CC) -O0 -g3 -Wall -c $(INC_DIR) -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)" -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 	
 ./debug/%.o: ./VideoAndDisply_Src/%.cpp
 	@echo 'Building file: $<'
 	@echo 'Invoking: Cross G++ Compiler'
-	$(CPP) -std=c++11 -O0 -g3 -Wall -c -I$(INC_DIR) -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"  -o "$@" "$<"
+	$(CPP) -std=c++11 -O0 -g3 -Wall -c $(INC_DIR) -fmessage-length=0 -MMD -MP -MF"$(@:%.o=%.d)" -MT"$(@:%.o=%.d)"  -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '

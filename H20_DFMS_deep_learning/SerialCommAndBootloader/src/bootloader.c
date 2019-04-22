@@ -1958,8 +1958,10 @@ int bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, \
 		break;
 
 	default:
-
-		return -1;
+		*reply_mesg = *can_mesg;
+		*(reply_mesg+1) = 0x13;
+		*reply_mesg_len = 2;
+		return 0;
 		break;
 	}
 

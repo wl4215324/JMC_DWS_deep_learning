@@ -90,6 +90,14 @@ static inline unsigned long roundup_pow_of_two(unsigned long x)
 }
 
 
+#define  RECV_BUF_SIZE  1024
+#define  SEND_BUF_SIZE  512
+#define  RECV_BUF_SHM_KEY  10000
+#define  SEND_BUF_SHM_KEY  10001
+
+extern shmfifo *pRecvComFifo;
+extern shmfifo *pSendComFifo;
+
 extern shmfifo *shmfifo_init(key_t key, unsigned int shm_size);
 extern unsigned int shmfifo_put(shmfifo *p_shmfifo, const BYTE *wr_buffer, unsigned int wr_len);
 extern unsigned int shmfifo_get(shmfifo *p_shmfifo, BYTE *rd_buffer, unsigned int rd_len);

@@ -9,6 +9,7 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include "gl_display.h"
+#include "t7_camera_v4l2.h"
 
 
 #define DISPLAY_NV21 1
@@ -127,7 +128,7 @@ EGLSurface egl_surface;
 
 GLuint LoadTexture ( char *fileName );
 
-static int display_init()
+int display_init()
 {
     EGLint egl_major, egl_minor;
     EGLConfig config;
@@ -384,5 +385,34 @@ int FbDisplay::display_buffer(char *buffer)
     glDeleteTextures(1, &con_data.uv_tex_id);
 
     return 0;
+}
 
+
+int display_buffer(char *buffer)
+{
+    LoadTexture(buffer);
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    glFlush();
+
+    eglSwapBuffers(egl_display, egl_surface);
+    glDeleteTextures(1, &con_data.y_tex_id);
+    glDeleteTextures(1, &con_data.uv_tex_id);
+
+    return 0;
+}
+
+void* disp_image(void* argv)
+{
+	usleep(500000);
+	display_init();
+
+	while(true)
+	{
+		display_buffer(YUV420_buf);
+		usleep(40000);
+	}
+
+	return NULL;
 }

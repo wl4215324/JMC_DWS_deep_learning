@@ -12,12 +12,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stddef.h>
+
 #include "applicfg.h"
 #include "list.h"
 #include "crc32.h"
 #include "sha_1.h"
 #include "file_operate.h"
-
 
 #define MINORBITS   16
 #define MINORMASK   ((1U << MINORBITS) - 1)

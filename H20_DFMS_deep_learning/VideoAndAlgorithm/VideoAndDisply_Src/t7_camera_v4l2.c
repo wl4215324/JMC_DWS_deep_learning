@@ -19,6 +19,10 @@ static int mBufferCnt;
 
 video_callback callback;
 
+//disp_callback disp_image;
+
+char YUV420_buf[1280*720*3/2];
+
 static int waitFrame(void)
 {
 	fd_set fds;
@@ -870,7 +874,7 @@ int startDevice(int width, int height, unsigned int pix_fmt)
 	return 0;
 }
 
-void* capture_video(void* para)
+void *capture_video(void* para)
 {
 	int ret = -1;
 	int camera_dev_index = *(int*)para;
@@ -922,6 +926,8 @@ void* capture_video(void* para)
 		}
 	}
 
-	pthread_exit(NULL);
+	//pthread_exit(NULL);
+
+	return NULL;
 }
 

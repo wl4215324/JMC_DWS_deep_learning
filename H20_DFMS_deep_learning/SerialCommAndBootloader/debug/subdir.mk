@@ -3,38 +3,32 @@
 C_SRCS := \
 ./src/SerialCommuAndBtMain.c \
 ./src/bootloader.c \
-./src/serial_pack_parse.c \
 ./src/serial_port_commu.c \
 ./src/sha_1.c \
-./src/file_operate.c \
-./src/producer_consumer_shmfifo.c
+./src/file_operate.c
 
 CPP_SRCS := \
 
 OBJS := \
 ./debug/SerialCommuAndBtMain.o \
 ./debug/bootloader.o \
-./debug/serial_pack_parse.o \
 ./debug/serial_port_commu.o \
 ./debug/sha_1.o \
-./debug/file_operate.o \
-./debug/producer_consumer_shmfifo.o
+./debug/file_operate.o 
 
 
 
 C_DEPS := \
 ./debug/SerialCommuAndBtMain.d \
 ./debug/bootloader.d \
-./debug/serial_pack_parse.d \
 ./debug/serial_port_commu.d \
 ./debug/sha_1.d \
-./debug/file_operate.d \
-./debug/producer_consumer_shmfifo.d
+./debug/file_operate.d 
 
 CPP_DEPS := 
 
 USER_OBJS :=
-INC_DIR :=
+INC_DIR :=  ../ShmCommon/
 
 # Each subdirectory must supply rules for building sources it contributes
 ./debug/%.o: ./src/%.c

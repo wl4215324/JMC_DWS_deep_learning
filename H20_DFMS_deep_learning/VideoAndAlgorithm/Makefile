@@ -2,15 +2,18 @@
 -include ./Algorithm_Src/subdir.mk
 
 
-LIB_DIR +=
-LIBS +=
+	  
+CF = -std=c++11 -c -O3 -Wall -fpermissive -DCPU_ONLY 
+FAST = -ffast-math  -march=armv7-a -mfpu=vfpv4-d16 -mfloat-abi=hard -mcpu=cortex-a7 -fopenmp
 
 all: VideoAndAlgorithm
 
 VideoAndAlgorithm: $(OBJS)
 	@echo 'Building target: $@'
 	@echo 'Invoking: GCC C Linker'
-	$(CPP) -o $@ $(OBJS) $(USER_OBJS) $(LIB_DIR) $(LIBS)
+	$(RM) $@
+	$(CPP) $(FAST) -o $@ $(OBJS) $(USER_OBJS) $(LIBS) -Wl,-rpath=/root/libs_algo/hf-jianhua/
+	$(STRIP) $@
 	@echo 'Finished building target: $@'
 	@echo ' '
 	

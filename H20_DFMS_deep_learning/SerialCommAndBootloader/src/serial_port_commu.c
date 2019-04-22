@@ -119,7 +119,7 @@ static int set_parity(int fd, int databits, int stopbits, int parity)
   		options.c_iflag |= INPCK;
 	}
 //    options.c_cc[VTIME] = 30; // 3S
-	options.c_cc[VTIME] = 3; // 300ms
+	options.c_cc[VTIME] = 10; // 1000ms
     options.c_cc[VMIN] = 0;
 
     tcflush(fd,TCIFLUSH);  /* Update the options and do it NOW */
@@ -140,7 +140,7 @@ int open_set_serial_port( )
 		return -1;
 	}
 
-	if(set_speed(fd, 57600) < 0)
+	if(set_speed(fd, 115200) < 0)
 	{
 		return -1;
 	}
