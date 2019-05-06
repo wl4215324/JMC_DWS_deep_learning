@@ -268,4 +268,9 @@ unsigned int shmfifo_len(shmfifo *p_shmfifo)
 	return (p_shmfifo->shm_segment->in - p_shmfifo->shm_segment->out);
 }
 
+unsigned int shmfifo_left_size(shmfifo *p_shmfifo)
+{
+	return (p_shmfifo->shm_segment->size - p_shmfifo->shm_segment->in + p_shmfifo->shm_segment->out);
+}
+
 

@@ -104,5 +104,6 @@ extern unsigned int shmfifo_get(shmfifo *p_shmfifo, BYTE *rd_buffer, unsigned in
 extern void shmfifo_destory(shmfifo *p_shmfifo);
 extern void shmfifo_reset(shmfifo *p_shmfifo);
 extern unsigned int shmfifo_len(shmfifo *p_shmfifo);
+extern unsigned int shmfifo_left_size(shmfifo *p_shmfifo);
 
 #endif /* PRODUCER_CONSUMER_QUEUE_H_ */

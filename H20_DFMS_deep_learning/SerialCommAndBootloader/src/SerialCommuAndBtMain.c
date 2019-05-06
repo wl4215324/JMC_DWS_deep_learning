@@ -16,6 +16,7 @@
 
 //shmfifo *p_shmfifo = shmfifo_init(10000, 2000);
 
+
 int main(int argc, char* argv[])
 {
 	int i  = 0, retry_cnt = 0;
@@ -104,6 +105,7 @@ int main(int argc, char* argv[])
 				{
 					DEBUG_INFO(spec_recv_len: %d\n, spec_recv_len);
 					shmfifo_put(pRecvComFifo, recv_buf, spec_recv_len);
+
 					ret_send_length = D2_MESSAGE_LENGTH;
 					shmfifo_get(pSendComFifo, send_buf, ret_send_length);
 					send_spec_len_data(fd, send_buf, ret_send_length);
@@ -126,14 +128,31 @@ int main(int argc, char* argv[])
 					send_spec_len_data(fd, send_buf, ret_send_length);
 				}
 			}
-//			else
-//			{
-//				goto recv_error;
-//			}
 		}
 		else if(0 == read_ret)
 		{
 			DEBUG_INFO(serial port receiving timeout!\n);
+
+			ret_send_length = D2_MESSAGE_LENGTH;
+
+			if(shmfifo_len(pSendComFifo) >= ret_send_length)
+			{
+				shmfifo_get(pSendComFifo, send_buf, ret_send_length);
+				send_spec_len_data(fd, send_buf, ret_send_length);
+			}
+
+			if(ret_send_length > 0)
+			{
+				gettimeofday(&tp, NULL);
+				DEBUG_INFO(%d ms send_length is: %d data:, (tp.tv_sec*1000+tp.tv_usec/1000), ret_send_length);
+
+				for(i=0; i<ret_send_length; i++ )
+				{
+					printf("%02X", send_buf[i]);
+				}
+
+				printf("\n");
+			}
 
 			if(retry_cnt++ > 1000)
 			{
@@ -143,7 +162,7 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				usleep(500000);
+				usleep(300000);
 			}
 		}
 		else
@@ -151,17 +170,6 @@ int main(int argc, char* argv[])
 			DEBUG_INFO(serial port receiving error!\n);
 			serial_commu_recv_state = -1;
 			usleep(200000);
-//recv_error:
-//			if(retry_cnt++ > 1000)
-//			{
-//				serial_commu_recv_state = -1;
-//				tcflush(fd, TCIFLUSH);
-//				retry_cnt = 0;
-//			}
-//			else
-//			{
-//				usleep(10000);
-//			}
 		}
 	}
 

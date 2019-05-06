@@ -6,7 +6,8 @@ debug/gl_display.d: VideoAndDisply_Src/gl_display.cpp \
  VideoAndDisply_Src/fbdev/include/GLES2/gl2.h \
  VideoAndDisply_Src/fbdev/include/GLES2/gl2platform.h \
  VideoAndDisply_Src/gl_display.h VideoAndDisply_Src/t7_camera_v4l2.h \
- VideoAndDisply_Src/sunxi_camera.h
+ VideoAndDisply_Src/sunxi_camera.h ../ShmCommon/disp_num_on_image.h \
+ ../ShmCommon/serial_pack_parse.h ../ShmCommon/applicfg.h
 
 VideoAndDisply_Src/fbdev/include/EGL/egl.h:
 
@@ -25,3 +26,9 @@ VideoAndDisply_Src/gl_display.h:
 VideoAndDisply_Src/t7_camera_v4l2.h:
 
 VideoAndDisply_Src/sunxi_camera.h:
+
+../ShmCommon/disp_num_on_image.h:
+
+../ShmCommon/serial_pack_parse.h:
+
+../ShmCommon/applicfg.h:

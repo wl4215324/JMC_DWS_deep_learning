@@ -27,7 +27,7 @@ SerialInputVar serial_input_var = {
 	    .MP5_DDWS_switch_2_3 = 0,
 };
 
-SerialOutputVar serial_output_var = {0, 0, 0,}, serial_output_var_test;
+SerialOutputVar serial_output_var = {0,1,2,3,4,5,6}, serial_output_var_test;
 pthread_mutex_t serial_output_var_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 

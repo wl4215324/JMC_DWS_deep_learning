@@ -9,7 +9,10 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include "gl_display.h"
+
 #include "t7_camera_v4l2.h"
+#include "disp_num_on_image.h"
+#include "serial_pack_parse.h"
 
 
 #define DISPLAY_NV21 1
@@ -405,13 +408,22 @@ int display_buffer(char *buffer)
 
 void* disp_image(void* argv)
 {
+	char disp_yuv420_buf[1280*720*3/2] = {0,};
 	usleep(500000);
 	display_init();
+	Hz32Init();
+	char disp_str[4] = {'\0', };
 
 	while(true)
 	{
-		display_buffer(YUV420_buf);
-		usleep(40000);
+		memcpy(disp_yuv420_buf, YUV420_buf, sizeof(YUV420_buf));
+		//DrawNums32(100, 20, serial_output_var.reserved, (unsigned char *)disp_yuv420_buf);
+		pthread_mutex_lock(&serial_output_var_mutex);
+		sprintf(disp_str, "%d", serial_output_var.close_eye_one_level_warn);
+		pthread_mutex_unlock(&serial_output_var_mutex);
+		disp_str_on_monitor(50, 20, disp_str, (unsigned char *)disp_yuv420_buf);
+		display_buffer(disp_yuv420_buf);
+		usleep(25000);
 	}
 
 	return NULL;
