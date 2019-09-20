@@ -90,35 +90,33 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_ID_OF_VEHICLE_SPEED  0x0CFE6CEE
 #define MESSAGE_ID_OF_VEHICLE_SPEED_INDEX 8
 
-#define MESSAGE_ID_OF_TURN_SIGNAL  0x0CFDCC21
-#define MESSAGE_ID_OF_TURN_SIGNAL_INDEX  20
+#define MESSAGE_ID_OF_POWER_MODE  0x18FFCE1D
+#define MESSAGE_ID_OF_POWER_MODE_INDEX  20
 
-#define MESSAGE_ID_OF_ACCEL_PEDAL  0x0CF00300
-#define MESSAGE_ID_OF_ACCEL_PEDAL_INDEX  32
+#define MESSAGE_ID_OF_DFMS_SWITCH  0x18A9E821
+#define MESSAGE_ID_OF_DFMS_SWITCH_INDEX  32
 
-#define MESSAGE_ID_OF_BRAKE_SWITCH  0x18FEF100
-#define MESSAGE_ID_OF_BRAKE_SWITCH_INDEX  44
+#define MESSAGE_ID_OF_TURN_LIGHT  0x0CFDCC21
+#define MESSAGE_ID_OF_TURN_LIGHT_INDEX  44
 
-#define MESSAGE_ID_OF_DRIVER_DOOR  0x18FED921
-#define MESSAGE_ID_OF_DRIVER_DOOR_INDEX  56
+#define MESSAGE_ID_OF_BCM_BRAKE  0x18FFCD21
+#define MESSAGE_ID_OF_BCM_BRAKE_INDEX  56
 
-#define MESSAGE_ID_OF_SMALL_LAMP  0x18FE4021
-#define MESSAGE_ID_OF_SMALL_LAMP_INDEX  68
+#define MESSAGE_ID_OF_RCM_GEAR  0x18FEC322
+#define MESSAGE_ID_OF_RCM_GEAR_INDEX  68
 
-#define MESSAGE_ID_OF_DDWS_SWITCH  0x18FF0217
-#define MESSAGE_ID_OF_DDWS_SWITCH_INDEX  80
+#define MESSAGE_ID_OF_DRIVER_DOOR  0x18FF01EC
+#define MESSAGE_ID_OF_DRIVER_DOOR_INDEX  80
 
-#define MESSAGE_ID_OF_ENGINE_SPEED  0x0CF00400
-#define MESSAGE_ID_OF_ENGINE_SPEED_INDEX  92
+#define MESSAGE_ID_OF_SIDE_DOOR  0x18FF02ED
+#define MESSAGE_ID_OF_SIDE_DOOR_INDEX  92
 
-#define MESSAGE_ID_OF_DDWS_SWITCH_MP5  0x18FF544C
-#define MESSAGE_ID_OF_DDWS_SWITCH_MP5_INDEX  104
+#define MESSAGE_ID_OF_TCU_GEAR  0x18F00503
+#define MESSAGE_ID_OF_TCU_GEAR_INDEX  104
 
-#define MESSAGE_ID_OF_CRUISE_SWITCH  0x18FEF100
-#define MESSAGE_ID_OF_CRUISE_SWITCH_INDEX  44
+#define MESSAGE_ID_OF_EBS_BRAKE  0x18F0010B
+#define MESSAGE_ID_OF_EBS_BRAKE_INDEX  116
 
-#define MESSAGE_ID_OF_REVERSE_GEAR  0x0C010021
-#define MESSAGE_ID_OF_REVERSE_GEAR_INDEX  116
 
 
 /*
@@ -161,6 +159,7 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define  COVER_WARNING        0x0D
 #define  FAULT_WARNING        0x0E
 
+
 /*
  * OK_Switch function enabled or disabled definition
  */
@@ -172,21 +171,16 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
  *  input data type definition for receiving serial port
  */
 typedef struct {
-	unsigned short vehicle_speed;
-	unsigned short turn_signal;
-	unsigned short accel_pedal;
-	unsigned short brake_switch;
-	unsigned short driver_door;
-	unsigned short engine_speed;
-	unsigned short small_lamp;
-    unsigned short DDWS_switch;
-    unsigned short OK_switch;
-    unsigned short MP5_DDWS_switch;
-    unsigned short IC_DDWS_switch;
-    unsigned short Cruise_switch;
-    unsigned short reverse_gear;
-    unsigned short IC_DDWS_switch_2_3;
-    unsigned short MP5_DDWS_switch_2_3;
+	unsigned char vehicle_speed;
+	unsigned char power_mode;
+	unsigned char DFMS_switch;
+	unsigned char turn_light;
+	unsigned char brake_switch;
+	unsigned char RCM_gear;
+	unsigned char driver_door;
+	unsigned char side_door;
+	unsigned char TCU_gear;
+	unsigned char EBS_brake_switch;
 } SerialInputVar;
 
 
@@ -292,7 +286,7 @@ extern int pack_serial_send_message(unsigned char message_type, \
 		void* send_data, unsigned char* send_buf, int* send_buf_len);
 extern int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short spec_send_data_len);
 
-int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
+extern int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 		unsigned char* send_buf, int* send_buf_len);
 
 unsigned short calc_check_sum(unsigned char* data_buf, int data_len);

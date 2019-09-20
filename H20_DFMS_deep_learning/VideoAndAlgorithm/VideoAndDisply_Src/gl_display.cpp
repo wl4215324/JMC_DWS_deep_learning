@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <string.h>
 #include <linux/fb.h>
 #include <errno.h>
 #include <iostream>
@@ -9,10 +10,15 @@
 #include <EGL/egl.h>
 #include <GLES2/gl2.h>
 #include "gl_display.h"
+#include "algo.h"
 
 #include "t7_camera_v4l2.h"
 #include "disp_num_on_image.h"
 #include "serial_pack_parse.h"
+#include "framebuffer_display.h"
+#include "video_layer.h"
+#include "sunxiMemInterface.h"
+#include "video_layer_test.h"
 
 
 #define DISPLAY_NV21 1
@@ -20,8 +26,8 @@
 #define BUFFER_WIDTH 1280
 #define BUFFER_HEIGHT 720
 
-#define SCREEN_WIDTH 1024
-#define SCREEN_HEIGHT 600
+#define SCREEN_WIDTH 1024  //1024
+#define SCREEN_HEIGHT 600  //600
 //#define SCREEN_HEIGHT 576
 
 //#define SCREEN_WIDTH 338
@@ -157,8 +163,10 @@ int display_init()
         return -1;
     }
 
-    if (!eglInitialize(egl_display, &egl_major, &egl_minor)) {
+    if (!eglInitialize(egl_display, &egl_major, &egl_minor))
+    {
         fprintf(stderr, "Error: eglInitialise failed!\n");
+        perror("");
         return -1;
     }
 
@@ -175,8 +183,7 @@ int display_init()
     context = eglCreateContext(egl_display, config, EGL_NO_CONTEXT,
                                context_attribute_list);
     if (context == EGL_NO_CONTEXT) {
-        fprintf(stderr, "Error: eglCreateContext failed: 0x%08X\n",
-                eglGetError());
+        fprintf(stderr, "Error: eglCreateContext failed: 0x%08X\n", eglGetError());
         return -1;
     }
     struct fbdev_window native_window;
@@ -406,16 +413,71 @@ int display_buffer(char *buffer)
     return 0;
 }
 
+//#define DISP_GPU
+//#define FRAME_BUFFER_DISP 1
+
 void* disp_image(void* argv)
 {
-	char disp_yuv420_buf[1280*720*3/2] = {0,};
+	char gray_buf[1280*720] = {0, };
+	char disp_rgba_buf[1280*720*4];
 	usleep(500000);
+	FBDEV fb_dev;
+
+#ifdef DISP_GPU
 	display_init();
 	Hz32Init();
+#elif FRAME_BUFFER_DISP
+	open_display_dev(&fb_dev);
+#else
+	VideoLayer::LayerCon conf;
+	VideoLayer layer{};
+    paramStruct_t pops1{};
+    alloc_nv41_mem(1280, 720, &pops1);
+    printf("pops.phy = %x pops.vir = %x\n", pops1.phy, pops1.vir);
+    //memset((void *)pops1.vir, 0, 1280*720*1.5);
+
+    conf.dst_x = 0;
+    conf.dst_y = 0;
+    conf.dst_w = 1280;
+    conf.dst_h = 720;
+    conf.ori_w = 1280;
+    conf.ori_h = 720;
+    conf.layer_id = 0;
+    conf.phy_addr =  pops1.phy;
+    conf.enable = 1;
+    conf.zorder = 2;
+    layer.set_layer(&conf);
+
+    VideoLayer::LayerCon conf2;
+    paramStruct_t pops2{};
+    alloc_nv41_mem(1280, 720, &pops2);
+    conf2.dst_x = 0;
+    conf2.dst_y = 0;
+    conf2.dst_w = 1280;
+    conf2.dst_h = 720;
+    conf2.ori_w = 1280;
+    conf2.ori_h = 720;
+    conf2.layer_id = 0;
+    conf2.phy_addr =  pops2.phy;
+    conf2.enable = 1;
+    conf2.zorder = 2;
+    //memset((void *)pops.vir, 0xff, 1280*720*1.5);
+#endif
+
 	char disp_str[4] = {'\0', };
+	struct timeval tv;
+	unsigned long long start_ticks, end_ticks;
+
+	Mat gray_image = Mat(720, 1280, CV_8UC1);
+	Mat rgba_image = Mat(720, 1280, CV_8UC4);
+	char disp_yuv420_buf[1280*720*3/2] = {0,};
+
+	int fb = 0;
+	int i = 0;
 
 	while(true)
 	{
+#ifdef DISP_GPU
 		memcpy(disp_yuv420_buf, YUV420_buf, sizeof(YUV420_buf));
 		//DrawNums32(100, 20, serial_output_var.reserved, (unsigned char *)disp_yuv420_buf);
 		pthread_mutex_lock(&serial_output_var_mutex);
@@ -423,7 +485,42 @@ void* disp_image(void* argv)
 		pthread_mutex_unlock(&serial_output_var_mutex);
 		disp_str_on_monitor(50, 20, disp_str, (unsigned char *)disp_yuv420_buf);
 		display_buffer(disp_yuv420_buf);
-		usleep(25000);
+#elif FRAME_BUFFER_DISP
+//		fb =  open(DISPLAY_DEV, O_RDWR);
+//		printf("start_ticks %d bytes\n", sizeof(start_ticks));
+//		gettimeofday(&tv, NULL);
+//		start_ticks= (unsigned long long)(tv.tv_sec*1000 + tv.tv_usec/1000);
+//		printf("start_ticks is %llu ticks\n", start_ticks);
+//		memcpy(disp_yuv420_buf, YUV420_buf, sizeof(disp_yuv420_buf));
+//		yuv420ToRgb(disp_yuv420_buf, 1280, 720, fb_dev.fb_mem);
+		memcpy(gray_image.data, YUV420_buf, 1280*720);
+		cvtColor(gray_image, rgba_image, CV_GRAY2RGBA);
+		memcpy((void*)fb_dev.fb_mem, (void*)rgba_image.data, 1280*720*4);
+		update_framebuffer(&fb_dev);
+#else
+//		memcpy((void *)pops.vir, YUV420_buf, 1280*720*1.5);
+//	    layer.set_layer(&conf);
+		if(i++ % 2 == 0)
+		{
+			pthread_mutex_lock(&camera_buf_lock);
+			memcpy((void *)pops1.vir, YUV420_buf, 1280*720*1.5);
+			pthread_mutex_unlock(&camera_buf_lock);
+//			memset((void *)pops1.vir, 0x00, 1280*720*1.5);
+//			memcpy((void *)pops1.vir, yuv420p_buf1, 1280*720*1.5);
+		    layer.set_layer(&conf);
+		}
+		else
+		{
+			pthread_mutex_lock(&camera_buf_lock);
+			memcpy((void *)pops2.vir, YUV420_buf, 1280*720*1.5);
+			pthread_mutex_unlock(&camera_buf_lock);
+//			memset((void *)pops2.vir, 0xFF, 1280*720*1.5);
+//			memcpy((void *)pops2.vir, yuv420p_buf2, 1280*720*1.5);
+		    layer.set_layer(&conf2);
+		}
+
+	    usleep(30000);
+#endif
 	}
 
 	return NULL;

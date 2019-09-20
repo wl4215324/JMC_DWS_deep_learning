@@ -39,7 +39,6 @@
 
 
 typedef int (*video_callback)(char *buf, int size);
-
 typedef int (*disp_callback)(char *buf);
 
 enum CAMERA_TYPE {
@@ -75,8 +74,18 @@ typedef struct v4l2_mem_map_t
 	int dmafd[NB_BUFFER];
 } v4l2_mem_map_t;
 
+struct VideoFrame
+{
+    char *vir_buf;
+    int size;
+    unsigned long long pts;
+    unsigned int phy_addr;
+};
 
+
+extern pthread_mutex_t camera_buf_lock;
 extern char YUV420_buf[1280*720*3/2];
+extern unsigned int camera_buf_phy_addr;
 
 extern video_callback callback;
 //extern disp_callback disp_image;

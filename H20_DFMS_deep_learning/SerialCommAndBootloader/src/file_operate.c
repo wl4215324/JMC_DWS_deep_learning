@@ -7,7 +7,7 @@
 
 #include "file_operate.h"
 
-bool is_dir_exitent(const char *directory_name)
+bool is_dir_existent(const char *directory_name)
 {
 	if( strlen(directory_name) <= 0 )
 		return false;
@@ -41,7 +41,7 @@ bool make_dir(const char *dir_name)
 
 bool rm_empty_dir(const char *rm_dir)
 {
-	if(!is_dir_exitent(rm_dir))
+	if(!is_dir_existent(rm_dir))
 	{
 		printf("%s is not existent, you don't need to remove dir!\n", rm_dir);
 		return true;

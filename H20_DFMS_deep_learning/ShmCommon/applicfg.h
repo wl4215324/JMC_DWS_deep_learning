@@ -35,6 +35,7 @@
  data[3] = 0xCD;
  */
 
+#if 0
 /* Integers */
 #define INTEGER8 int8_t
 #define INTEGER16 int16_t
@@ -58,6 +59,8 @@
 /* Reals */
 #define REAL32	float
 #define REAL64 double
+#endif
+
 
 /* Definition of error and warning macros */
 /* -------------------------------------- */
@@ -96,7 +99,8 @@
 #ifdef USE_DEBUG
 #define DEBUG_LINE() printf("[%s:%s] line=%d\r\n",__FILE__, __func__, __LINE__)
 #define DEBUG_ERR(fmt, args...) printf("[%s:%d] "#fmt" errno=%d, %m \n", __func__, __LINE__, ##args, errno, errno)
-#define DEBUG_INFO(fmt, args...) printf("[%s:%d] "#fmt" ", __func__, __LINE__, ##args)
+#define DEBUG_INFO(fmt, args...) printf("[%s:%d] "#fmt" ",  __func__,  __LINE__,  ##args)
+
 #else
 #define DEBUG_LINE()
 #define DEBUG_ERR(fmt, ...)

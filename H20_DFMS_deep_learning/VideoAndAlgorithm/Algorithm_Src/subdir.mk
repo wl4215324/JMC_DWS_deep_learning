@@ -1,19 +1,30 @@
 # Add inputs and outputs from these tool invocations to the build variables 
-C_SRCS := 
+C_SRCS := \
+./Algorithm_Src/warning_logic.c \
+./Algorithm_Src/timer.c \
+./Algorithm_Src/user_timer.c
+
 
 CPP_SRCS := \
 ./Algorithm_Src/app_main.cpp
 
 
+
 OBJS += \
-./debug/app_main.o
+./debug/app_main.o \
+./debug/warning_logic.o \
+./debug/timer.o \
+./debug/user_timer.o
 
 
-C_DEPS := 
+C_DEPS := \
+./debug/warning_logic.d \
+./debug/timer.d \
+./debug/user_timer.d
 
 
 CPP_DEPS := \
-./debug/app_main.d
+./debug/app_main.d 
 
 
 USER_OBJS +=

@@ -12,19 +12,15 @@
  */
 SerialInputVar serial_input_var = {
 		.vehicle_speed = 0,
-		.turn_signal = 0,
-		.accel_pedal = 0,
+		.power_mode = 0x01,
+		.DFMS_switch = 0x01,
+		.turn_light = 0,
 		.brake_switch = 0,
+		.RCM_gear = 0,
 		.driver_door = 0,
-		.engine_speed = 0,
-		.small_lamp = 0,
-	    .DDWS_switch = 1,
-	    .OK_switch = 0,  //
-	    .IC_DDWS_switch = 0,
-	    .MP5_DDWS_switch = 0,
-	    .Cruise_switch = 0,
-	    .IC_DDWS_switch_2_3 = 1,
-	    .MP5_DDWS_switch_2_3 = 0,
+		.side_door = 0,
+		.TCU_gear = 0xFB,
+		.EBS_brake_switch = 0,
 };
 
 SerialOutputVar serial_output_var = {0,1,2,3,4,5,6}, serial_output_var_test;
@@ -180,7 +176,7 @@ unsigned short calc_check_sum(unsigned char* data_buf, int data_len)
  */
 int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng)
 {
-	int i = 0;
+	int i = 0, j = 0;
 	int retry_cnt = 0;
 	int retval = 0;
 	unsigned char temp_buf[8];
@@ -201,27 +197,31 @@ int read_one_frame(int fd, unsigned char* recv_buff, int* recv_frame_leng)
 			if(retval >= 0)
 			{
 				*recv_frame_leng += retval;
-				*(recv_buff+MESSAGE_HEAD_INDEX)   = GET_HIG_BYTE_FROM_WORD(message_head);
+				*(recv_buff+MESSAGE_HEAD_INDEX) = GET_HIG_BYTE_FROM_WORD(message_head);
 				*(recv_buff+MESSAGE_HEAD_INDEX+1) = GET_LOW_BYTE_FROM_WORD(message_head);
-				*(recv_buff+MESSAGE_LEN_INDEX)   = GET_HIG_BYTE_FROM_WORD(message_len);
+				*(recv_buff+MESSAGE_LEN_INDEX) = GET_HIG_BYTE_FROM_WORD(message_len);
 				*(recv_buff+MESSAGE_LEN_INDEX+1) = GET_LOW_BYTE_FROM_WORD(message_len);
-				*(recv_buff+MESSAGE_LEN_COMPL_INDEX)   = GET_HIG_BYTE_FROM_WORD(message_len_complement);
+				*(recv_buff+MESSAGE_LEN_COMPL_INDEX) = GET_HIG_BYTE_FROM_WORD(message_len_complement);
 				*(recv_buff+MESSAGE_LEN_COMPL_INDEX+1) = GET_LOW_BYTE_FROM_WORD(message_len_complement);
 				*(recv_buff+MESSAGE_TYPE_ID) = message_type;
 				*(recv_buff+MESSAGE_VAR_NUM) = var_cnt;
 				check_sum = calc_check_sum(recv_buff+2, message_len-2);
 
-				//DEBUG_INFO(cal check_sum: %2X\n, check_sum);
+//				DEBUG_INFO(cal check_sum: %2X\n, check_sum);
+//				printf("Serial Recv: ");
+//				for(j=0; j<*recv_frame_leng; j++)
+//					printf("%02X ", *(recv_buff+j));
+//				printf("\n");
 
-				//if((0xd6 == *(recv_buff+6)) && ((0x36 == *(recv_buff+7)) || (0x37 == *(recv_buff+7))))
-				{
+//				if((0xd6 == *(recv_buff+6)) && ((0x36 == *(recv_buff+7)) || (0x37 == *(recv_buff+7))))
+//				{
 //					for(j=0; j<*recv_frame_leng; j++ )
 //					{
 //						printf("%02X", recv_buff[j]);
 //					}
 //
 //					DEBUG_INFO(cal check_sum: %4X\n, check_sum);
-				}
+//				}
 
 				if(check_sum == (((*(recv_buff+ *recv_frame_leng -2) & 0xffff) << 8) |*(recv_buff+ *recv_frame_leng -1)))
 				{
@@ -447,6 +447,141 @@ error_return:
 
 
 
+int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len)
+{
+	/* get variable vehicle_speed from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+3)) == \
+			MESSAGE_ID_OF_VEHICLE_SPEED)
+	{
+		//serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
+		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 8);
+		DEBUG_INFO(vehicle_speed: %d\n, serial_input_var.vehicle_speed);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable power mode from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX), *(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+3)) == \
+			MESSAGE_ID_OF_POWER_MODE)
+	{
+		serial_input_var.power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+4, 5, 3);
+		DEBUG_INFO(power_mode: %d\n, serial_input_var.power_mode);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable DFMS_switch from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX), *(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX+2), *(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX+3)) == \
+			MESSAGE_ID_OF_DFMS_SWITCH)
+	{
+		serial_input_var.DFMS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX+4, 0, 2);
+		DEBUG_INFO(DFMS_switch: %d\n, serial_input_var.DFMS_switch);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable turn light from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_TURN_LIGHT_INDEX), *(recv_buf+MESSAGE_ID_OF_TURN_LIGHT_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_TURN_LIGHT_INDEX+2), *(recv_buf+MESSAGE_ID_OF_TURN_LIGHT_INDEX+3)) == \
+			MESSAGE_ID_OF_TURN_LIGHT)
+	{
+		serial_input_var.turn_light = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_LIGHT_INDEX+4, 8, 4);
+		DEBUG_INFO(turn_light: %d\n, serial_input_var.turn_light);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable brake switch from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+3)) == \
+			MESSAGE_ID_OF_BCM_BRAKE)
+	{
+		serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 36, 2);
+		DEBUG_INFO(brake_switch: %d\n, serial_input_var.brake_switch);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable RCM gear from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_RCM_GEAR_INDEX), *(recv_buf+MESSAGE_ID_OF_RCM_GEAR_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_RCM_GEAR_INDEX+2), *(recv_buf+MESSAGE_ID_OF_RCM_GEAR_INDEX+3)) == \
+			MESSAGE_ID_OF_RCM_GEAR)
+	{
+		serial_input_var.RCM_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_RCM_GEAR_INDEX+4, 8, 2);
+		DEBUG_INFO(RCM_gear: %d\n, serial_input_var.RCM_gear);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable driver door from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX), *(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+2), *(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+3)) == \
+			MESSAGE_ID_OF_DRIVER_DOOR)
+	{
+		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 20, 1);
+		DEBUG_INFO(driver_door: %d\n, serial_input_var.driver_door);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable front side door from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_SIDE_DOOR_INDEX), *(recv_buf+MESSAGE_ID_OF_SIDE_DOOR_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_SIDE_DOOR_INDEX+2), *(recv_buf+MESSAGE_ID_OF_SIDE_DOOR_INDEX+3)) == \
+			MESSAGE_ID_OF_SIDE_DOOR)
+	{
+		serial_input_var.side_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SIDE_DOOR_INDEX+4, 9, 1);
+		DEBUG_INFO(side_door: %d\n, serial_input_var.side_door);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable TCU gear from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX), *(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX+2), *(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX+3)) == \
+			MESSAGE_ID_OF_TCU_GEAR)
+	{
+		serial_input_var.TCU_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX+4, 24, 8);
+		DEBUG_INFO(TCU_gear: %d\n, serial_input_var.TCU_gear);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get variable TCU gear from receiving data */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_EBS_BRAKE_INDEX), *(recv_buf+MESSAGE_ID_OF_EBS_BRAKE_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_EBS_BRAKE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_EBS_BRAKE_INDEX+3)) == \
+			MESSAGE_ID_OF_EBS_BRAKE)
+	{
+		serial_input_var.EBS_brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_EBS_BRAKE_INDEX+4, 6, 2);
+		DEBUG_INFO(EBS_brake_switch: %d\n, serial_input_var.EBS_brake_switch);
+	}
+	else
+	{
+		return -1;
+	}
+
+	return 0;
+}
 
 /*
  * type D2 message processing, mainly parsing input variables for DWS algorithm
@@ -460,33 +595,11 @@ static int D2_message_process(unsigned char* recv_buf, int recv_buf_len,\
 		return -1;
 	}
 
-//	if(parse_serial_input_var(recv_buf, recv_buf_len) < 0)
-//	{
-//		return -1;
-//	}
+	if(parse_serial_input_var(recv_buf, recv_buf_len) < 0)
+	{
+		return -1;
+	}
 
-	//serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-
-	//pthread_mutex_lock(&serial_output_var_mutex);
-
-	/* added on Nov. 27th*/
-//	if(somking_freezing_5min_flag.timer_val == WARNING_FREEZE)
-//	{
-//		serial_output_var.warnning_level.somking_warn = 0;
-//	}
-//
-//	if(phoning_freezing_5min_flag.timer_val == WARNING_FREEZE)
-//	{
-//		serial_output_var.calling_warn = 0;
-//	}
-//
-//	if(covering_freezing_5min_flag.timer_val == WARNING_FREEZE)
-//	{
-//		serial_output_var.warnning_level.warning_state = NO_WARNING;
-//	}
-
-	//serial_output_var.warnning_level.working_state = serial_input_var.DDWS_switch;
-	//pthread_mutex_unlock(&serial_output_var_mutex);
 
 	return pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, send_buf, send_buf_len);
 }
@@ -531,6 +644,7 @@ static int D5_message_process(unsigned char* recv_buf, int recv_buf_len,\
 
 	return pack_serial_send_message(D5_MESSAGE, (void*)&D6_mesg_data, send_buf, send_buf_len);
 }
+
 
 
 /*

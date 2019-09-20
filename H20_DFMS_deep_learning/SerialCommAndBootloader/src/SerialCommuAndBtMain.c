@@ -103,11 +103,14 @@ int main(int argc, char* argv[])
 
 			    if(D2_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID))  // type D2 message processing
 				{
-					DEBUG_INFO(spec_recv_len: %d\n, spec_recv_len);
+					DEBUG_INFO(spec_recv_len: %d  shmfifo left size: %d\n, \
+							spec_recv_len, shmfifo_left_size(pRecvComFifo));
+
 					shmfifo_put(pRecvComFifo, recv_buf, spec_recv_len);
 
 					ret_send_length = D2_MESSAGE_LENGTH;
-					shmfifo_get(pSendComFifo, send_buf, ret_send_length);
+
+					DEBUG_INFO(shmfifo_get length: %d\n, shmfifo_get(pSendComFifo, send_buf, ret_send_length));
 					send_spec_len_data(fd, send_buf, ret_send_length);
 
 					gettimeofday(&tp, NULL);

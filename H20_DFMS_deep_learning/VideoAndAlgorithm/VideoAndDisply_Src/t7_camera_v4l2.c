@@ -6,13 +6,14 @@
  */
 
 #include "t7_camera_v4l2.h"
+#include <pthread.h>
 
 static int nPlanes = 0;
 static int mCameraFd = -1;
 static int mCameraType = 0;
 static int mCaptureFormat;  // the driver capture format
 static int mFrameWidth = 0, mFrameHeight = 0;
-static int mFrameRate = 30;
+static int mFrameRate = 25;
 v4l2_mem_map_t mMapMem;
 // actually buffer counts
 static int mBufferCnt;
@@ -21,7 +22,10 @@ video_callback callback;
 
 //disp_callback disp_image;
 
+pthread_mutex_t camera_buf_lock = PTHREAD_MUTEX_INITIALIZER;
 char YUV420_buf[1280*720*3/2];
+unsigned int camera_buf_phy_addr;
+
 
 static int waitFrame(void)
 {
@@ -882,11 +886,13 @@ void *capture_video(void* para)
 	if(openCameraDev(camera_dev_index) < 0)
 	{
 		printf("file %s line %d calling openCameraDev error!\n" , __FILE__, __LINE__);
+		return NULL;
 	}
 
 	if(startDevice(1280, 720, V4L2_PIX_FMT_NV21) < 0)
 	{
 		printf("file %s line %d calling startDevice error!\n" , __FILE__, __LINE__);
+		return NULL;
 	}
 
 	while(true)
