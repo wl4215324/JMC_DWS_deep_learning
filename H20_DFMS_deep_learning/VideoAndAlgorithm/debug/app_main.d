@@ -1036,10 +1036,16 @@ debug/app_main.d: Algorithm_Src/app_main.cpp Algorithm_Src/algo/algo.h \
  /home/tony/eclipse-workspace/T7_Protect/rootfs/ncnn/include/gpu.h \
  /home/tony/eclipse-workspace/T7_Protect/rootfs/ncnn/include/modelbin.h \
  /home/tony/eclipse-workspace/T7_Protect/rootfs/ncnn/include/paramdict.h \
- VideoAndDisply_Src/gl_display.h ../ShmCommon/producer_consumer_shmfifo.h \
- ../ShmCommon/applicfg.h VideoAndDisply_Src/t7_camera_v4l2.h \
- VideoAndDisply_Src/sunxi_camera.h ../ShmCommon/serial_pack_parse.h \
- ../ShmCommon/applicfg.h
+ VideoAndDisply_Src/gl_display.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/producer_consumer_shmfifo.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h \
+ VideoAndDisply_Src/t7_camera_v4l2.h VideoAndDisply_Src/sunxi_camera.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/serial_pack_parse.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h \
+ Algorithm_Src/warning_logic.h Algorithm_Src/user_timer.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/list.h \
+ Algorithm_Src/timer.h Algorithm_Src/jiffies.h Algorithm_Src/bug.h \
+ VideoAndDisply_Src/video_layer.h
 
 Algorithm_Src/algo/algo.h:
 
@@ -3121,14 +3127,28 @@ Algorithm_Src/algo/detect.h:
 
 VideoAndDisply_Src/gl_display.h:
 
-../ShmCommon/producer_consumer_shmfifo.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/producer_consumer_shmfifo.h:
 
-../ShmCommon/applicfg.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h:
 
 VideoAndDisply_Src/t7_camera_v4l2.h:
 
 VideoAndDisply_Src/sunxi_camera.h:
 
-../ShmCommon/serial_pack_parse.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/serial_pack_parse.h:
 
-../ShmCommon/applicfg.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h:
+
+Algorithm_Src/warning_logic.h:
+
+Algorithm_Src/user_timer.h:
+
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/list.h:
+
+Algorithm_Src/timer.h:
+
+Algorithm_Src/jiffies.h:
+
+Algorithm_Src/bug.h:
+
+VideoAndDisply_Src/video_layer.h:

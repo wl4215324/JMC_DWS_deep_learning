@@ -1,12 +1,13 @@
 debug/bootloader.d: src/bootloader.c src/bootloader.h \
- ../ShmCommon/applicfg.h src/list.h src/crc32.h src/sha_1.h \
- src/file_operate.h
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/list.h \
+ src/crc32.h src/sha_1.h src/file_operate.h
 
 src/bootloader.h:
 
-../ShmCommon/applicfg.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h:
 
-src/list.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/list.h:
 
 src/crc32.h:
 

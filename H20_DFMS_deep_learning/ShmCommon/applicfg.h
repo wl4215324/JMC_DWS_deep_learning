@@ -99,7 +99,7 @@
 #ifdef USE_DEBUG
 #define DEBUG_LINE() printf("[%s:%s] line=%d\r\n",__FILE__, __func__, __LINE__)
 #define DEBUG_ERR(fmt, args...) printf("[%s:%d] "#fmt" errno=%d, %m \n", __func__, __LINE__, ##args, errno, errno)
-#define DEBUG_INFO(fmt, args...) printf("[%s:%d] "#fmt" ",  __func__,  __LINE__,  ##args)
+#define DEBUG_INFO(fmt, args...) printf("[%s:%s:%d] "#fmt" ",  __FILE__, __func__,  __LINE__,  ##args)
 
 #else
 #define DEBUG_LINE()

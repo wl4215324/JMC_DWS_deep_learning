@@ -225,7 +225,8 @@ void input_variables_judge(SerialInputVar serial_input_var, \
 		exe_once_flag[0] = 0;
 	}
 
-	if(!serial_input_var.brake_switch)  //if brake pedal depressed
+	if(((serial_input_var.vehicle_model == 1) && !serial_input_var.EBS_brake_switch) || \
+	   ((serial_input_var.vehicle_model == 2) && !serial_input_var.bcm_brake_switch) )  //if brake pedal depressed
 	{
 		if(!exe_once_flag[1])
 		{
@@ -245,7 +246,6 @@ void input_variables_judge(SerialInputVar serial_input_var, \
 		exe_once_flag[1] = 0;
 	}
 
-	//if(serial_input_var.driver_door && serial_input_var.side_door)
 	if(!serial_input_var.driver_door && !serial_input_var.side_door)
 	{
 		if(!exe_once_flag[2])
@@ -266,7 +266,8 @@ void input_variables_judge(SerialInputVar serial_input_var, \
 		exe_once_flag[2] = 0;
 	}
 
-	if(serial_input_var.TCU_gear >= 0x7D && serial_input_var.TCU_gear <= 0xFA)
+	if((serial_input_var.vehicle_model == 1 && serial_input_var.TCU_gear >= 0x7D && serial_input_var.TCU_gear <= 0xFA) ||\
+	   (serial_input_var.vehicle_model == 2 && serial_input_var.RCM_gear == 0x01))
 	{
 		if(!exe_once_flag[3])
 		{
@@ -286,7 +287,8 @@ void input_variables_judge(SerialInputVar serial_input_var, \
 		exe_once_flag[3] = 0;
 	}
 
-	if(serial_input_var.power_mode == 0x03)  // power mode is ON
+	if((serial_input_var.vehicle_model == 1 && serial_input_var.ps_power_mode == 0x03) ||\
+	   (serial_input_var.vehicle_model == 2 && serial_input_var.bcm_power_mode == 0x03))  // power mode is ON
 	{
 		CAN_signal_flags->bits.power_mode = 0;
 	}

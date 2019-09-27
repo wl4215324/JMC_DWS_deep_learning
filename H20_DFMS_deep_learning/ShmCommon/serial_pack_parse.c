@@ -6,26 +6,28 @@
  */
 
 #include "serial_pack_parse.h"
+#include "bootloader.h"
 
 /*
  *
  */
 SerialInputVar serial_input_var = {
 		.vehicle_speed = 0,
-		.power_mode = 0x01,
+		.ps_power_mode = 0x01,
 		.DFMS_switch = 0x01,
 		.turn_light = 0,
-		.brake_switch = 0,
+		.bcm_power_mode = 0,
+		.bcm_brake_switch = 0,
 		.RCM_gear = 0,
 		.driver_door = 0,
 		.side_door = 0,
 		.TCU_gear = 0xFB,
 		.EBS_brake_switch = 0,
+		.vehicle_model = 0,
 };
 
 SerialOutputVar serial_output_var = {0,1,2,3,4,5,6}, serial_output_var_test;
 pthread_mutex_t serial_output_var_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 
 /*
  * configuration parameters
@@ -446,9 +448,10 @@ error_return:
 }
 
 
-
 int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len)
 {
+	//static unsigned char vehicle_model = 0;  //0: unknown, 1: high configure, 2: middle configure
+
 	/* get variable vehicle_speed from receiving data */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+3)) == \
@@ -468,8 +471,9 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			*(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+3)) == \
 			MESSAGE_ID_OF_POWER_MODE)
 	{
-		serial_input_var.power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+4, 5, 3);
-		DEBUG_INFO(power_mode: %d\n, serial_input_var.power_mode);
+		serial_input_var.ps_power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+4, 5, 3);
+		DEBUG_INFO(ps_power_mode: %d\n, serial_input_var.ps_power_mode);
+//		power_mode_h = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+4, 5, 3);
 	}
 	else
 	{
@@ -502,13 +506,26 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 		return -1;
 	}
 
-	/* get variable brake switch from receiving data */
+	/* get power mode from BCM */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+3)) == \
 			MESSAGE_ID_OF_BCM_BRAKE)
 	{
-		serial_input_var.brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 36, 2);
-		DEBUG_INFO(brake_switch: %d\n, serial_input_var.brake_switch);
+		serial_input_var.bcm_power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 36, 2);
+		DEBUG_INFO(bcm_power_mode: %d\n, serial_input_var.bcm_power_mode);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get brake switch from BCM */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+3)) == \
+			MESSAGE_ID_OF_BCM_BRAKE)
+	{
+		serial_input_var.bcm_brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 36, 2);
+		DEBUG_INFO(bcm_brake_switch: %d\n, serial_input_var.bcm_brake_switch);
 	}
 	else
 	{
@@ -561,6 +578,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 	{
 		serial_input_var.TCU_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX+4, 24, 8);
 		DEBUG_INFO(TCU_gear: %d\n, serial_input_var.TCU_gear);
+
 	}
 	else
 	{
@@ -579,6 +597,25 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 	{
 		return -1;
 	}
+
+	if(serial_input_var.vehicle_model == 0)
+	{
+		if((serial_input_var.ps_power_mode == 0x05) && \
+		   (serial_input_var.TCU_gear == 0xAA) && \
+		   (serial_input_var.EBS_brake_switch == 0x02))
+		{
+			serial_input_var.vehicle_model = 1;  //high configuration
+		}
+
+		if((serial_input_var.bcm_power_mode == 0x05) && \
+		   (serial_input_var.RCM_gear == 0x02) && \
+		   (serial_input_var.bcm_brake_switch == 0x02))
+		{
+			serial_input_var.vehicle_model = 2; //middle configuration
+		}
+	}
+
+	DEBUG_INFO(vehicle model: %d\n, serial_input_var.vehicle_model);
 
 	return 0;
 }
@@ -646,7 +683,6 @@ static int D5_message_process(unsigned char* recv_buf, int recv_buf_len,\
 }
 
 
-
 /*
  * type D6 message processing, mainly receiving bootloader message and
  * replying to MCU
@@ -666,8 +702,7 @@ static int D6_message_process(unsigned char* recv_buf, int recv_buf_len,\
 	}
 	else
 	{
-//		bootloader_main_process(&JMC_bootloader_logic, serial_recv_buf+MESSAGE_VAR_NUM, \
-//					recv_buf_len, (send_buf+MESSAGE_VAR_NUM), send_buf_len);
+		bootloader_main_process(recv_buf+MESSAGE_VAR_NUM, recv_buf_len-9, (send_buf+MESSAGE_VAR_NUM), send_buf_len);
 		ret = 0;
 	}
 
@@ -683,10 +718,8 @@ static int D6_message_process(unsigned char* recv_buf, int recv_buf_len,\
 	*(send_buf+send_mesg_len) = GET_HIG_BYTE_FROM_WORD(check_sum);
 	*(send_buf+send_mesg_len+1) = GET_LOW_BYTE_FROM_WORD(check_sum);
 	*send_buf_len = send_mesg_len + 2;
-
 	return ret;
 }
-
 
 
 int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
@@ -725,7 +758,6 @@ int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 
 	return -1;
 }
-
 
 
 /*
@@ -779,118 +811,3 @@ int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short spec_send
 
 	return (spec_send_data_len- nleft);
 }
-
-
-
-/* rs232 communication task */
-//void* serial_commu_app(void* argv)
-//int serial_commu_app()
-//{
-//	int i  = 0, retry_cnt = 0;
-//	int fd = 0;
-//	fd_set rfds;
-//	int recv_length, spec_recv_len;
-//	int send_buf_len;
-//	unsigned char dws_mesg_array[8] = {0};
-//	struct timeval tp;
-//	unsigned char work_mode_poll_cnt = 0;
-//
-//	struct timeval tv = {
-//			.tv_sec = 1,
-//			.tv_usec = 300000,
-//	};
-//
-//	if((fd = open_set_serial_port()) < 0)
-//	{
-//		DEBUG_INFO("open internal serial com error!\n");
-//		return -1;
-//	}
-//
-//	tcflush(fd, TCIOFLUSH);
-//
-//	while(true)
-//	{
-//		FD_ZERO(&rfds);
-//		FD_SET(fd, &rfds);
-//
-//		if(select(fd+1, &rfds, NULL, NULL, &tv) > 0)
-//		{
-//			/*read serial data from rs232 */
-//			if((recv_length = read_one_frame(fd, serial_recv_buf, &spec_recv_len)) > 0)
-//			{
-//				retry_cnt = 0;
-//				serial_commu_recv_state = 0;
-//
-//				gettimeofday(&tp, NULL);
-//				printf("%ld ms recv_length is: %d data:", (tp.tv_sec*1000+tp.tv_usec/1000), recv_length);
-//
-//				for(i=0; i<recv_length; i++ )
-//				{
-//					printf("%02X", serial_recv_buf[i]);
-//				}
-//
-//			    printf("\n");
-//
-//				if(D6_MESSAGE == *(serial_recv_buf+MESSAGE_TYPE_ID))
-//				{
-//
-//				}
-//				else
-//				{
-//
-//				}
-//
-//
-//			    /* parse receiving serial data */
-//			    if(parse_recv_pack_send(serial_recv_buf, spec_recv_len, serial_send_buf, &send_buf_len) > 0)
-//			    {
-//			    	if(send_buf_len > 0)
-//				    {
-//						if(send_spec_len_data(fd, serial_send_buf, send_buf_len) >= send_buf_len)
-//						{
-//							//printf("periodic serial port send_length is: %d, data: ", send_buf_len);
-//
-//							if(0xd6 == *(serial_send_buf+6))
-//							{
-//								gettimeofday(&tp, NULL);
-//								printf("%d ms periodic serial port send_length is: %d, data: ", (tp.tv_sec*1000+tp.tv_usec/1000), \
-//										send_buf_len);
-//
-//								for(i=0; i<send_buf_len; i++)
-//								{
-//									printf("%02X ", serial_send_buf[i]);
-//								}
-//
-//								puts("\n");
-//							}
-//						}
-//						else
-//						{
-//							printf("send data failed!\n");
-//						}
-//				    }
-//			    }
-//			}
-//			else
-//			{
-//				goto recv_error;
-//			}
-//		}
-//		else
-//		{
-//recv_error:
-//			if(retry_cnt++ > 1000)
-//			{
-//				serial_commu_recv_state = -1;
-//				tcflush(fd, TCIFLUSH);
-//				retry_cnt = 0;
-//			}
-//			else
-//			{
-//				usleep(10000);
-//			}
-//		}
-//	}
-//
-//	pthread_exit(NULL);
-//}

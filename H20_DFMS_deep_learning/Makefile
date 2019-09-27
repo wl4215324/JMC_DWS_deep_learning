@@ -1,4 +1,4 @@
-UILD_ROOT = /home/tony/eclipse-workspace/t7_toolchain/hf/host/usr/bin/
+BUILD_ROOT = /home/tony/eclipse-workspace/t7_toolchain/hf/host/usr/bin/
 
 OBJ_SRCS := 
 ASM_SRCS := 
@@ -25,6 +25,9 @@ SERIAL_AND_BT_APP_DIR = $(shell pwd)/SerialCommAndBootloader
 SHM_COMM_DIR = $(shell pwd)/ShmCommon
 VIDEO_ALGORITHM_APP_DIR = $(shell pwd)/VideoAndAlgorithm
 BIN_TARGET_DIR = $(shell pwd)/bin
+
+INC_DIR := -I$(SERIAL_AND_BT_APP_DIR)/src/
+INC_DIR += -I$(SHM_COMM_DIR)/
 
 export CC CPP AR STRIP INC_DIR CUR_DIR LIB_DIR LIBS RM SERIAL_AND_BT_APP_DIR SHM_COMM_DIR \
 VIDEO_ALGORITHM_APP_DIR BIN_TARGET_DIR

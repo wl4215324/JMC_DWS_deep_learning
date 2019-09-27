@@ -9,8 +9,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/time.h>
-#include "serial_pack_parse.h"
+
 #include "serial_port_commu.h"
+#include "serial_pack_parse.h"
 #include "bootloader.h"
 #include "producer_consumer_shmfifo.h"
 
@@ -34,7 +35,7 @@ int main(int argc, char* argv[])
 			.tv_usec = 500000,
 	};
 
-	if((fd = open_set_serial_port()) < 0)
+	if((fd = open_set_serial_port()) < 0)  //initialize rs232 ttyS1
 	{
 		DEBUG_INFO(open internal serial com error!\n);
 		return -1;
@@ -46,7 +47,7 @@ int main(int argc, char* argv[])
 
 	tcflush(fd, TCIOFLUSH);
 
-	if(bootloader_logic_init(&JMC_bootloader_logic))
+	if(bootloader_logic_init())
 	{
 		DEBUG_INFO(bootloader_logic_init error!\n);
 		return -1;
@@ -86,13 +87,14 @@ int main(int argc, char* argv[])
 
 		if((read_ret = select(fd+1, &rfds, NULL, NULL, &tv)) > 0)
 		{
+			recv_length = 0;
 			/*read serial data from rs232 */
 			if((recv_length = read_one_frame(fd, recv_buf, &spec_recv_len)) > 0)
 			{
 				retry_cnt = 0;
 				serial_commu_recv_state = 0;
 				gettimeofday(&tp, NULL);
-				printf("%ld ms recv_length is: %d data:", (tp.tv_sec*1000+tp.tv_usec/1000), recv_length);
+				DEBUG_INFO(recv_length is: %d spec_recv_len: %d data : ,recv_length, spec_recv_len);
 
 				for(i=0; i<recv_length; i++ )
 				{
@@ -103,25 +105,28 @@ int main(int argc, char* argv[])
 
 			    if(D2_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID))  // type D2 message processing
 				{
-					DEBUG_INFO(spec_recv_len: %d  shmfifo left size: %d\n, \
-							spec_recv_len, shmfifo_left_size(pRecvComFifo));
+			    	DEBUG_INFO(pRecvComFifo left size %d bytes\n, shmfifo_left_size(pRecvComFifo));
 
-					shmfifo_put(pRecvComFifo, recv_buf, spec_recv_len);
+			    	/* if pRecvComFifo have enough space for message storage*/
+			    	if(shmfifo_left_size(pRecvComFifo) >= recv_length)
+			    	{
+			    		shmfifo_put(pRecvComFifo, recv_buf, recv_length);
+			    	}
+			    	else
+			    	{
+						parse_recv_pack_send(recv_buf, spec_recv_len, send_buf, &ret_send_length);
+						DEBUG_INFO(com send length: %d data: , ret_send_length);
 
-					ret_send_length = D2_MESSAGE_LENGTH;
+						for(i=0; i<ret_send_length; i++ )
+						{
+							printf("%02X", send_buf[i]);
+						}
 
-					DEBUG_INFO(shmfifo_get length: %d\n, shmfifo_get(pSendComFifo, send_buf, ret_send_length));
-					send_spec_len_data(fd, send_buf, ret_send_length);
+						printf("\n");
+						send_spec_len_data(fd, send_buf, ret_send_length);
+			    	}
 
-					gettimeofday(&tp, NULL);
-					printf("%ld ms send_length is: %d data:", (tp.tv_sec*1000+tp.tv_usec/1000), ret_send_length);
-
-					for(i=0; i<ret_send_length; i++ )
-					{
-						printf("%02X", send_buf[i]);
-					}
-
-					printf("\n");
+			    	goto send_fifo_msg;
 				}
 			    else if((D6_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) || \
 				   (D3_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) || \
@@ -129,34 +134,20 @@ int main(int argc, char* argv[])
 				{
 					parse_recv_pack_send(recv_buf, spec_recv_len, send_buf, &ret_send_length);
 					send_spec_len_data(fd, send_buf, ret_send_length);
+
+					DEBUG_INFO(D3~6 reply msg: );
+					for(i=0; i<ret_send_length; i++ )
+					{
+						printf("%02X", send_buf[i]);
+					}
+
+					printf("\n");
+
 				}
 			}
 		}
-		else if(0 == read_ret)
+		else if(0 == read_ret)  //time out no data
 		{
-			DEBUG_INFO(serial port receiving timeout!\n);
-
-			ret_send_length = D2_MESSAGE_LENGTH;
-
-			if(shmfifo_len(pSendComFifo) >= ret_send_length)
-			{
-				shmfifo_get(pSendComFifo, send_buf, ret_send_length);
-				send_spec_len_data(fd, send_buf, ret_send_length);
-			}
-
-			if(ret_send_length > 0)
-			{
-				gettimeofday(&tp, NULL);
-				DEBUG_INFO(%d ms send_length is: %d data:, (tp.tv_sec*1000+tp.tv_usec/1000), ret_send_length);
-
-				for(i=0; i<ret_send_length; i++ )
-				{
-					printf("%02X", send_buf[i]);
-				}
-
-				printf("\n");
-			}
-
 			if(retry_cnt++ > 1000)
 			{
 				retry_cnt = 0;
@@ -165,8 +156,24 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				usleep(300000);
+				usleep(100000);
 			}
+
+send_fifo_msg:
+	    	// if pSendComFifo have more than one frame, send it
+	    	if(shmfifo_len(pSendComFifo) >= D2_MESSAGE_LENGTH)
+	    	{
+	    		ret_send_length = shmfifo_get(pSendComFifo, send_buf, D2_MESSAGE_LENGTH);
+	    		send_spec_len_data(fd, send_buf, ret_send_length);
+
+	    		DEBUG_INFO(pSendComFifo send data: );
+				for(i=0; i<ret_send_length; i++ )
+				{
+					printf("%02X", send_buf[i]);
+				}
+
+			    printf("\n");
+	    	}
 		}
 		else
 		{

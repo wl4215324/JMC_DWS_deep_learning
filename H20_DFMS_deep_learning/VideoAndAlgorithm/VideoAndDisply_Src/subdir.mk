@@ -32,7 +32,7 @@ CPP_DEPS := \
 
 USER_OBJS +=
 
-INC_DIR := -I./VideoAndDisply_Src/fbdev/include -I../ShmCommon/ -I./Algorithm_Src/algo/ \
+INC_DIR += -I./VideoAndDisply_Src/fbdev/include -I../ShmCommon/ -I./Algorithm_Src/algo/ \
            -I ~/t7_reference/t7linux-auto/buildroot-201611/target/user_rootfs_misc/sdk_lib/cedarx/include/libcedarc/include/ \
            -I ~/t7_reference/t7linux-auto/buildroot-201611/target/target/user_rootfs_misc/sdk_lib/cedarx/include/libcedarc/
 

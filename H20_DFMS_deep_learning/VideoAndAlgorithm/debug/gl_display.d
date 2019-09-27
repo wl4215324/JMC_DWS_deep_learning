@@ -1044,8 +1044,10 @@ debug/gl_display.d: VideoAndDisply_Src/gl_display.cpp \
  /home/tony/eclipse-workspace/T7_Protect/rootfs/ncnn/include/modelbin.h \
  /home/tony/eclipse-workspace/T7_Protect/rootfs/ncnn/include/paramdict.h \
  VideoAndDisply_Src/t7_camera_v4l2.h VideoAndDisply_Src/sunxi_camera.h \
- ../ShmCommon/disp_num_on_image.h ../ShmCommon/serial_pack_parse.h \
- ../ShmCommon/applicfg.h VideoAndDisply_Src/framebuffer_display.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/disp_num_on_image.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/serial_pack_parse.h \
+ /home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h \
+ VideoAndDisply_Src/framebuffer_display.h \
  VideoAndDisply_Src/video_layer.h VideoAndDisply_Src/sunxiMemInterface.h \
  VideoAndDisply_Src/DmaIon.h VideoAndDisply_Src/ion_alloc_list.h \
  VideoAndDisply_Src/video_layer_test.h
@@ -3146,11 +3148,11 @@ VideoAndDisply_Src/t7_camera_v4l2.h:
 
 VideoAndDisply_Src/sunxi_camera.h:
 
-../ShmCommon/disp_num_on_image.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/disp_num_on_image.h:
 
-../ShmCommon/serial_pack_parse.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/serial_pack_parse.h:
 
-../ShmCommon/applicfg.h:
+/home/tony/eclipse-workspace/H20_DFMS_deep_learning/ShmCommon/applicfg.h:
 
 VideoAndDisply_Src/framebuffer_display.h:
 

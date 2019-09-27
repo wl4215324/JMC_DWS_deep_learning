@@ -172,15 +172,17 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
  */
 typedef struct {
 	unsigned char vehicle_speed;
-	unsigned char power_mode;
+	unsigned char ps_power_mode;
 	unsigned char DFMS_switch;
 	unsigned char turn_light;
-	unsigned char brake_switch;
+	unsigned char bcm_power_mode;
+	unsigned char bcm_brake_switch;
 	unsigned char RCM_gear;
 	unsigned char driver_door;
 	unsigned char side_door;
 	unsigned char TCU_gear;
 	unsigned char EBS_brake_switch;
+	unsigned char vehicle_model;  //1: high configuration, 2: middle configuration
 } SerialInputVar;
 
 
