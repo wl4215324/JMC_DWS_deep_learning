@@ -22,9 +22,12 @@ extern "C"{
 #include "warning_logic.h"
 #include "user_timer.h"
 #include "video_layer.h"
+#include "production_test.h"
 }
 
 user_timer test_timer[9] ;
+
+extern Factory_Test_Image factory_test_data;
 
 static void YUV420spRotateNegative90(uchar *dst, const uchar *src, int srcWidth, int height)
 {
@@ -201,7 +204,7 @@ void input_variables_judge(SerialInputVar serial_input_var, \
 	{
 		CAN_signal_flags->bits.vehicle_speed_flag = 0;
 	}
-	else if(serial_input_var.vehicle_speed < DFMS_DISABLED_SPEED)
+	else if(serial_input_var.vehicle_speed <= DFMS_DISABLED_SPEED)
 	{
 		CAN_signal_flags->bits.vehicle_speed_flag = 1;
 	}
@@ -300,37 +303,40 @@ void input_variables_judge(SerialInputVar serial_input_var, \
 	return;
 }
 
+
 unsigned char smoke_over_10_secs = 0, smoke_frozen_1_min = 0;
 unsigned char phone_over_10_secs = 0, phone_frozen_1_min = 0;
 
 
 int unfreeze_1min_restriction(unsigned long input_param)
 {
-//	if(input_param == 0)
-//	{
-//		smoke_frozen_1_min = 0;
-//	}
-//	else
-//	{
-//		phone_frozen_1_min = 0;
-//	}
-	smoke_frozen_1_min = 0;
+	if(input_param == 0)
+	{
+		smoke_frozen_1_min = 0;
+		smoke_over_10_secs = 0;
+	}
+	else
+	{
+		phone_frozen_1_min = 0;
+		phone_over_10_secs = 0;
+	}
+	//smoke_frozen_1_min = 0;
 	return 0;
 }
 
 
 int depress_warn_afer_10_secs(unsigned long input_param)
 {
-//	if(input_param == 0)
-//	{
-//		smoke_over_10_secs = 1;
-//	}
-//	else
-//	{
-//		phone_over_10_secs = 1;
-//	}
+	if(input_param == 0)
+	{
+		smoke_over_10_secs = 1;
+	}
+	else
+	{
+		phone_over_10_secs = 1;
+	}
 
-	smoke_over_10_secs = 1;
+	//smoke_over_10_secs = 1;
 	return 0;
 }
 
@@ -339,7 +345,7 @@ void smoke_warn_logic_process(unsigned char warn, unsigned int *out_put)
 {
 	static unsigned char last_warn = 0;
 
-	if(warn == 0x04)  //if current warn is smoke
+	if(warn == 0x04)  //if current warn is smoking
 	{
 		if(smoke_frozen_1_min)  //if current state is frozen
 		{
@@ -374,12 +380,11 @@ void smoke_warn_logic_process(unsigned char warn, unsigned int *out_put)
 	}
 	else  // if current state is not smoking
 	{
-		smoke_over_10_secs = 0;
-		detach_user_timer(&test_timer[5]);  //delete 10 seconds timer of smoke warn
-
-		if(last_warn == 0x04)  // if last warn is smoke, but this warn is not smoke
+		//smoke_over_10_secs = 0;
+		//detach_user_timer(&test_timer[5]);  //delete 10 seconds timer of smoke warn
+		if(last_warn == 0x04)  // if current warn is not smoking but last warn is smoking
 		{
-			if(!smoke_frozen_1_min)
+			if(!smoke_frozen_1_min)  //if current state is not frozen
 			{
 				smoke_frozen_1_min = 1;  // freeze smoke warn for 1 minute
 
@@ -388,7 +393,17 @@ void smoke_warn_logic_process(unsigned char warn, unsigned int *out_put)
 				    init_user_timer(&test_timer[6], GET_TICKS_TEST+60000000, unfreeze_1min_restriction, 0);
 				    add_user_timer(&test_timer[6]);
 				}
+
+				//smoke_over_10_secs = 0;
+				//detach_user_timer(&test_timer[5]);  //delete 10 seconds timer of smoke warn
 			}
+
+			DEBUG_INFO(\n);
+		}
+		else
+		{
+			smoke_over_10_secs = 0;
+			detach_user_timer(&test_timer[5]);  //delete 10 seconds timer of smoke warn
 		}
 
 		*out_put = warn;
@@ -423,7 +438,7 @@ void phone_warn_logic_process(unsigned char warn, unsigned int *out_put)
 
 				*out_put = 0;
 			}
-			else
+			else  //if continuously phone within 10 seconds
 			{
 				*out_put = 0x08;
 
@@ -437,8 +452,8 @@ void phone_warn_logic_process(unsigned char warn, unsigned int *out_put)
 	}
 	else
 	{
-		phone_over_10_secs = 0;
-		detach_user_timer(&test_timer[7]);  //delete 10 seconds timer of phone warn
+		//phone_over_10_secs = 0;
+		//detach_user_timer(&test_timer[7]);  //delete 10 seconds timer of phone warn
 
 		if(last_warn == 0x08)  // if last warn is phone, but this warn is not phone
 		{
@@ -453,6 +468,11 @@ void phone_warn_logic_process(unsigned char warn, unsigned int *out_put)
 				}
 			}
 		}
+		else
+		{
+			phone_over_10_secs = 0;
+			detach_user_timer(&test_timer[7]);  //delete 10 seconds timer of phone warn
+		}
 
 		*out_put = warn;
 	}
@@ -463,7 +483,7 @@ void phone_warn_logic_process(unsigned char warn, unsigned int *out_put)
 
 void dfms_warn_mapping(unsigned int alarm, SerialOutputVar *serial_output_var)
 {
-	unsigned int output_result;
+	unsigned int output_result1, output_result2;
 
 	switch(alarm)
 	{
@@ -502,8 +522,9 @@ void dfms_warn_mapping(unsigned int alarm, SerialOutputVar *serial_output_var)
 		break;
 	}
 
-	smoke_warn_logic_process(serial_output_var->close_eye_one_level_warn, &output_result);
-	serial_output_var->close_eye_one_level_warn = output_result | 0xC0;
+	smoke_warn_logic_process(serial_output_var->close_eye_one_level_warn, &output_result1);
+	phone_warn_logic_process(output_result1, &output_result2);
+	serial_output_var->close_eye_one_level_warn = output_result2 | 0xC0;
 	serial_output_var->close_eye_two_level_warn = DFMS_State|0xF0;
 	return;
 }
@@ -545,6 +566,10 @@ int main(int argc, char *argv[])
 		init_user_timer(test_timer+i, GET_TICKS_TEST, delay_10S_func, 0);
 	}
 
+#ifdef FACTORY_TEST
+	init_factory_data(&factory_test_data);
+#endif
+
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
@@ -567,6 +592,7 @@ int main(int argc, char *argv[])
     pthread_attr_destroy(&attr);
 
 	Algo *algo = new Algo();
+	algo->init(Y8, 720, 1280);
 	algo->algoParam.callClassifyScore = 0.95f;
 	algo->algoParam.smokeClassifyScore = 0.95f;
 	algo->algoParam.yawnClassifyScore = 0.95f;
@@ -590,11 +616,11 @@ int main(int argc, char *argv[])
 
 	//报警队列时长(unit second)
 	// one determinant of alarm required time
-	algo->algoParam.smokeClassifyLevel = 2;
-	algo->algoParam.callClassifyLevel = 2;  //origin 2
-	algo->algoParam.attenLevel = 2;
-	algo->algoParam.yawnLevel = 2;
-	algo->algoParam.eyeLevel = 2;
+	algo->algoParam.smokeClassifyLevel = 2;  //smoke > 1S
+	algo->algoParam.callClassifyLevel = 6;   // phone > 4S
+	algo->algoParam.attenLevel = 5;  //distract > 3S
+	algo->algoParam.yawnLevel = 5;   // yawn > 3S
+	algo->algoParam.eyeLevel = 3;    // close eye > 2S
 	algo->algoParam.nopLevel = 10;
 
 	//报警队列报警阈值
@@ -602,15 +628,14 @@ int main(int argc, char *argv[])
 	algo->algoParam.smokeClassifyDeqConf = 0.6;
 	algo->algoParam.callClassifyDeqConf = 0.6;
 	algo->algoParam.attenDeqConf = 0.6;
-	algo->algoParam.yawnDeqConf = 0.8;
-	algo->algoParam.eyeDeqConf = 0.9;  //origin 0.6
+	algo->algoParam.yawnDeqConf = 0.6;
+	algo->algoParam.eyeDeqConf = 0.6;  //origin 0.6
 
-
+	algo->setAlgoParam(algo->algoParam);
 #ifdef CAMERA_ROTATE
-	algo->init(Y8, 1280, 720, algo->algoParam);
 	Mat yuv420_image = Mat(720, 1280, CV_8UC1);
 #else
-	algo->init(Y8, 720, 1280, algo->algoParam);
+
 	Mat yuv420_image = Mat(1280, 720, CV_8UC1);
 #endif
 
@@ -627,13 +652,29 @@ int main(int argc, char *argv[])
 		memcpy(yuv420_image.data, YUV420_buf, 1280*720);
 #else
 		//YUV420spRotateNegative90(yuv420_image.data, YUV420_buf, 1280, 720); //ratate cost 16ms
+#ifdef FACTORY_TEST
+		if(factory_test_data.ecu_mode == NORMAL_WROK)
+		{
+			YUV420spRotate90(yuv420_image.data, YUV420_buf, 1280, 720);
+		}
+		else
+		{
+			YUV420spRotate90(yuv420_image.data, factory_test_data.test_image, 1280, 720);
+		}
+#else
 		YUV420spRotate90(yuv420_image.data, YUV420_buf, 1280, 720);
+#endif
+
 #endif
 		cvtColor(yuv420_image, colorImage, CV_GRAY2BGR);
 		input_variables_judge(serial_input_var, &CAN_signal_flags);
 		warning_logic_state_machine(DFMS_health_state, CAN_signal_flags, &DFMS_State);
 
+#ifdef FACTORY_TEST
+		if(DFMS_State == ACTIVE || factory_test_data.ecu_mode == FACTORY_TEST)
+#else
 		if(DFMS_State == ACTIVE)
+#endif
 		{
 			alarm = algo->detectFrame(colorImage, 1, work_mode);
 		}
@@ -657,10 +698,9 @@ int main(int argc, char *argv[])
 			{
 				shmfifo_put(pSendComFifo, send_buf, send_buf_len);
 			}
-
-			last_alarm = alarm;
 		}
 
+		last_alarm = alarm;
 		usleep(100000);
 	}
 
@@ -669,7 +709,7 @@ int main(int argc, char *argv[])
 
 
 
-void save_camera_image()
+void save_camera_image( )
 {
     int image_width = IMAGE_WIDTH - 2*WIDTH_CUT;
     int image_height = IMAGE_HEIGHT -2*HEIGHT_CUT;

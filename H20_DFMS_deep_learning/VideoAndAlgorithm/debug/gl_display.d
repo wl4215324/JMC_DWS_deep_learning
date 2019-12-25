@@ -1050,7 +1050,8 @@ debug/gl_display.d: VideoAndDisply_Src/gl_display.cpp \
  VideoAndDisply_Src/framebuffer_display.h \
  VideoAndDisply_Src/video_layer.h VideoAndDisply_Src/sunxiMemInterface.h \
  VideoAndDisply_Src/DmaIon.h VideoAndDisply_Src/ion_alloc_list.h \
- VideoAndDisply_Src/video_layer_test.h
+ VideoAndDisply_Src/video_layer_test.h \
+ VideoAndDisply_Src/../Algorithm_Src/production_test.h
 
 VideoAndDisply_Src/fbdev/include/EGL/egl.h:
 
@@ -3165,3 +3166,5 @@ VideoAndDisply_Src/DmaIon.h:
 VideoAndDisply_Src/ion_alloc_list.h:
 
 VideoAndDisply_Src/video_layer_test.h:
+
+VideoAndDisply_Src/../Algorithm_Src/production_test.h:

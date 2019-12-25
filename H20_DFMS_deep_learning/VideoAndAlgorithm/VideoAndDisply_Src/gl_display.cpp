@@ -20,6 +20,10 @@
 #include "sunxiMemInterface.h"
 #include "video_layer_test.h"
 
+extern "C" {
+#include "../Algorithm_Src/production_test.h"
+}
+
 
 #define DISPLAY_NV21 1
 #define DISPLAY_NV21_GRAY
@@ -416,6 +420,8 @@ int display_buffer(char *buffer)
 //#define DISP_GPU
 //#define FRAME_BUFFER_DISP 1
 
+extern Factory_Test_Image factory_test_data;
+
 void* disp_image(void* argv)
 {
 	char gray_buf[1280*720] = {0, };
@@ -503,19 +509,33 @@ void* disp_image(void* argv)
 		if(i++ % 2 == 0)
 		{
 			pthread_mutex_lock(&camera_buf_lock);
-			memcpy((void *)pops1.vir, YUV420_buf, 1280*720*1.5);
+#ifdef FACTORY_TEST
+			if(factory_test_data.ecu_mode == NORMAL_WROK)
+			{
+				memcpy((void *)pops1.vir, factory_test_data.test_image, 1280*720*1.5);
+			}
+#else		else
+			{
+				memcpy((void *)pops1.vir, YUV420_buf, 1280*720*1.5);
+			}
+#endif
 			pthread_mutex_unlock(&camera_buf_lock);
-//			memset((void *)pops1.vir, 0x00, 1280*720*1.5);
-//			memcpy((void *)pops1.vir, yuv420p_buf1, 1280*720*1.5);
 		    layer.set_layer(&conf);
 		}
 		else
 		{
 			pthread_mutex_lock(&camera_buf_lock);
-			memcpy((void *)pops2.vir, YUV420_buf, 1280*720*1.5);
+#ifdef FACTORY_TEST
+			if(factory_test_data.ecu_mode == NORMAL_WROK)
+			{
+				memcpy((void *)pops2.vir, factory_test_data.test_image, 1280*720*1.5);
+			}
+#else		else
+			{
+				memcpy((void *)pops2.vir, YUV420_buf, 1280*720*1.5);
+			}
+#endif
 			pthread_mutex_unlock(&camera_buf_lock);
-//			memset((void *)pops2.vir, 0xFF, 1280*720*1.5);
-//			memcpy((void *)pops2.vir, yuv420p_buf2, 1280*720*1.5);
 		    layer.set_layer(&conf2);
 		}
 

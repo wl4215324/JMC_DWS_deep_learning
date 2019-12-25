@@ -11,6 +11,7 @@ unsigned char DFMS_health_state = 0;
 extern_signal_flags CAN_signal_flags = {0x3f};
 DFMS_state DFMS_State = CLOSE;
 
+
 void warning_logic_state_machine(unsigned char fault_or_normal, extern_signal_flags signal_flags,\
 		DFMS_state *state_machine)
 {

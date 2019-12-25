@@ -458,8 +458,8 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_VEHICLE_SPEED)
 	{
 		//serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 16);
-		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 48, 8);
-		DEBUG_INFO(vehicle_speed: %d\n, serial_input_var.vehicle_speed);
+		serial_input_var.vehicle_speed = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEHICLE_SPEED_INDEX+4, 56, 8);
+		//DEBUG_INFO(vehicle_speed: %d\n, serial_input_var.vehicle_speed);
 	}
 	else
 	{
@@ -472,7 +472,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_POWER_MODE)
 	{
 		serial_input_var.ps_power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+4, 5, 3);
-		DEBUG_INFO(ps_power_mode: %d\n, serial_input_var.ps_power_mode);
+		//DEBUG_INFO(ps_power_mode: %d\n, serial_input_var.ps_power_mode);
 //		power_mode_h = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_POWER_MODE_INDEX+4, 5, 3);
 	}
 	else
@@ -486,7 +486,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_DFMS_SWITCH)
 	{
 		serial_input_var.DFMS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX+4, 0, 2);
-		DEBUG_INFO(DFMS_switch: %d\n, serial_input_var.DFMS_switch);
+		//DEBUG_INFO(DFMS_switch: %d\n, serial_input_var.DFMS_switch);
 	}
 	else
 	{
@@ -499,7 +499,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_TURN_LIGHT)
 	{
 		serial_input_var.turn_light = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TURN_LIGHT_INDEX+4, 8, 4);
-		DEBUG_INFO(turn_light: %d\n, serial_input_var.turn_light);
+		//DEBUG_INFO(turn_light: %d\n, serial_input_var.turn_light);
 	}
 	else
 	{
@@ -511,21 +511,21 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+3)) == \
 			MESSAGE_ID_OF_BCM_BRAKE)
 	{
-		serial_input_var.bcm_power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 36, 2);
-		DEBUG_INFO(bcm_power_mode: %d\n, serial_input_var.bcm_power_mode);
+		serial_input_var.bcm_power_mode = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 5, 3);
+		//DEBUG_INFO(bcm_power_mode: %d\n, serial_input_var.bcm_power_mode);
 	}
 	else
 	{
 		return -1;
 	}
 
-	/* get brake switch from BCM */
+	/* get bcm brake switch from BCM */
 	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+1),\
 			*(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+3)) == \
 			MESSAGE_ID_OF_BCM_BRAKE)
 	{
 		serial_input_var.bcm_brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_BCM_BRAKE_INDEX+4, 36, 2);
-		DEBUG_INFO(bcm_brake_switch: %d\n, serial_input_var.bcm_brake_switch);
+		//DEBUG_INFO(bcm_brake_switch: %d\n, serial_input_var.bcm_brake_switch);
 	}
 	else
 	{
@@ -538,7 +538,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_RCM_GEAR)
 	{
 		serial_input_var.RCM_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_RCM_GEAR_INDEX+4, 8, 2);
-		DEBUG_INFO(RCM_gear: %d\n, serial_input_var.RCM_gear);
+		//DEBUG_INFO(RCM_gear: %d\n, serial_input_var.RCM_gear);
 	}
 	else
 	{
@@ -551,7 +551,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_DRIVER_DOOR)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 20, 1);
-		DEBUG_INFO(driver_door: %d\n, serial_input_var.driver_door);
+		//DEBUG_INFO(driver_door: %d\n, serial_input_var.driver_door);
 	}
 	else
 	{
@@ -564,7 +564,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_SIDE_DOOR)
 	{
 		serial_input_var.side_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_SIDE_DOOR_INDEX+4, 9, 1);
-		DEBUG_INFO(side_door: %d\n, serial_input_var.side_door);
+		//DEBUG_INFO(side_door: %d\n, serial_input_var.side_door);
 	}
 	else
 	{
@@ -577,7 +577,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_TCU_GEAR)
 	{
 		serial_input_var.TCU_gear = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TCU_GEAR_INDEX+4, 24, 8);
-		DEBUG_INFO(TCU_gear: %d\n, serial_input_var.TCU_gear);
+		//DEBUG_INFO(TCU_gear: %d\n, serial_input_var.TCU_gear);
 
 	}
 	else
@@ -591,7 +591,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_EBS_BRAKE)
 	{
 		serial_input_var.EBS_brake_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_EBS_BRAKE_INDEX+4, 6, 2);
-		DEBUG_INFO(EBS_brake_switch: %d\n, serial_input_var.EBS_brake_switch);
+		//DEBUG_INFO(EBS_brake_switch: %d\n, serial_input_var.EBS_brake_switch);
 	}
 	else
 	{
@@ -600,16 +600,16 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 
 	if(serial_input_var.vehicle_model == 0)
 	{
-		if((serial_input_var.ps_power_mode == 0x05) && \
-		   (serial_input_var.TCU_gear == 0xAA) && \
-		   (serial_input_var.EBS_brake_switch == 0x02))
+		if((serial_input_var.ps_power_mode != 0x05) && \
+		   (serial_input_var.TCU_gear != 0xAA) && \
+		   (serial_input_var.EBS_brake_switch != 0x02))
 		{
 			serial_input_var.vehicle_model = 1;  //high configuration
 		}
 
-		if((serial_input_var.bcm_power_mode == 0x05) && \
-		   (serial_input_var.RCM_gear == 0x02) && \
-		   (serial_input_var.bcm_brake_switch == 0x02))
+		if((serial_input_var.bcm_power_mode != 0x05) && \
+		   (serial_input_var.RCM_gear != 0x02) && \
+		   (serial_input_var.bcm_brake_switch != 0x02))
 		{
 			serial_input_var.vehicle_model = 2; //middle configuration
 		}

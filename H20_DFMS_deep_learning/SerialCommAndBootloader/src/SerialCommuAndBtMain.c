@@ -17,6 +17,8 @@
 
 //shmfifo *p_shmfifo = shmfifo_init(10000, 2000);
 
+extern BootloaderBusinessLogic JMC_bootloader_logic;
+
 
 int main(int argc, char* argv[])
 {
@@ -30,10 +32,6 @@ int main(int argc, char* argv[])
 	unsigned char send_buf[256];
 	struct timeval tp;
 
-	struct timeval tv = {
-			.tv_sec = 3,
-			.tv_usec = 500000,
-	};
 
 	if((fd = open_set_serial_port()) < 0)  //initialize rs232 ttyS1
 	{
@@ -79,6 +77,11 @@ int main(int argc, char* argv[])
 	{
 		DEBUG_INFO(pSendComFifo init success!\n);
 	}
+
+	struct timeval tv = {
+			.tv_sec = 2,
+			.tv_usec = 50000,
+	};
 
 	while(true)
 	{
@@ -127,7 +130,7 @@ int main(int argc, char* argv[])
 			    	}
 
 			    	goto send_fifo_msg;
-				}
+				}  //D3, D5 and D6 message process
 			    else if((D6_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) || \
 				   (D3_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) || \
 				   (D5_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID)) )
@@ -156,7 +159,7 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				usleep(100000);
+				usleep(200000);
 			}
 
 send_fifo_msg:
@@ -164,15 +167,20 @@ send_fifo_msg:
 	    	if(shmfifo_len(pSendComFifo) >= D2_MESSAGE_LENGTH)
 	    	{
 	    		ret_send_length = shmfifo_get(pSendComFifo, send_buf, D2_MESSAGE_LENGTH);
-	    		send_spec_len_data(fd, send_buf, ret_send_length);
 
-	    		DEBUG_INFO(pSendComFifo send data: );
-				for(i=0; i<ret_send_length; i++ )
-				{
-					printf("%02X", send_buf[i]);
-				}
+	    		/* if bootloader is active, stop sending D2 message to uart and just send D6 message */
+	    		if(JMC_bootloader_logic.bootloader_subseq < DownloadDriver)
+	    		{
+	    			send_spec_len_data(fd, send_buf, ret_send_length);
 
-			    printf("\n");
+		    		DEBUG_INFO(pSendComFifo send data: );
+					for(i=0; i<ret_send_length; i++ )
+					{
+						printf("%02X", send_buf[i]);
+					}
+
+				    printf("\n");
+	    		}
 	    	}
 		}
 		else

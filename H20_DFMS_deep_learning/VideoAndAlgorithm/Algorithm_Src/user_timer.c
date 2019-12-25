@@ -74,7 +74,7 @@ void TimerInit(void)
 void init_user_timer(user_timer *timer, unsigned long long expires, \
 		int (*func)(unsigned long), unsigned long data)
 {
-	INIT_LIST_HEAD(&timer->entry);
+	INIT_LIST_HEAD(&(timer->entry));
 	timer->expires = expires;
 	timer->function = func;
 	timer->data = data;
@@ -312,6 +312,7 @@ static int _modify_user_timer(tvec_base *base, unsigned long new_expires, user_t
 	_add_user_timer(base, timer);
 	return 0;
 }
+
 
 int modify_user_timer(unsigned long new_expires, user_timer *timer)
 {

@@ -15,8 +15,6 @@
 #include "objectDetect.hpp"
 #include "detect.h"
 
-
-
 using namespace cv;
 using namespace std;
 
@@ -39,8 +37,7 @@ enum ALARM_TYPE {
     BLINK_ALARM = 0x17,      //眨眼报警
     BLOCKGLASS_ALARM = 0x18,  //红外阻断墨镜报警
     PHONE_ALARM = 0x19,      //手+手机物品报警
-    HAND_OFF_ALARM = 0x1A, //脱离方向盘
-	COVER_ALARM = 0x1B
+    HAND_OFF_ALARM = 0x20, //脱离方向盘
 };
 
 //报警类型，用于报警队列
@@ -54,8 +51,7 @@ enum {
     PHONE_TYPE = 0x07,         //手+手机
     CIGARETTE_TYPE = 0x08,     //手+烟
     BLINK_TYPE = 0x09,         //眨眼
-    BLOCKGLASS_TYPE = 0x10,    //红外阻断
-	COVER_TYPE = 0x11
+    BLOCKGLASS_TYPE = 0x10    //红外阻断
 };
 
 //检测类别
@@ -109,8 +105,7 @@ typedef struct {
 class Algo {
 public:
     Algo();
-    void setAlgoParam(stAlgoParam algoParam);
-    int init(int fomat, int width, int height);
+    int init(int fomat, int width, int height, stAlgoParam algoParam);
     int detectFrame(cv::Mat &frame, float speed, int& demoMode);
     int release();
 
@@ -126,6 +121,7 @@ public:
     void ClearActionResult(int flag);
     void ClearAllResult();
 
+
     stAlgoParam algoParam;   //param
 
 //private:
@@ -133,7 +129,7 @@ public:
     int ERR_CNT = 25;
     int errCnt = 0;
 
-    int tmpWidth = 0;
+    int tmpHeight = 0;
 
     int frameWidth;
     int frameHeight;
@@ -156,7 +152,6 @@ public:
     int trackFlag = 0;
     Rect kcfResult; //跟踪结果
 
-    int tmpHeight = 0;
 
     typedef struct {
         int dataSize; //队列大小
@@ -176,7 +171,6 @@ public:
     stActionCnt stCigarette;//手+烟
     stActionCnt stBlink; //眨眼
     stActionCnt stBlockGlass;//红外阻断
-    stActionCnt stCover;
 
     Mat classifyFrame;
     float predictScore;
@@ -195,6 +189,7 @@ public:
 
 //ncnn
     DetectNcnn detectNcnn;
+
 };
 
 #endif //ADAS_DWSAPP_ALGO_H_H

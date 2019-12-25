@@ -16,9 +16,9 @@
 #include <fcntl.h>
 #include <string.h>
 #include <pthread.h>
+
 #include "applicfg.h"
-//#include "serial_port_commu.h"
-//#include "bootloader.h"
+
 
 
 #define MAKE_WORD(hig_byte, low_byte) (unsigned short) (((hig_byte&0x00FF)<<8) |(low_byte&0x00ff))
@@ -278,7 +278,7 @@ extern D6MessageDataType D6_mesg_data;
 
 extern int fd;
 extern int serial_commu_recv_state;
-extern KeyValuePair key_value_list[CONFIG_PARAMS_COUNT];
+
 
 //void* serial_commu_app(void* argv);
 //int serial_commu_app( );
@@ -291,6 +291,6 @@ extern int send_spec_len_data(int fd, unsigned char* send_buf, unsigned short sp
 extern int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 		unsigned char* send_buf, int* send_buf_len);
 
-unsigned short calc_check_sum(unsigned char* data_buf, int data_len);
+extern unsigned short calc_check_sum(unsigned char* data_buf, int data_len);
 
 #endif /* SERIAL_PARSE_PACK_PARSE_H_ */

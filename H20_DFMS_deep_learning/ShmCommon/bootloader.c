@@ -138,8 +138,8 @@ static int __bootloader_logic_init(BootloaderBusinessLogic *bootloader_logic)
 		return -1;
 	}
 
-	//bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
-	bootloader_logic->bootloader_subseq = DownloadDriver;
+	bootloader_logic->bootloader_subseq = CheckPreprogrammingCondition;
+	//bootloader_logic->bootloader_subseq = DownloadDriver;
 	bootloader_logic->seed.level_FBL = 0;
 	bootloader_logic->seed.level_one = 0;
 	bootloader_logic->secret_key.level_FBL = 0;
@@ -397,9 +397,6 @@ static int save_data_as_specified_file(BootloaderBusinessLogic *bootloader_logic
 								return -1;
 							}
 
-//							printf("write bytes: %d\n", fwrite(data_seg_1->data+CUSTOMIZED_HEADER_SIZE, 1, data_seg_1->segment_len-CUSTOMIZED_HEADER_SIZE, \
-//									src_file));
-
 							DEBUG_INFO(already write file: %s\n, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
 							strcpy(file_path_name, data_seg_1->data+HEADER_FILE_FULL_NAME_START);
 						}
@@ -419,9 +416,9 @@ static int save_data_as_specified_file(BootloaderBusinessLogic *bootloader_logic
 
 			if(src_file)
 			{
+				fflush(src_file);
+				fsync(fileno(src_file));
 				fclose(src_file);
-				sync();
-				sync();
 				chmod(file_path_name, 0777);
 				DEBUG_INFO(write file finished\n);
 			}
@@ -1105,8 +1102,9 @@ create_app_logicblock:
 				}
 
 				/* if address or size is invalid, then reply negative response */
-				if((ptr_datasegment->mem_addr != APP_DOWNLOAD_ADDR) || \
-					(ptr_datasegment->mem_size < APP_LENGTH_OF_BYTES))
+//				if((ptr_datasegment->mem_addr != APP_DOWNLOAD_ADDR) || \
+//					(ptr_datasegment->mem_size < APP_LENGTH_OF_BYTES))
+				if(ptr_datasegment->mem_addr != APP_DOWNLOAD_ADDR)
 				{
 					/* negative response */
 					*reply_mesg = 0x7F;
@@ -1491,26 +1489,6 @@ error_exit:
 				}
 			}
 
-#if 0
-			list_for_each(temp_list_head, &bootloader_logic->driver_list_head)
-			{
-				driver_logicblock_node = list_entry(temp_list_head, \
-						LogicBlockNode, logic_block_list);
-
-				if(driver_logicblock_node->logic_block_data.block_download_result != 1)
-				{
-					/* negative response */
-					*reply_mesg = 0x71;
-					*(reply_mesg+1) = 0x01;
-					*(reply_mesg+2) = 0xFF;
-					*(reply_mesg+3) = 0x01;
-					*(reply_mesg+4) = 0x01;
-					*reply_mesg_len = 5;
-					return 0;
-				}
-			}
-#endif
-
             /* positive response */
 			*reply_mesg = 0x71;
 			*(reply_mesg+1) = 0x01;
@@ -1520,14 +1498,14 @@ error_exit:
 			*reply_mesg_len = 5;
 
 			//save_app_list_as_file(bootloader_logic);
-			bootloader_logic->bootloader_subseq = ResetECU;
+			bootloader_completetion(bootloader_logic);
+			bootloader_logic->bootloader_subseq = DownloadDriver;
 			return 0;
 		}
 	}
 
 	return -1;
 }
-
 
 
 static void bootloader_free_mem(BootloaderBusinessLogic *bootloader_logic)
@@ -1654,8 +1632,8 @@ static int __bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, 
 	}
 
 	DEBUG_INFO(bootloader_logic->bootloader_subseq: %d\n, bootloader_logic->bootloader_subseq);
-
 	DEBUG_INFO(can_mesg: );
+
 	for(i=0; i<mesg_len; i++)
 	{
 		printf("%02X ", *(can_mesg+i));
@@ -1688,13 +1666,13 @@ static int __bootloader_main_process(BootloaderBusinessLogic *bootloader_logic, 
 		break;
 
 	case CheckPreprogrammingCondition:
-		if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && (0x02 == *(can_mesg+2)) \
-				&& (0x03 == *(can_mesg+3)))
+		if((0x31 == *can_mesg) && (0x01 == *(can_mesg+1)) && (0xF0 == *(can_mesg+2)) \
+				&& (0x02 == *(can_mesg+3)))
 		{
 			*reply_mesg = 0x71;
 			*(reply_mesg+1) = 0x01;
-			*(reply_mesg+2) = 0x02;
-			*(reply_mesg+3) = 0x03;
+			*(reply_mesg+2) = 0xF0;
+			*(reply_mesg+3) = 0x02;
 			*(reply_mesg+4) = 0x00;
 			*reply_mesg_len = 5;
 			//bootloader_logic->bootloader_subseq = SetDTCoff;

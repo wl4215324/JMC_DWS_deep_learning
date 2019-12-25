@@ -46,7 +46,7 @@
 #define  CONTROL_DTC_SETTING  0x85
 #define  MAX_NUMBER_OF_BLOCK_LENG  0x100
 
-#define  APPLICATION_NAME  "/home/user/jmc_dws"
+#define  APPLICATION_NAME  "/extp/user/jmc_dws"
 #define  APPLICATION_NAME_BAKUP "/home/user/jmc_dws_bakup"
 
 #define  DRIVER_DOWNLOAD_ADDR   0x01

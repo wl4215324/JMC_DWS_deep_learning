@@ -2,7 +2,8 @@
 C_SRCS := \
 ./Algorithm_Src/warning_logic.c \
 ./Algorithm_Src/timer.c \
-./Algorithm_Src/user_timer.c
+./Algorithm_Src/user_timer.c \
+./Algorithm_Src/production_test.c
 
 
 CPP_SRCS := \
@@ -14,13 +15,15 @@ OBJS += \
 ./debug/app_main.o \
 ./debug/warning_logic.o \
 ./debug/timer.o \
-./debug/user_timer.o
+./debug/user_timer.o \
+./debug/production_test.o
 
 
 C_DEPS := \
 ./debug/warning_logic.d \
 ./debug/timer.d \
-./debug/user_timer.d
+./debug/user_timer.d \
+./debug/production_test.d
 
 
 CPP_DEPS := \
@@ -60,10 +63,10 @@ LIBS += -L$(ROOTFS_DIR)/caffe/lib -lboost_system -lopenblas -lboost_filesystem -
 
 LIBS +=../ShmCommon/CommLib.a ./dsm.a ./libncnn.a
 
-LF += -L/home/tony/eclipse-workspace/T7_Protect/rootfs/caffe/lib \
-      -lboost_system -lopenblas -lboost_filesystem -lboost_regex -lboost_atomic -lcaffe -lprotobuf -lgfortran \
-      -lboost_thread -lhdf5 -lhdf5_hl -lpng16 -lglog -lgflags \
-	  -lrt \
+#LF += -L/home/tony/eclipse-workspace/T7_Protect/rootfs/caffe/lib \
+#      -lboost_system -lopenblas -lboost_filesystem -lboost_regex -lboost_atomic -lcaffe -lprotobuf -lgfortran \
+#      -lboost_thread -lhdf5 -lhdf5_hl -lpng16 -lglog -lgflags \
+#	  -lrt \
 
 
 # Each subdirectory must supply rules for building sources it contributes
