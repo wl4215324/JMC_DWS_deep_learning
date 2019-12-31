@@ -124,6 +124,7 @@ void input_variables_judge(SerialInputVar serial_input_var, extern_signal_flags 
 		CAN_signal_flags->bits.vehicle_speed_flag = 1;
 	}
 
+#ifdef ADD_CAN_SIGNAL_LOGIC
 	if(serial_input_var.left_turn_light || serial_input_var.right_turn_light)  //if any of turn lights is lighted
 	{
 		CAN_signal_flags->bits.turn_light_flag = 1;
@@ -168,6 +169,13 @@ void input_variables_judge(SerialInputVar serial_input_var, extern_signal_flags 
 	{
 		CAN_signal_flags->bits.dfms_enable_flag = 1;
 	}
+#else
+	CAN_signal_flags->bits.turn_light_flag = 0;
+	CAN_signal_flags->bits.door_flag = 0;
+	CAN_signal_flags->bits.gear_flag = 0;
+	CAN_signal_flags->bits.brake_flag = 0;
+	CAN_signal_flags->bits.dfms_enable_flag = 0;
+#endif
 
 	return;
 }
@@ -542,6 +550,7 @@ int init_algorithm()
 
 	return 0;
 }
+
 
 void* parse_serial_commu(void* argv)
 {
