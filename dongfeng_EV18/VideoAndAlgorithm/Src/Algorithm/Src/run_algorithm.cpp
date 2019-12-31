@@ -5,12 +5,13 @@
  *      Author: tony
  */
 
-#include <pthread.h>
+
 #include "run_algorithm.hpp"
 #include "algo.h"
 #include "algoFXP.h"
 
 extern "C" {
+#include <pthread.h>
 #include "serial_pack_parse.h"
 #include "producer_consumer_shmfifo.h"
 #include "warning_logic.h"
@@ -180,17 +181,22 @@ int warn_delay_process(unsigned long data)
 #define  WARN_INTERVAL_10S  10000000
 #define  WARN_RECORD_DELAY_5S  5000000
 
+
 void dfms_warn_mapping(unsigned char off_wheel_alarm, unsigned char dfms_alarm, SerialOutputVar *serial_output_var, \
 		DFMS_state dfms_work_state)
 {
 	if(off_wheel_alarm == WHEEL_ALARM)
 	{
+#ifdef  ADD_WARN_INTERVAL
 		if(is_timer_detach(warn_interval_timers))
 		{
 			init_user_timer(warn_interval_timers, GET_TICKS_TEST+WARN_INTERVAL_10S, warn_delay_process, 0);
 			add_user_timer(warn_interval_timers);
 			serial_output_var->DFMS_warn.off_wheel = 1;
 		}
+#else
+		serial_output_var->DFMS_warn.off_wheel = 1;
+#endif
 	}
 	else
 	{
@@ -200,48 +206,69 @@ void dfms_warn_mapping(unsigned char off_wheel_alarm, unsigned char dfms_alarm, 
 	switch(dfms_alarm)
 	{
 	case YAWN_ALARM: //打哈欠报警
+#ifdef  ADD_WARN_INTERVAL
 		if(is_timer_detach(warn_interval_timers+1))
 		{
 			init_user_timer(warn_interval_timers+1, GET_TICKS_TEST+WARN_INTERVAL_10S, warn_delay_process, 1);
 			add_user_timer(warn_interval_timers+1);
 		    serial_output_var->DFMS_warn.yawn = 1;
 		}
+#else
+		serial_output_var->DFMS_warn.yawn = 1;
+#endif
 		break;
 
 	case ATTEN_ALARM: //分神
+#ifdef  ADD_WARN_INTERVAL
 		if(is_timer_detach(warn_interval_timers+2))
 		{
 			init_user_timer(warn_interval_timers+2, GET_TICKS_TEST+WARN_INTERVAL_10S, warn_delay_process, 2);
 			add_user_timer(warn_interval_timers+2);
 		    serial_output_var->DFMS_warn.distraction = 1;
 		}
+#else
+		serial_output_var->DFMS_warn.distraction = 1;
+#endif
 		break;
 
 	case CALL_ALARM: //打电话报警
+#ifdef  ADD_WARN_INTERVAL
 		if(is_timer_detach(warn_interval_timers+3))
 		{
 			init_user_timer(warn_interval_timers+3, GET_TICKS_TEST+WARN_INTERVAL_10S, warn_delay_process, 3);
 			add_user_timer(warn_interval_timers+3);
 		    serial_output_var->DFMS_warn.phoning = 1;
 		}
+#else
+		serial_output_var->DFMS_warn.phoning = 1;
+#endif
+
 		break;
 
 	case SMOKE_ALARM: //抽烟报警
+#ifdef  ADD_WARN_INTERVAL
 		if(is_timer_detach(warn_interval_timers+4))
 		{
 			init_user_timer(warn_interval_timers+4, GET_TICKS_TEST+WARN_INTERVAL_10S, warn_delay_process, 4);
 			add_user_timer(warn_interval_timers+4);
 		    serial_output_var->DFMS_warn.smoking = 1;
 		}
+#else
+		serial_output_var->DFMS_warn.smoking = 1;
+#endif
 		break;
 
 	case EYES_ALARM: //闭眼报警
+#ifdef  ADD_WARN_INTERVAL
 		if(is_timer_detach(warn_interval_timers+5))
 		{
 			init_user_timer(warn_interval_timers+5, GET_TICKS_TEST+WARN_INTERVAL_10S, warn_delay_process, 5);
 			add_user_timer(warn_interval_timers+5);
 		    serial_output_var->DFMS_warn.close_eye = 1;
 		}
+#else
+		serial_output_var->DFMS_warn.close_eye = 1;
+#endif
 		break;
 
 	default:
@@ -249,29 +276,9 @@ void dfms_warn_mapping(unsigned char off_wheel_alarm, unsigned char dfms_alarm, 
 		break;
 	}
 
-	if(serial_output_var->DFMS_warn_bits & 0x5E)
-	{
-		if(is_timer_detach(dsm_video_record->file_store_timer))
-		{
-			if((dsm_video_record->file_status->file_dir_status == FILE_DIR_NORMAL) && \
-				genfilename(dsm_video_record->video_file_name, dsm_video_record->file_status) == 0)
-			{
-				dsm_video_record->sd_card_status = 0;
-				init_user_timer(dsm_video_record->file_store_timer, GET_TICKS_TEST+WARN_RECORD_DELAY_5S, notify_save_file, \
-						(unsigned long)dsm_video_record);
-				add_user_timer(dsm_video_record->file_store_timer);
-			}
-			else
-			{
-				dsm_video_record->sd_card_status = -1;
-			}
-		}
-	}
-
 	serial_output_var->DFMS_work_state = dfms_work_state;
 	return;
 }
-
 
 
 void* run_DFMS_algorithm(void *argc)
@@ -304,10 +311,18 @@ void* run_DFMS_algorithm(void *argc)
 
 	//报警队列时长(unit second)
 	// one determinant of alarm required time
+	/*
 	algo->algoParam.smokeClassifyLevel = 7;
 	algo->algoParam.callClassifyLevel = 12;  //origin 2
 	algo->algoParam.attenLevel = 4;
 	algo->algoParam.yawnLevel = 4;
+	algo->algoParam.eyeLevel = 2;
+	algo->algoParam.nopLevel = 10;
+	*/
+	algo->algoParam.smokeClassifyLevel = 2;
+	algo->algoParam.callClassifyLevel = 2;  //origin 2
+	algo->algoParam.attenLevel = 2;
+	algo->algoParam.yawnLevel = 2;
 	algo->algoParam.eyeLevel = 2;
 	algo->algoParam.nopLevel = 10;
 
@@ -315,7 +330,7 @@ void* run_DFMS_algorithm(void *argc)
 	// the other determinant of alarm required time
 	algo->algoParam.smokeClassifyDeqConf = 0.6;
 	algo->algoParam.callClassifyDeqConf = 0.6;
-	algo->algoParam.attenDeqConf = 0.8;
+	algo->algoParam.attenDeqConf = 0.6;
 	algo->algoParam.yawnDeqConf = 0.6;
 	algo->algoParam.eyeDeqConf = 0.6;  //origin 0.6
 
@@ -328,7 +343,6 @@ void* run_DFMS_algorithm(void *argc)
 	unsigned char last_dfms_alarm = 0;
 	unsigned char temp_fxp_alarm = 0;
 	unsigned char last_fxp_alarm = 0;
-
 
 	int demo_mode = 1;
 
@@ -346,9 +360,9 @@ void* run_DFMS_algorithm(void *argc)
 
 		cvtColor(yuv420_image, colorImage, CV_GRAY2BGR);
 		input_variables_judge(serial_input_var, &CAN_signal_flags);
-		//DEBUG_INFO(CAN_signal_flags: %02x\n, CAN_signal_flags.signal_state);
+		DEBUG_INFO(CAN_signal_flags: %02x\n, CAN_signal_flags.signal_state);
 		warning_logic_state_machine(DFMS_health_state, CAN_signal_flags, &DFMS_State);
-		//DEBUG_INFO(DFMS_State is : %0d\n, DFMS_State);
+		DEBUG_INFO(DFMS_State is : %0d\n, DFMS_State);
 
 		if(DFMS_State == ACTIVE)
 		{
@@ -378,6 +392,28 @@ void* run_DFMS_algorithm(void *argc)
 		pthread_mutex_lock(&serial_output_var_mutex);
 		dfms_warn_mapping(temp_fxp_alarm, dfms_alarm, &serial_output_var, DFMS_State);
 		pthread_mutex_unlock(&serial_output_var_mutex);
+
+#ifdef SAVE_WARN_VIDEO_FILE
+	/* if dws warning happend */
+	if((serial_output_var.DFMS_warn_bits) & 0x5E)
+	{
+		if(is_timer_detach(dsm_video_record->file_store_timer))
+		{
+			if((dsm_video_record->file_status->file_dir_status == FILE_DIR_NORMAL) && \
+				genfilename(dsm_video_record->video_file_name, dsm_video_record->file_status) == 0)
+			{
+				dsm_video_record->sd_card_status = 0;
+				init_user_timer(dsm_video_record->file_store_timer, GET_TICKS_TEST+WARN_RECORD_DELAY_5S, notify_save_file, \
+						(unsigned long)dsm_video_record);
+				add_user_timer(dsm_video_record->file_store_timer);
+			}
+			else
+			{
+				dsm_video_record->sd_card_status = -1;
+			}
+		}
+	}
+#endif
 
 		if((last_dfms_alarm != dfms_alarm) || (last_fxp_alarm != temp_fxp_alarm))
 		{

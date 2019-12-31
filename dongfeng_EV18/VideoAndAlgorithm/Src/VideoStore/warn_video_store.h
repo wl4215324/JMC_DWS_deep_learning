@@ -24,6 +24,8 @@
 #define  MAX_BIT_RATE_MBIT  8
 #define  MAX_FRAME_RATE  30
 
+//#define  SAVE_WARN_VIDEO_FILE
+
 typedef struct {
 	T7_Video_Encode *t7_video_encode;
 	Video_Queue *video_file_queue;

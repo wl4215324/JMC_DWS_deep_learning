@@ -3,5 +3,5 @@
 int init_video_layer();
 int dsm_camera_display(unsigned int phy_addr);
 int monitor_camera_display(unsigned int phy_addr);
-int video_layer_test();
+void video_layer_test(void *argv);
 #endif

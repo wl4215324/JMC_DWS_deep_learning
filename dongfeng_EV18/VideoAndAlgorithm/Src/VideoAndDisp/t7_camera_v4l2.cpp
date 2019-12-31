@@ -1025,7 +1025,7 @@ void* capture_video(void* para)
 				ret = ioctl(dsm_camera_fd, VIDIOC_DQBUF, buf);
 				if (ret < 0)
 				{
-					printf("GetPreviewFrame: VIDIOC_DQBUF Failed, %s\n", strerror(errno));
+				    printf("GetPreviewFrame: VIDIOC_DQBUF Failed, %s\n", strerror(errno));
 				}
 
 				v4l2_buf_addr_phy_Y = buf->m.offset;	// - 0x20000000;  //dram addr offset for ve
@@ -1037,7 +1037,7 @@ void* capture_video(void* para)
 				#endif
 
 				dsm_camera_display(v4l2_buf_addr_phy_Y);
-
+/*
 				if(dsm_video_record->sd_card_status == 0)
 				{
 					encode_video_frame_according_to_vir_addr(dsm_video_record->t7_video_encode, \
@@ -1047,9 +1047,10 @@ void* capture_video(void* para)
 							dsm_video_record->t7_video_encode->outputBuffer.pData0, \
 							dsm_video_record->t7_video_encode->outputBuffer.nSize0);
 				}
+*/
 
 //				if(encode_cnt++ < 250)
-				{
+//				{
 //					encode_one_frame_h264((unsigned char*)mMapMem.mem[buf->index], \
 //							((unsigned char*)mMapMem.mem[buf->index])+1280*720);
 //					encode_video_frame_according_to_vir_addr(video_encoder, (unsigned char*)mMapMem.mem[buf->index], \
@@ -1057,9 +1058,9 @@ void* capture_video(void* para)
 //
 //					push_data_into_video_queue(video_encoded_queue, video_encoder->outputBuffer.pData0, \
 //							video_encoder->outputBuffer.nSize0);
-				}
+//				}
 //				else
-				{
+//				{
 					//free_h264_encode();
 					//destroy_video_encoder(&video_encoder);
 
@@ -1075,7 +1076,7 @@ void* capture_video(void* para)
 //				    fd_video = fopen(h264_video_name, "w");
 //				    fwrite(video_encoder->sps_pps_data.pBuffer, video_encoder->sps_pps_data.nLength, 1, fd_video);
 //					encode_cnt = 0;
-				}
+//				}
 
 				copy_dfms_image((unsigned char*)mMapMem.mem[buf->index]); //virtual addr
 

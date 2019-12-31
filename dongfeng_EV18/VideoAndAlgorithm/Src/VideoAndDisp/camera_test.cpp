@@ -53,16 +53,18 @@ int main(int argc, char **argv)
 	signal(SIGKILL, signal_handler);  //kill signal for kill
 	signal(SIGSEGV, signal_handler);  // signal for segment fault
 */
+
 	TimerInit();
 
+#ifdef SAVE_WARN_VIDEO_FILE
 	dsm_video_record = init_video_store(1280, 720, 1280, 720, 5, 30, VENC_CODEC_H264);
-
 
 	if(dsm_video_record == (Video_File_Resource*)(-1))
 	{
 		printf("dsm_video_record initial error!\n");
 		return 0;
 	}
+#endif
 
     pthread_attr_t attr;
     pthread_attr_init(&attr);
@@ -70,16 +72,23 @@ int main(int argc, char **argv)
 
     pthread_t video_and_disp, dfms_task, monitor_tast;
     pthread_t dsm_video_record_task;
+
+//    int result = pthread_create(&video_and_disp, &attr, video_layer_test, NULL);
+//    pthread_attr_destroy(&attr);
+
     int result = pthread_create(&video_and_disp, &attr, capture_video, NULL);
+
+#ifdef SAVE_WARN_VIDEO_FILE
     result = pthread_create(&dsm_video_record_task, &attr, save_warn_video, (void*)dsm_video_record);
+#endif
+
     pthread_attr_destroy(&attr);
 
+    /* run algorithms for dws and off-wheel */
     if(!init_algorithm())
     {
-    	run_algorithm();
+    	run_algorithm( );
     }
-
-
 
     while(1)
     {

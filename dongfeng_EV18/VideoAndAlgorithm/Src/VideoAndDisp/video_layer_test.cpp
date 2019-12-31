@@ -2,6 +2,10 @@
 #include "sunxiMemInterface.h"
 #include "G2dApi.h"
 
+extern "C" {
+#include <stdio.h>
+}
+
 int alloc_nv41_mem(int w, int h,paramStruct_t*pops)
 {
     int iRet;
@@ -33,7 +37,38 @@ int alloc_nv41_mem(int w, int h,paramStruct_t*pops)
     return 0;
 }
 
-int video_layer_test()
+
+int read_yuv_image_file(void *read_buf)
+{
+	if(read_buf == NULL)
+	{
+		return -1;
+	}
+
+	FILE *fp = fopen("/extp/video2.yuv", "r");
+	unsigned int file_len = 0;
+
+	if(fp == NULL)
+	{
+		return -1;
+	}
+
+	fseek(fp, 0, SEEK_END);
+	file_len = ftell(fp);
+
+	if(file_len)
+	{
+		fseek(fp, 0, SEEK_SET);
+		fread(read_buf, file_len, 1, fp);
+	}
+
+	fclose(fp);
+	return file_len;
+}
+
+
+
+void* video_layer_test(void *argv)
 {
     VideoLayer::LayerCon conf;
 #if 0
@@ -54,12 +89,13 @@ int video_layer_test()
     printf("pops.phy = %x pops.vir = %x\n", pops.phy, pops.vir);
 
     //memset((void *)pops.vir, 0xff/2, 1280*720*1.5);
-    memset((void *)pops.vir, 0, 1280*720*1.5);
+    memset((void *)pops.vir, 0xC8, 1280*720*1.5);
+    read_yuv_image_file((void *)pops.vir);
 
     conf.dst_x = 0;
     conf.dst_y = 0;
-    conf.dst_w = 1280;
-    conf.dst_h = 720;
+    conf.dst_w = 720;
+    conf.dst_h = 480;
     conf.ori_w = 1280;
     conf.ori_h = 720;
     conf.layer_id = 0;
@@ -70,21 +106,21 @@ int video_layer_test()
     VideoLayer layer{};
     layer.set_layer(&conf);
 
-
     VideoLayer::LayerCon conf2;
-
-    alloc_nv41_mem(1280, 720, &pops);
+    paramStruct_t pops2{};
+    alloc_nv41_mem(1280, 720, &pops2);
     conf2.dst_x = 0;
     conf2.dst_y = 0;
-    conf2.dst_w = 1280;
-    conf2.dst_h = 720;
+    conf2.dst_w = 720;
+    conf2.dst_h = 480;
     conf2.ori_w = 1280;
     conf2.ori_h = 720;
     conf2.layer_id = 0;
-    conf2.phy_addr =  pops.phy;
+    conf2.phy_addr =  pops2.phy;
     conf2.enable = 1;
     conf2.zorder = 2;
-    memset((void *)pops.vir, 0xff, 1280*720*1.5);
+    memset((void *)pops2.vir, 0xC8, 1280*720*1.5);
+    read_yuv_image_file((void *)pops2.vir);
 
     while(1){
 #if 0
@@ -94,13 +130,14 @@ int video_layer_test()
     usleep(10000);
 #else
     layer.set_layer(&conf);
-    usleep(22000);
+    usleep(100000);
     layer.set_layer(&conf2);
-    usleep(22000);
+    usleep(100000);
 #endif
 
     }
-    return 0;
+
+    return NULL;
 }
 
 

@@ -43,7 +43,6 @@ enum ALARM_TYPE {
 	COVER_ALARM = 0x1B
 };
 
-
 //报警类型，用于报警队列
 enum {
     EYE_ACTION_TYPE = 0x01, //闭眼
@@ -157,6 +156,7 @@ public:
     int trackFlag = 0;
     Rect kcfResult; //跟踪结果
 
+    int tmpHeight = 0;
 
     typedef struct {
         int dataSize; //队列大小
