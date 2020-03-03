@@ -368,14 +368,14 @@ void* run_DFMS_algorithm(void *argc)
 
 		cvtColor(yuv420_image, colorImage, CV_GRAY2BGR);
 		input_variables_judge(serial_input_var, &CAN_signal_flags);
-		DEBUG_INFO(CAN_signal_flags: %02x\n, CAN_signal_flags.signal_state);
+		//DEBUG_INFO(CAN_signal_flags: %02x\n, CAN_signal_flags.signal_state);
 		warning_logic_state_machine(DFMS_health_state, CAN_signal_flags, &DFMS_State);
-		DEBUG_INFO(DFMS_State is : %0d\n, DFMS_State);
+		//DEBUG_INFO(DFMS_State is : %0d\n, DFMS_State);
 
 		if(DFMS_State == ACTIVE)
 		{
 			dfms_alarm = algo->detectFrame(colorImage, 1, demo_mode);
-			//DEBUG_INFO(algorithm out value: %02X\n, dfms_alarm);
+			DEBUG_INFO(algorithm out value: %02X\n, dfms_alarm);
 		}
 		else if((DFMS_State == CLOSE) || (DFMS_State == FAULT) || (DFMS_State == STANDBY))
 		{
@@ -423,7 +423,7 @@ void* run_DFMS_algorithm(void *argc)
 	}
 #endif
 
-		if((last_dfms_alarm != dfms_alarm) || (last_fxp_alarm != temp_fxp_alarm))
+		if((last_dfms_alarm != dfms_alarm) || (last_fxp_alarm != temp_fxp_alarm) || (dfms_alarm == 0x40))
 		{
 			pack_serial_send_message(D2_MESSAGE, (void*)&serial_output_var, send_buf, &send_buf_len);
 
@@ -439,11 +439,10 @@ void* run_DFMS_algorithm(void *argc)
 			{
 				shmfifo_put(pSendComFifo, send_buf, send_buf_len);
 			}
-
-			last_dfms_alarm = dfms_alarm;
-			last_fxp_alarm = fxp_alarm;
 		}
 
+		last_dfms_alarm = dfms_alarm;
+		last_fxp_alarm = fxp_alarm;
 		usleep(100000);
 	}
 

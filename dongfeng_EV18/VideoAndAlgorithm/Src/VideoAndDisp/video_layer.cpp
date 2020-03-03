@@ -73,7 +73,8 @@ VideoLayer::VideoLayer()
     buf[1] = 1;//enable
 
     ret = ioctl(disp_fd, DISP_VSYNC_EVENT_EN, &buf[0]);
-    if(ret != 0){
+    if(ret != 0)
+    {
         printf("DISP_VSYNC_EVENT_EN failed\n");
         exit(-1);
     }
@@ -83,17 +84,17 @@ VideoLayer::VideoLayer()
     buf[2] = 14;//output type
 
     ret = ioctl(disp_fd, DISP_DEVICE_SWITCH, &buf[0]);
-    if(ret != 0){
+    if(ret != 0)
+    {
         printf("DISP_DEVICE_SWITCH failed\n");
         exit(-1);
     }
-
 }
 
 #include "sunxiMemInterface.h"
 #include "G2dApi.h"
 
-static int alloc_nv41_mem(int w, int h,paramStruct_t*pops)
+static int alloc_nv41_mem(int w, int h, paramStruct_t*pops)
 {
     int iRet;
 #if 0

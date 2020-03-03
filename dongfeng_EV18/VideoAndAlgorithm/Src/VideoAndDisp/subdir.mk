@@ -87,7 +87,7 @@ CMAKE_LIBS := -L/home/tony/t7_reference/t7linux-auto/tools/pack/chips/sun8iw17p1
 -L/home/tony/t7_reference/t7linux-auto/buildroot-201611/target/user_rootfs_misc/sdk_lib/cedarx/lib \
 -L/home/tony/t7_reference/t7linux-auto/buildroot-201611/target/user_rootfs_misc/sdk_lib/libs \
 -Wl,-rpath=/home/tony/t7_reference/t7linux-auto/tools/pack/chips/sun8iw17p1/hal/gpu/fbdev/lib:/home/tony/t7_reference/t7linux-auto/buildroot-201611/target/user_rootfs_misc/sdk_lib/cedarx/lib:/home/tony/t7_reference/t7linux-auto/buildroot-201611/target/user_rootfs_misc/sdk_lib/libs: \
--lGLESv2 -lEGL -lpthread -lMemAdapter -lvencoder
+-lGLESv2 -lEGL -lpthread -lMemAdapter -lvencoder -lsdk_g2d -lcdx_base
 
 
 # -lsdk_g2d -lcdx_base -lvideoengine -lsdk_disp

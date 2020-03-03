@@ -2,6 +2,7 @@
 #define __G2D_COPY_H__
 #include "sunxiMemInterface.h"
 class G2dCopy{
+
 int handle;
 public:
     G2dCopy();
@@ -12,9 +13,6 @@ public:
     int alloc_nv41_mem(int w, int h,paramStruct_t*pops);
     int alloc_free(paramStruct_t*pops);
     int flush_cache(paramStruct_t*pops);
-
-
-
 };
 
 #endif

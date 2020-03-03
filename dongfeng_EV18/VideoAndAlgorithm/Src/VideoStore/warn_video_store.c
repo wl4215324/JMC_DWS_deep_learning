@@ -164,6 +164,7 @@ init_error_exit:
 
     	free(video_file_resource);
     }
+
     return (Video_File_Resource*)(-1);
 }
 

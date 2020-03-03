@@ -1,10 +1,9 @@
 #include "g2dCopy.h"
 #include "G2dApi.h"
+
 G2dCopy::G2dCopy()
 {
     handle = g2dInit();
-
-
 }
 
 G2dCopy::~G2dCopy()
@@ -27,7 +26,7 @@ int G2dCopy::clip(void *psrc, int src_w, int src_h, int src_x, int src_y, int wi
     return 0;
 }
 
-int G2dCopy::alloc_nv41_mem(int w, int h,paramStruct_t*pops)
+int G2dCopy::alloc_nv41_mem(int w, int h, paramStruct_t*pops)
 {
     int iRet;
     iRet = allocOpen(MEM_TYPE_DMA, pops, NULL);

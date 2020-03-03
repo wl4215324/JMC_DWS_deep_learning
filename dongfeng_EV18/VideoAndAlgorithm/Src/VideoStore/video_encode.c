@@ -6,38 +6,7 @@
  */
 
 #include "video_encode.h"
-
-
-static int set_params_into_encoder(VideoEncoder *VideoEnc, encode_param_t encode_param)
-{
-	if(encode_param.encode_format == VENC_CODEC_H264)
-	{
-		//* h264 param
-	    VencH264Param h264Param;
-	    int value = 0;
-
-	    h264Param.bEntropyCodingCABAC = 1;  // 0:CAVLC 1:CABAC
-	    h264Param.nBitrate = encode_param.bit_rate * 1024 * 1024;  //3MB
-	    h264Param.nFramerate = encode_param.frame_rate;  //30fps
-	    h264Param.nCodingMode = VENC_FRAME_CODING;
-	    //h264Param.nCodingMode = VENC_FIELD_CODING;
-	    h264Param.nMaxKeyInterval = 30;
-	    h264Param.sProfileLevel.nProfile = VENC_H264ProfileMain;
-	    h264Param.sProfileLevel.nLevel = VENC_H264Level31;
-	    h264Param.sQPRange.nMinqp = 10;
-	    h264Param.sQPRange.nMaxqp = 40;
-
-        VideoEncSetParameter(VideoEnc, VENC_IndexParamH264Param, &h264Param);
-        value = 0;
-        VideoEncSetParameter(VideoEnc, VENC_IndexParamIfilter, &value);
-        value = 0; //degree
-        VideoEncSetParameter(VideoEnc, VENC_IndexParamRotation, &value);
-//      value = 0;
-//      VideoEncSetParameter(VideoEnc, VENC_IndexParamSetPSkip, &value);
-	}
-
-	return 0;
-}
+#include "video_encode_attribute.h"
 
 
 T7_Video_Encode* init_video_encoder(uint32_t src_width, uint32_t src_height, uint32_t dst_width, uint32_t dst_height, \
@@ -65,7 +34,7 @@ T7_Video_Encode* init_video_encoder(uint32_t src_width, uint32_t src_height, uin
 	t7_video_encode->encode_param.bit_rate = bit_rate;
 	t7_video_encode->encode_param.frame_rate = frame_rate;
 
-	if(set_params_into_encoder(t7_video_encode->VideoEnc, t7_video_encode->encode_param) < 0)  //failed to set params for encoder
+	if(set_params_into_encoder(t7_video_encode->VideoEnc, &(t7_video_encode->encode_param)) < 0)  //failed to set params for encoder
 	{
 		perror("set_params_into_encoder error: ");
 		goto init_error_exit;
@@ -130,13 +99,11 @@ void destroy_video_encoder(T7_Video_Encode **video_encoder)
 	        (*video_encoder)->baseConfig.memops = NULL;
 		}
 
-
         ReleaseAllocInputBuffer((*video_encoder)->VideoEnc);
         VideoEncDestroy((*video_encoder)->VideoEnc);
 		*video_encoder = NULL;
 	}
 }
-
 
 
 int encode_video_frame_according_to_vir_addr(T7_Video_Encode *t7_video_encode, uint8_t *AddrVirY, \

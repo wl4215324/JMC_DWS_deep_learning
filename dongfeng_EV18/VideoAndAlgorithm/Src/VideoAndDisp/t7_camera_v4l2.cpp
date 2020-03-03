@@ -9,12 +9,14 @@
 #include "gl_display.h"
 #include "video_layer_test.h"
 #include "t7_enc_test.h"
+#include "sunxiMemInterface.h"
 
 extern "C" {
 #include <stdbool.h>
 #include "../VideoStore/files_manager.h"
 #include "../VideoStore/video_encode.h"
 #include "../VideoStore/warn_video_store.h"
+#include "G2dApi.h"
 }
 
 
@@ -898,6 +900,39 @@ int startDevice(int fd, int width, int height, unsigned int pix_fmt, v4l2_mem_ma
 	return 0;
 }
 
+int save_data_as_file(const char *file_name, unsigned char *data, unsigned int data_len)
+{
+	int fd = 0;
+	unsigned int i = 0, left = 0;
+	static unsigned int cnt = 0;
+
+	if(cnt >= 2)
+	{
+		return 1;
+	}
+
+	fd = open(file_name, O_RDWR|O_CREAT);
+
+	if(fd < 0)
+	{
+		return -1;
+	}
+
+	left = data_len % 1024;
+	lseek(fd, 0, SEEK_SET);
+
+	for(i=0; i<data_len/1024; i++)
+	{
+		write(fd, data+(i*1024), 1024);
+	}
+
+	write(fd, data+(i*1024), left);
+	sync();
+	close(fd);
+	cnt++;
+	return 0;
+}
+
 
 void* capture_video(void* para)
 {
@@ -934,6 +969,21 @@ void* capture_video(void* para)
 
 	init_video_layer();
 
+#ifdef ROTATE90_DISP
+	dma_mem_des_t g2d_image_mem_ops;
+	if(allocOpen(MEM_TYPE_DMA, &g2d_image_mem_ops, NULL) < 0)
+	{
+		printf("ion_alloc_open failed\r\n");
+	}
+	g2d_image_mem_ops.size = 1280*720*1.5;
+
+	if(allocAlloc(MEM_TYPE_DMA, &g2d_image_mem_ops, NULL) < 0)
+	{
+		printf("allocAlloc for g2d image memory error!\n");
+	}
+
+	int g2d_handle = g2dInit();
+#endif
 
 #if 0
 	T7_Video_Encode* video_encoder = init_video_encoder(1280, 720, 1280, 720, 3, 25, VENC_CODEC_H264);
@@ -983,7 +1033,8 @@ void* capture_video(void* para)
     struct v4l2_buffer *buf = &buf2;
     unsigned char *temp = NULL;
 
-    unsigned int v4l2_buf_addr_phy_Y;
+    unsigned int v4l2_buf_addr_phy_Y_dsm;
+    unsigned int v4l2_buf_addr_phy_Y_monitor;
     unsigned int v4l2_buf_addr_vir_Y;
 
 #if 0
@@ -1028,15 +1079,25 @@ void* capture_video(void* para)
 				    printf("GetPreviewFrame: VIDIOC_DQBUF Failed, %s\n", strerror(errno));
 				}
 
-				v4l2_buf_addr_phy_Y = buf->m.offset;	// - 0x20000000;  //dram addr offset for ve
+				v4l2_buf_addr_phy_Y_dsm = buf->m.offset;	// - 0x20000000;  //dram addr offset for ve
 				#ifdef _SUNXIW17_
 				if (mCameraType == CAMERA_TYPE_CSI)
 				{
-					v4l2_buf_addr_phy_Y = buf->m.planes[0].m.mem_offset;
+                    #ifdef ROTATE90_DISP
+					//save_data_as_file("./img_1.yuv", (unsigned char*)mMapMem.mem[buf->index], 1280*720*1.5);
+					g2dRotate(g2d_handle, G2D_ROTATE90, (unsigned char*)(buf->m.planes[0].m.mem_offset), \
+							  1280, 720, (unsigned char*)(g2d_image_mem_ops.phy), 720, 1280);
+					flushCache(MEM_TYPE_DMA, &g2d_image_mem_ops, NULL);
+					//save_data_as_file("./img_2.yuv", (unsigned char*)(g2d_image_mem_ops.vir), 1280*720*1.5);
+					g2dScale(g2d_handle, (unsigned char*)(g2d_image_mem_ops.phy), 720, 1280, \
+							(unsigned char*)v4l2_buf_addr_phy_Y_dsm, 1280, 720);
+                    #else
+					v4l2_buf_addr_phy_Y_dsm = buf->m.planes[0].m.mem_offset;
+                    #endif
 				}
 				#endif
 
-				dsm_camera_display(v4l2_buf_addr_phy_Y);
+				dsm_camera_display(v4l2_buf_addr_phy_Y_dsm);
 /*
 				if(dsm_video_record->sd_card_status == 0)
 				{
@@ -1108,15 +1169,15 @@ void* capture_video(void* para)
 					printf("GetPreviewFrame: VIDIOC_DQBUF Failed, %s\n", strerror(errno));
 				}
 
-				v4l2_buf_addr_phy_Y = buf->m.offset;	// - 0x20000000;  //dram addr offset for ve
+				v4l2_buf_addr_phy_Y_monitor = buf->m.offset;	// - 0x20000000;  //dram addr offset for ve
 				#ifdef _SUNXIW17_
 				if (mCameraType == CAMERA_TYPE_CSI)
 				{
-					v4l2_buf_addr_phy_Y = buf->m.planes[0].m.mem_offset;
+					v4l2_buf_addr_phy_Y_monitor = buf->m.planes[0].m.mem_offset;
 				}
 				#endif
 
-				monitor_camera_display(v4l2_buf_addr_phy_Y);
+				monitor_camera_display(v4l2_buf_addr_phy_Y_monitor);
 				copy_monitor_image((unsigned char*)monitor_camera_MapMem.mem[buf->index]);
 
 				ret = ioctl(monitor_camera_fd, VIDIOC_QBUF, buf);

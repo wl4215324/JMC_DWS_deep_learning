@@ -75,6 +75,7 @@ static int set_parity(int fd, int databits, int stopbits, int parity)
 			options.c_iflag &= ~(INLCR | ICRNL | IGNCR);
 			options.c_oflag &= ~(ONLCR | OCRNL | ONOCR | ONLRET);
 			break;
+
 		case 'o':
 		case 'O':
 			options.c_cflag |= (PARODD | PARENB);

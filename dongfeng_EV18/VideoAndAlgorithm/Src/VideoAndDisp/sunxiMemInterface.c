@@ -1,8 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "memoryAdapter.h"
-#include <sc_interface.h>
+#include "sc_interface.h"
 //#include <cutils/log.h>
 #include "sdklog.h"
 #include "sunxiMemInterface.h"
@@ -14,22 +13,28 @@ int sdk_log_print(int prio, const char *tag,const char *fmt, ...){}
 int allocOpen(unsigned int memType, dma_mem_des_t * param_in, void * param_out)
 {
 	int ret = FAIL;
-	if(NULL == param_in){
+	if(NULL == param_in)
+	{
 		ALOGE("allocOpen failed,param_in is null\n");
 		return -1;
 	}
 	
 	dma_mem_des_t* p =  param_in;
-	switch(memType){
+
+	switch(memType)
+	{
 	case MEM_TYPE_DMA:
         ret = IonAllocOpen();
 		break;	
 		
 	case MEM_TYPE_CDX_NEW:
 		p->ops = MemAdapterGetOpsS();
-		if(NULL != p->ops){
+		if(NULL != p->ops)
+		{
 			ret = CdcMemOpen((struct ScMemOpsS *)p->ops);
-		}else{
+		}
+		else
+		{
 			ALOGE("allocOpen failed,p->ops null\n");
 		}
 		break;
@@ -42,25 +47,31 @@ int allocOpen(unsigned int memType, dma_mem_des_t * param_in, void * param_out)
 	return ret;
 }
 
+
 int allocClose(unsigned int memType, dma_mem_des_t * param_in, void * param_out)
 {
 	int ret = FAIL;
-	if(NULL == param_in){
+	if(NULL == param_in)
+	{
 		ALOGE("allocClose failed,param_in is null\n");
 		return -1;
 	}
 	dma_mem_des_t* p =  param_in;
-	switch(memType){
+	switch(memType)
+	{
 	case MEM_TYPE_DMA:
         ret = IonAllocClose();
 		break;	
 		
 	case MEM_TYPE_CDX_NEW:
-		if(NULL != p->ops){
+		if(NULL != p->ops)
+		{
 			CdcMemClose((struct ScMemOpsS *)p->ops);
 			p->ops = NULL;
 			ret = SUCCESS;
-		}else{
+		}
+		else
+		{
 			ALOGE("allocClose failed,p->ops null\n");
 		}
 		break;

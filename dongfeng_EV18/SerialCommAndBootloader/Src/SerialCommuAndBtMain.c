@@ -11,7 +11,7 @@
 #include <sys/time.h>
 
 #include "serial_port_commu.h"
-#include "serial_pack_parse.h"
+#include "../../ShmCommon/serial_pack_parse.h"
 #include "bootloader.h"
 #include "producer_consumer_shmfifo.h"
 
@@ -29,7 +29,6 @@ int main(int argc, char* argv[])
 	unsigned char recv_buf[512];
 	unsigned char send_buf[256];
 	struct timeval tp;
-
 
 	if((fd = open_set_serial_port()) < 0)  //initialize rs232 ttyS1
 	{

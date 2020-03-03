@@ -12,7 +12,8 @@ C_SRCS += \
 ./basic_queue.c \
 ./queue_for_image.c \
 ./video_encode.c \
-./warn_video_store.c
+./warn_video_store.c \
+./video_encode_attribute.c
 
 CPP_SRCS +=
 
@@ -25,7 +26,8 @@ OBJS += \
 ./Debug/basic_queue.o \
 ./Debug/queue_for_image.o \
 ./Debug/video_encode.o \
-./Debug/warn_video_store.o
+./Debug/warn_video_store.o \
+./Debug/video_encode_attribute.o
 
 C_DEPS += \
 ./Debug/file_operation.d \
@@ -36,7 +38,8 @@ C_DEPS += \
 ./Debug/basic_queue.d \
 ./Debug/queue_for_image.d \
 ./Debug/video_encode.d \
-./Debug/warn_video_store.d
+./Debug/warn_video_store.d \
+./Debug/video_encode_attribute.d
 
 CPP_DEPS +=
 
