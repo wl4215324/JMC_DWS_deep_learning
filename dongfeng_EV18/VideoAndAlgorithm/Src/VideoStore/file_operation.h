@@ -23,7 +23,7 @@
 #define SZ_1G ((unsigned long long)(1<<30))
 //#define RESERVED_SIZE (SZ_1M * 300)
 //#define RESERVED_SIZE ((unsigned long long)((SZ_1M*500)/SZ_1M))
-#define RESERVED_SIZE ((unsigned long long)((SZ_1M*500)/SZ_1M))
+#define RESERVED_SIZE ((unsigned long long)((SZ_1M*500)/SZ_1M))  //500M
 
 #define LOOP_COVERAGE_SIZE (RESERVED_SIZE + ((SZ_1M*500)/SZ_1M))
 

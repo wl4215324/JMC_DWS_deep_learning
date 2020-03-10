@@ -8,6 +8,7 @@
 #include "files_manager.h"
 #include "file_operation.h"
 #include "rtc_operations.h"
+#include "warn_video_store.h"
 
 char g_PicPath[MAX_SUPPORT_CAM][PIC_NAME_LEN] = { };   //mod lss
 char g_NamePic[MAX_SUPPORT_CAM][CM_MAX_PICTURE_NUM][PIC_NAME_LEN] = { };
@@ -55,57 +56,17 @@ unsigned int gAFileOccupySizePerMinMb = 64;
 
 
 
-
-/**************************************
-Function:
-Description:
-***************************************/
-file_status_t *initFileListDir(char *dirname, unsigned char camera_index, \
-		unsigned char bit_rate_Mb, unsigned short duration_s)
+void init_file_manager(char *dirname, file_status_t *file_manager)
 {
 	DIR *dir_ptr;
 	struct dirent *direntp;
 	int i;
-	int idx;
 	char tmpbuf[256];
 	char rmbuf[256];
 	char real_path[256];
 	char camera_path[256];
-	int len = 0;
-
-	if (!dirname || (len = strlen(dirname)) < 2 || (bit_rate_Mb <= 0) || (duration_s <= 0))
-	{
-		return (file_status_t*)(-1);
-	}
-
-	unsigned char l32_CameraId = 0;
-	l32_CameraId = (camera_index >= MAX_SUPPORT_CAM) ? 0: camera_index;
-	strcpy(tmpbuf, dirname);
-
-	for (i = 0; i < len; i++)
-	{
-		if (tmpbuf[len - 1 - i] == '/')
-		{
-			tmpbuf[len - 1 - i] = 0;
-		}
-		else
-		{
-			break;
-		}
-	}
-
-	int rmret = 0;
-	rmret = readlink(tmpbuf, real_path, sizeof(real_path));
-	if (rmret < 0)
-	{
-		strcpy(real_path, tmpbuf);
-	}
-
-	file_status_t *file_manager = (file_status_t*) malloc(sizeof(file_status_t));
-	if(!file_manager)
-	{
-		goto init_files_dir_error;
-	}
+	char dir_len = 0;
+	int idx;
 
 	file_manager->cur_max_filenum = 0;
 	file_manager->cur_dir_file_num = 0;
@@ -119,46 +80,80 @@ file_status_t *initFileListDir(char *dirname, unsigned char camera_index, \
 		memset(file_manager->cur_filesname+i, 0, CM_MAX_FILE_LEN);
 	}
 
-	if (isMounted(real_path))
+	strcpy(tmpbuf, dirname);
+	dir_len = strlen(dirname);
+
+	/* if the last char of string is '/' then remove it, else nothing to be done */
+	for(i = 0; i < dir_len; i++)
+	{
+		if (tmpbuf[dir_len-1 - i] == '/')
+		{
+			tmpbuf[dir_len-1 - i] = 0;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	int rmret = 0;
+	/* if tmpbuf is just a symbol link, then get real path */
+	rmret = readlink(tmpbuf, real_path, sizeof(real_path));
+	if (rmret < 0)
+	{
+		strcpy(real_path, tmpbuf);
+	}
+
+	if (isMounted(real_path))  // judge SD card is mounted or not
     {
 		printf("-------sdmmc------mounted \n");
 	}
 	else
 	{
+		//sd card is not unmounted, then following is unnecessary to be executed
 		printf("-------sdmmc------unmounted \n");
-		return (file_status_t*)(-1);
+		return ;
 	}
 
 	file_manager->file_dir_status = FILE_DIR_NOT_CREATE;
 	memset(camera_path, 0, sizeof(camera_path));
-	sprintf(camera_path, "%s/%s", real_path, pVideoPath[l32_CameraId]);
+	sprintf(camera_path, "%s/%s", real_path, pVideoPath[0]);
 	printf("camera_path: %s\n", camera_path);
 
+	/* if warnning file path is existent then do nothing, or else create a new directory for files */
 	if (createdir(camera_path) != 0)
 	{
 		printf("create camera_path dir %s fail", camera_path);
-		return (file_status_t*)(-1);
+		return ;
 	}
 
 	file_manager->file_dir_status = FILE_DIR_NORMAL;
 	strcpy(file_manager->cur_filedir, camera_path);
 	unsigned long long totMB  = totalSize(real_path);  //MB
+
 	/* round up to an integer according to fomula (M+N-1)/N */
-	file_manager->file_size_MB = ((duration_s * bit_rate_Mb + 7) >> 3);
-	file_manager->cur_max_filenum = (totMB - RESERVED_SIZE + CM_MAX_RECORDFILE_NUM - 1) / CM_MAX_RECORDFILE_NUM;
+	file_manager->file_size_MB = ((10 * 4 + 7) >> 3);
+
+	if(file_manager->file_size_MB == 0)
+	{
+		file_manager->file_size_MB = (totMB - RESERVED_SIZE) / CM_MAX_RECORDFILE_NUM;
+	}
+
+	file_manager->cur_max_filenum = (totMB - RESERVED_SIZE) / file_manager->file_size_MB;
 
 	if(file_manager->cur_max_filenum  > CM_MAX_RECORDFILE_NUM)
 	{
 		file_manager->cur_max_filenum = CM_MAX_RECORDFILE_NUM;
 	}
 
+	/* read files's name stored in specified directory and put specified array according to index */
 	if((dir_ptr = opendir(camera_path)))
 	{
 		while ((direntp = readdir(dir_ptr)) != NULL)
 		{
-			if (strstr(direntp->d_name, CM_SAVE_FILE_MARK) != NULL)  //skip file "save"
+			if (strstr(direntp->d_name, CM_SAVE_FILE_MARK) != NULL)  //skip files "save"
 				continue;
-			if (strstr(direntp->d_name, CM_LOCK_FILE_MARK) != NULL)  //skip file "lock"
+			if (strstr(direntp->d_name, CM_LOCK_FILE_MARK) != NULL)  //skip files "lock"
 				continue;
 
 			for (i = 0; i < strlen(direntp->d_name); i++)  //file name not empty
@@ -187,22 +182,194 @@ file_status_t *initFileListDir(char *dirname, unsigned char camera_index, \
 								sprintf(rmbuf, "%s/%s", file_manager->cur_filedir, direntp->d_name);
 								rmret = remove(rmbuf);
 
-//								strcpy(p->cur_filesname[idx], camera_path);
-//								strcat(p->cur_filesname[idx], "/");
+                                //strcpy(p->cur_filesname[idx], camera_path);
+                                //strcat(p->cur_filesname[idx], "/");
 								strcat(file_manager->cur_filesname[idx], direntp->d_name);
 							}
 						}
 					}
-					else //if index is invalid
+					else //if index is invalid, delete the file with invalid index
 					{
-						;
-//						memset(rmbuf, 0 ,sizeof(rmbuf));
-//						sprintf(rmbuf, "%s/%s", file_manager->cur_filedir, direntp->d_name);
-//						rmret = remove(rmbuf);
+                        memset(rmbuf, 0 ,sizeof(rmbuf));
+                        sprintf(rmbuf, "%s/%s", file_manager->cur_filedir, direntp->d_name);
+                        rmret = remove(rmbuf);
 					}
 				}
 			}
 
+			/* if filename format is invalid, then delete the file */
+			if(i >= strlen(direntp->d_name))
+			{
+				memset(rmbuf, 0 ,sizeof(rmbuf));
+				sprintf(rmbuf, "%s/%s", file_manager->cur_filedir, direntp->d_name);
+				rmret = remove(rmbuf);
+			}
+		}
+
+		closedir(dir_ptr);
+		sync();
+	}
+}
+
+/**************************************
+Function:
+Description:
+***************************************/
+file_status_t *initFileListDir(char *dirname, unsigned char camera_index, \
+		unsigned char bit_rate_Mb, unsigned short duration_s)
+{
+	DIR *dir_ptr;
+	struct dirent *direntp;
+	int i;
+	int idx;
+	char tmpbuf[256];
+	char rmbuf[256];
+	char real_path[256];
+	char camera_path[256];
+	int len = 0;
+
+	if (!dirname || (len = strlen(dirname)) < 2 || (bit_rate_Mb <= 0) || (duration_s <= 0))
+	{
+		return (file_status_t*)(-1);
+	}
+
+	unsigned char l32_CameraId = 0;
+	l32_CameraId = (camera_index >= MAX_SUPPORT_CAM) ? 0: camera_index;
+	strcpy(tmpbuf, dirname);
+
+	/* if the last char of string is '/' then remove it, else nothing to be done */
+	for(i = 0; i < len; i++)
+	{
+		if (tmpbuf[len - 1 - i] == '/')
+		{
+			tmpbuf[len - 1 - i] = 0;
+		}
+		else
+		{
+			break;
+		}
+	}
+
+	int rmret = 0;
+	/* if tmpbuf is just a symbol link, then get real path */
+	rmret = readlink(tmpbuf, real_path, sizeof(real_path));
+	if (rmret < 0)
+	{
+		strcpy(real_path, tmpbuf);
+	}
+
+	file_status_t *file_manager = (file_status_t*) malloc(sizeof(file_status_t));
+	if(!file_manager)
+	{
+		goto init_files_dir_error;
+	}
+
+	file_manager->cur_max_filenum = 0;
+	file_manager->cur_dir_file_num = 0;
+	file_manager->cur_file_idx = 0;
+	file_manager->file_size_MB = 0;
+	file_manager->file_dir_status = SDCARD_NOT_MOUNT;
+	memset(file_manager->cur_filedir, 0 ,sizeof(file_manager->cur_filedir));
+
+	for(i=0; i<CM_MAX_RECORDFILE_NUM; i++)
+	{
+		memset(file_manager->cur_filesname+i, 0, CM_MAX_FILE_LEN);
+	}
+
+	if (isMounted(real_path))  // judge SD card is mounted or not
+    {
+		printf("-------sdmmc------mounted \n");
+	}
+	else
+	{
+		//sd card is not unmounted, then following is unnecessary to be executed
+		printf("-------sdmmc------unmounted \n");
+		return (file_status_t*)(-1);
+	}
+
+	file_manager->file_dir_status = FILE_DIR_NOT_CREATE;
+	memset(camera_path, 0, sizeof(camera_path));
+	sprintf(camera_path, "%s/%s", real_path, pVideoPath[l32_CameraId]);
+	printf("camera_path: %s\n", camera_path);
+
+	/* if warnning file path is existent then do nothing, or else create a new directory for files */
+	if (createdir(camera_path) != 0)
+	{
+		printf("create camera_path dir %s fail", camera_path);
+		return (file_status_t*)(-1);
+	}
+
+	file_manager->file_dir_status = FILE_DIR_NORMAL;
+	strcpy(file_manager->cur_filedir, camera_path);
+	unsigned long long totMB  = totalSize(real_path);  //MB
+
+	/* round up to an integer according to fomula (M+N-1)/N */
+	file_manager->file_size_MB = ((duration_s * bit_rate_Mb + 7) >> 3);
+
+	if(file_manager->file_size_MB == 0)
+	{
+		file_manager->file_size_MB = (totMB - RESERVED_SIZE) / CM_MAX_RECORDFILE_NUM;
+	}
+
+	file_manager->cur_max_filenum = (totMB - RESERVED_SIZE) / file_manager->file_size_MB;
+
+	if(file_manager->cur_max_filenum  > CM_MAX_RECORDFILE_NUM)
+	{
+		file_manager->cur_max_filenum = CM_MAX_RECORDFILE_NUM;
+	}
+
+	/* read files's name stored in specified directory and put specified array according to index */
+	if((dir_ptr = opendir(camera_path)))
+	{
+		while ((direntp = readdir(dir_ptr)) != NULL)
+		{
+			if (strstr(direntp->d_name, CM_SAVE_FILE_MARK) != NULL)  //skip files "save"
+				continue;
+			if (strstr(direntp->d_name, CM_LOCK_FILE_MARK) != NULL)  //skip files "lock"
+				continue;
+
+			for (i = 0; i < strlen(direntp->d_name); i++)  //file name not empty
+			{
+				if (direntp->d_name[i] == '-')  //file name 1-20100101_001013_front
+				{
+					memset(tmpbuf, 0, sizeof(tmpbuf));
+					memcpy(tmpbuf, direntp->d_name, i);
+					idx = atoi(tmpbuf);
+
+					if (idx >= 0 && idx < file_manager->cur_max_filenum)  //if index is valid
+					{
+						/* if cur_filename[idx] is empty, then copy direntp->d_name to cur_filename[idx]*/
+						if (strlen(file_manager->cur_filesname[idx]) == 0)
+						{
+							strcat(file_manager->cur_filesname[idx], direntp->d_name);
+							file_manager->cur_dir_file_num++;
+						}
+						else  //if cur_filename[idx] was assigned yet, maybe old file need to be removed
+						{
+							/* if rmbuf is not substring of cur_filename[idx], then remove file cur_filename[idx] */
+							if (strcasecmp(file_manager->cur_filesname[idx], direntp->d_name) == 0)
+							{
+								printf("find duplicate  so rm old %s idx=%d  name=%s \n", file_manager->cur_filesname[idx], idx, direntp->d_name);
+								memset(rmbuf, 0 ,sizeof(rmbuf));
+								sprintf(rmbuf, "%s/%s", file_manager->cur_filedir, direntp->d_name);
+								rmret = remove(rmbuf);
+
+                                //strcpy(p->cur_filesname[idx], camera_path);
+                                //strcat(p->cur_filesname[idx], "/");
+								strcat(file_manager->cur_filesname[idx], direntp->d_name);
+							}
+						}
+					}
+					else //if index is invalid, delete the file with invalid index
+					{
+                        memset(rmbuf, 0 ,sizeof(rmbuf));
+                        sprintf(rmbuf, "%s/%s", file_manager->cur_filedir, direntp->d_name);
+                        rmret = remove(rmbuf);
+					}
+				}
+			}
+
+			/* if filename format is invalid, then delete the file */
 			if(i >= strlen(direntp->d_name))
 			{
 				memset(rmbuf, 0 ,sizeof(rmbuf));
@@ -223,6 +390,14 @@ init_files_dir_error:
 
 
 
+/*****************************************************************
+Function: int genfilename(char *name, file_status_t *file_manager)
+Description: allocate video file name according to object file manager
+Parameters:
+           char *name: allocated file name
+           file_status_t *file_manager: file manager object for
+           storing and managing video files
+******************************************************************/
 int genfilename(char *name, file_status_t *file_manager)
 {
 	char rec_filename[256], new_file_name[256];
@@ -234,6 +409,11 @@ int genfilename(char *name, file_status_t *file_manager)
 
 	//p->cur_file_idx = config_get_camfileidx(0); // get "cur-fileidx" value into file /etc/dvrconfig.ini
 	//p->cur_file_idx = 0;
+
+	if(file_manager->file_dir_status != FILE_DIR_NORMAL)
+	{
+		init_file_manager(SD_MOUNT_DIRECTORY, file_manager);
+	}
 
 	if (file_manager->cur_file_idx >= file_manager->cur_max_filenum)
 	{
@@ -259,9 +439,9 @@ int genfilename(char *name, file_status_t *file_manager)
 		{
 			break;
 		}
-		else  //there is no enought space for new video file
+		else  //there is no enought space for new video file, old file needs to be deleted
 		{
-			if(strlen(file_manager->cur_filesname[rmidx]) != 0)  //if file name not empty
+			if(strlen(file_manager->cur_filesname[rmidx]) != 0)  //if file name is not empty
 			{
 				memset(rec_filename, 0, sizeof(rec_filename));
 				sprintf(rec_filename, "%s/%s", file_manager->cur_filedir, file_manager->cur_filesname[rmidx]);
@@ -270,22 +450,25 @@ int genfilename(char *name, file_status_t *file_manager)
 				{
 					printf("file[%d] %s doesn't exist, pass this file.\n", rmidx, file_manager->cur_filesname[rmidx]);
 					memset(file_manager->cur_filesname[rmidx], 0, CM_MAX_FILE_LEN);
+				}
+				else  //if file exist, delete the file
+				{
+					ret = remove(rec_filename);
 
-					if(rmidx >= file_manager->cur_max_filenum)
+					if (ret == 0)
 					{
-						rmidx = 0;
+						memset(file_manager->cur_filesname[rmidx], 0, CM_MAX_FILE_LEN);
 					}
 					else
 					{
-						rmidx++;
+						printf("rm file %s fail %d \n", rec_filename, errno);
 					}
-
-					continue;
 				}
 
-				oldfileSize = getFileOccupySizeMb(rec_filename);
+#if 0
+				oldfileSize = getFileOccupySizeMb(rec_filename);  //if file is existent
 
-				if (oldfileSize >= file_manager->file_size_MB)
+				if (oldfileSize > file_manager->file_size_MB)
 				{
 					printf("dbg-rec file size dismatch,remove idx[%d] file now, oldfilesize=%d \n", rmidx, oldfileSize);
 
@@ -299,6 +482,7 @@ int genfilename(char *name, file_status_t *file_manager)
 
 					break;
 				}
+#endif
 #if 0
 				else if ((oldfileSize >= afile_blksize) && (oldfileSize <= ( afile_blksize + gAFileOccupySizePerMinMb)))
 				{
@@ -323,6 +507,7 @@ int genfilename(char *name, file_status_t *file_manager)
 					}
 				}
 #endif
+#if 0
 				else
 				{
 					printf("dbg-rec need to rm[%d]\n", rmidx);
@@ -337,9 +522,10 @@ int genfilename(char *name, file_status_t *file_manager)
 								rec_filename, errno);
 					}
 				}
+#endif
 			}
 
-			if (rmidx >= CM_MAX_RECORDFILE_NUM)
+			if(rmidx >= file_manager->cur_max_filenum)
 			{
 				rmidx = 0;
 			}
@@ -348,8 +534,7 @@ int genfilename(char *name, file_status_t *file_manager)
 				rmidx++;
 			}
 		}
-	}
-	while (reidx++ < file_manager->cur_max_filenum);
+	}while (1);
 
 	struct tm *tm = NULL;
 	time_t now = getDateTime(&tm); //获取系统当前时间
@@ -426,6 +611,7 @@ int genfilename(char *name, file_status_t *file_manager)
 		file_manager->cur_file_idx++;
 	}
 
+	/* write variable cur_file_idx into file */
 	//config_set_camfileidx(0, p->cur_file_idx);
 	return 0;
 }

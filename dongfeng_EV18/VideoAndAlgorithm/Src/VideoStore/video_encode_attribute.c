@@ -547,6 +547,158 @@ int initH264Func(h264_func_t *h264_func, encode_param_t *encode_param)
     return 0;
 }
 
+void init_h265_gop(VencH265GopStruct *h265Gop)
+{
+    h265Gop->gop_size = 8;
+    h265Gop->intra_period = 16;
+
+    h265Gop->use_lt_ref_flag = 1;
+    if(h265Gop->use_lt_ref_flag)
+    {
+        h265Gop->max_num_ref_pics = 2;
+        h265Gop->num_ref_idx_l0_default_active = 2;
+        h265Gop->num_ref_idx_l1_default_active = 2;
+        h265Gop->use_sps_rps_flag = 0;
+    }
+    else
+    {
+        h265Gop->max_num_ref_pics = 1;
+        h265Gop->num_ref_idx_l0_default_active = 1;
+        h265Gop->num_ref_idx_l1_default_active = 1;
+        h265Gop->use_sps_rps_flag = 1;
+    }
+    //1:user config the reference info; 0:encoder config the reference info
+    h265Gop->custom_rps_flag = 0;
+    if(1 == h265Gop->custom_rps_flag)
+    {
+        int pos = 0;
+        for (pos = 0; pos < h265Gop->gop_size; pos++)
+        {
+            h265Gop->ref_str[pos].slice_type = H265_P_SLICE;
+            h265Gop->ref_str[pos].poc = pos + 1;
+            h265Gop->ref_str[pos].qp_offset = 0;
+            h265Gop->ref_str[pos].tc_offset_div2 = 0;
+            h265Gop->ref_str[pos].beta_offset_div2 = 0;
+            h265Gop->ref_str[pos].num_ref_pics = 2;
+            h265Gop->ref_str[pos].reference_pics[0] = -1;
+            h265Gop->ref_str[pos].reference_pics[1] = -(pos + 1);
+            h265Gop->ref_str[pos].discard_pics[0] = -2;
+            h265Gop->ref_str[pos].lt_ref_flag = 1;
+            h265Gop->ref_str[pos].lt_ref_poc = 0;
+            h265Gop->ref_str[pos].predict = 1;
+            h265Gop->ref_str[pos].delta_rps_idx = 1;
+            h265Gop->ref_str[pos].delta_rps = -1;
+            h265Gop->ref_str[pos].num_ref_idcs = 3;
+            h265Gop->ref_str[pos].reference_idcs[0][0] = REF_IDC_DISCARD;
+            h265Gop->ref_str[pos].reference_idcs[0][1] = REF_IDC_CURRENT_USE;
+            h265Gop->ref_str[pos].reference_idcs[0][2] = REF_IDC_LONG_TERM;
+        }
+
+        h265Gop->ref_str[0].num_ref_pics = 1;
+        h265Gop->ref_str[0].reference_pics[1] = -1;
+        h265Gop->ref_str[0].discard_pics[1] = -(h265Gop->gop_size + 1);
+        h265Gop->ref_str[0].lt_ref_flag = 0;
+        h265Gop->ref_str[0].predict = 0;
+        h265Gop->ref_str[0].num_ref_idcs = 3;
+        h265Gop->ref_str[0].reference_idcs[0][1] = REF_IDC_CURRENT_USE;
+        h265Gop->ref_str[0].reference_idcs[0][2] = REF_IDC_DISCARD;
+
+        h265Gop->ref_str[1].num_ref_idcs = 2;
+        h265Gop->ref_str[1].reference_idcs[0][0] = REF_IDC_CURRENT_USE;
+        h265Gop->ref_str[1].reference_idcs[0][1] = REF_IDC_LONG_TERM;
+
+        h265Gop->ref_str[h265Gop->gop_size].slice_type = H265_IDR_SLICE;
+        h265Gop->ref_str[h265Gop->gop_size].poc = 0;
+        h265Gop->ref_str[h265Gop->gop_size].predict = 0;
+
+        if (h265Gop->use_lt_ref_flag)
+        {
+            h265Gop->ref_str[h265Gop->gop_size + 1].num_ref_pics = 1;
+            h265Gop->ref_str[h265Gop->gop_size + 1].reference_pics[0] = -1;
+            h265Gop->ref_str[h265Gop->gop_size + 1].delta_rps_idx = 1;
+            h265Gop->ref_str[h265Gop->gop_size + 1].delta_rps = -1;
+            h265Gop->ref_str[h265Gop->gop_size + 1].num_ref_idcs = 1;
+            h265Gop->ref_str[h265Gop->gop_size + 1].reference_idcs[0][0] = REF_IDC_CURRENT_USE;
+        }
+    }
+}
+
+int initH265Func(h265_func_t *h265_func, encode_param_t *encode_param)
+{
+    memset(h265_func, 0, sizeof(h264_func_t));
+
+    //init h265Param
+    h265_func->h265Param.nBitrate = encode_param->bit_rate;
+    h265_func->h265Param.nFramerate = encode_param->frame_rate;
+    h265_func->h265Param.sProfileLevel.nProfile = VENC_H265ProfileMain;
+    h265_func->h265Param.sProfileLevel.nLevel = VENC_H265Level41;
+    h265_func->h265Param.sQPRange.nMaxqp = 52;
+    h265_func->h265Param.sQPRange.nMinqp = 10;
+    h265_func->h265Param.nQPInit = 30;
+    h265_func->h265Param.idr_period = 30;
+    h265_func->h265Param.nGopSize = h265_func->h265Param.idr_period;
+    h265_func->h265Param.nIntraPeriod = h265_func->h265Param.idr_period;
+    h265_func->h265Param.bLongTermRef = 1;
+
+#if 1
+    h265_func->h265Hvs.hvs_en = 1;
+    h265_func->h265Hvs.th_dir = 24;
+    h265_func->h265Hvs.th_coef_shift = 4;
+
+    h265_func->h265Trc.inter_tend = 63;
+    h265_func->h265Trc.skip_tend = 3;
+    h265_func->h265Trc.merge_tend = 0;
+
+    h265_func->h265Smart.img_bin_en = 1;
+    h265_func->h265Smart.img_bin_th = 27;
+    h265_func->h265Smart.shift_bits = 2;
+    h265_func->h265Smart.smart_fun_en = 1;
+#endif
+
+    h265_func->h265_rc_frame_total = 20*h265_func->h265Param.nGopSize;
+
+    //init H265Gop
+    init_h265_gop(&h265_func->h265Gop);
+
+    //init VencMBModeCtrl
+    init_mb_mode(&h265_func->h265MBMode, encode_param);
+
+    //init VencMBInfo
+    init_mb_info(&h265_func->MBInfo, encode_param);
+
+    //init VencH264FixQP
+    init_fix_qp(&h265_func->fixQP);
+
+    //init VencSuperFrameConfig
+    init_super_frame_cfg(&h265_func->sSuperFrameCfg);
+
+    //init VencH264SVCSkip
+    init_svc_skip(&h265_func->SVCSkip);
+
+    //init VencH264AspectRatio
+    init_aspect_ratio(&h265_func->sAspectRatio);
+
+    //init VencH264AspectRatio
+    init_video_signal(&h265_func->sVideoSignal);
+
+    //init CyclicIntraRefresh
+    init_intra_refresh(&h265_func->sIntraRefresh);
+
+    //init VencROIConfig
+    init_roi(h265_func->sRoiConfig);
+
+    //init alter frameRate info
+    init_alter_frame_rate_info(&h265_func->sAlterFrameRateInfo);
+
+    //init proc info
+    init_enc_proc_info(&h265_func->sVeProcInfo);
+
+    //init VencOverlayConfig
+    init_overlay_info(&h265_func->sOverlayInfo);
+
+    return 0;
+}
+
 int set_params_into_encoder(VideoEncoder *VideoEnc, encode_param_t *encode_param)
 {
 	int result = 0;
@@ -647,6 +799,44 @@ int set_params_into_encoder(VideoEncoder *VideoEnc, encode_param_t *encode_param
 
 #endif
 	}
+    else if(encode_param->encode_format == VENC_CODEC_H265)
+    {
+	    result = initH265Func(&h265_func, encode_param);
+
+		if(result)
+		{
+			loge("initH265Func error, return \n");
+			return -1;
+		}
+
+		unsigned int vbv_size = 12*1024*1024;
+		VideoEncSetParameter(VideoEnc, VENC_IndexParamSetVbvSize, &vbv_size);
+		VideoEncSetParameter(VideoEnc, VENC_IndexParamH265Param, &h265_func.h265Param);
+
+		unsigned int value = 1;
+		//VideoEncSetParameter(pVideoEnc,
+		//VENC_IndexParamAlterFrame, &h265_func.sAlterFrameRateInfo);
+		VideoEncSetParameter(VideoEnc, VENC_IndexParamChannelNum, &value);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamProcSet, &h265_func.sVeProcInfo);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamSetOverlay, &h265_func.sOverlayInfo);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamVirtualIFrame, &encode_param->frame_rate);
+		//value = 0;
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamPFrameIntraEn, &value);
+		//value = 1;
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamEncodeTimeEn, &value);
+		//VideoEncSetParameter(pVideoEnc,
+		//VENC_IndexParamH265ToalFramesNum,  &h265_func.h265_rc_frame_total);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamH265Gop, &h265_func.h265Gop);
+
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamROIConfig, &h265_func.sRoiConfig[0]);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamH264FixQP, &h265_func.fixQP);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamH265HVS, &h265_func.h265Hvs);
+		//VideoEncSetParameter(pVideoEnc, VENC_IndexParamH265TendRatioCoef, &h265_func.h265Trc);
+#ifdef GET_MB_INFO
+		VideoEncSetParameter(pVideoEnc, VENC_IndexParamMBInfoOutput, &h265_func.MBInfo);
+#endif
+    }
 
 	return 0;
 }
+

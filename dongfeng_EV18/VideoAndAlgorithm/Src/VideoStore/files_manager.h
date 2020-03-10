@@ -17,7 +17,7 @@
 
 #define CM_SAVE_FILE_MARK   "save"
 #define CM_LOCK_FILE_MARK   "lock"
-#define CM_MAX_RECORDFILE_NUM 400
+#define CM_MAX_RECORDFILE_NUM 1000
 #define CM_MAX_FILE_LEN 64
 #define CM_THUMB_DIR ".thumb/"
 #define CAMERA_MSG_DVR_STORE_ERR  0x40000

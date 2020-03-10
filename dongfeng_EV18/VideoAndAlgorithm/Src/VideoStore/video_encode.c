@@ -68,7 +68,23 @@ T7_Video_Encode* init_video_encoder(uint32_t src_width, uint32_t src_height, uin
     	goto init_error_exit;
     }
 
-    VideoEncGetParameter(t7_video_encode->VideoEnc, VENC_IndexParamH264SPSPPS, &(t7_video_encode->sps_pps_data));
+
+    //VideoEncGetParameter(t7_video_encode->VideoEnc, VENC_IndexParamH264SPSPPS, &(t7_video_encode->sps_pps_data));
+
+    //get sps_pps_data
+    if(t7_video_encode->encode_param.encode_format == VENC_CODEC_H264)
+    {
+        VideoEncGetParameter(t7_video_encode->VideoEnc, VENC_IndexParamH264SPSPPS, &(t7_video_encode->sps_pps_data));
+        unsigned char value = 1;
+        //VideoEncGetParameter(pVideoEnc, VENC_IndexParamAllParams, &value);
+    }
+    else if(t7_video_encode->encode_param.encode_format == VENC_CODEC_H265)
+    {
+        VideoEncGetParameter(t7_video_encode->VideoEnc, VENC_IndexParamH265Header, &(t7_video_encode->sps_pps_data));
+        unsigned char value = 1;
+        //VideoEncGetParameter(pVideoEnc, VENC_IndexParamAllParams, &value);
+    }
+
 	return t7_video_encode;
 
 init_error_exit:

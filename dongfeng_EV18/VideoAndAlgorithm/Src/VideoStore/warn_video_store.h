@@ -24,7 +24,16 @@
 #define  MAX_BIT_RATE_MBIT  8
 #define  MAX_FRAME_RATE  30
 
+#define  SD_MOUNT_DIRECTORY  "/mnt/sdcard/mmcblk1p1/"
+
 //#define  SAVE_WARN_VIDEO_FILE
+
+typedef enum {
+	SD_UNMOUNT = -1,
+	SD_MOUNT,
+    SD_FULL,
+    SD_NORMAL,
+} SD_Card_Status;
 
 typedef struct {
 	T7_Video_Encode *t7_video_encode;

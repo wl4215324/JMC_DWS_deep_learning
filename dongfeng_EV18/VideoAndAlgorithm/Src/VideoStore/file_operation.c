@@ -186,6 +186,7 @@ int createdir(const char *path)
                     return -1;
                 }
             }
+
             DirName[i] = '/';
          }
     }

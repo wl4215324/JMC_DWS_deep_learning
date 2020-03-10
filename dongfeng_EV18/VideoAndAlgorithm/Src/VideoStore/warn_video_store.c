@@ -81,6 +81,7 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, u
 {
 	Video_File_Resource *video_file_resource = NULL;
 
+	/* judge the validity of parameters */
 	if(src_width <= 0 || src_height <= 0 || dst_width <= 0 || bit_rate <= 0 || frame_rate <= 0)
 	{
 		goto init_error_exit;
@@ -96,6 +97,7 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, u
 		frame_rate = MAX_FRAME_RATE;
 	}
 
+	/* create object Video_File_Resource */
 	video_file_resource = (Video_File_Resource*)malloc(sizeof(Video_File_Resource));
 
 	if(!video_file_resource)
@@ -103,11 +105,14 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, u
 		goto init_error_exit;
 	}
 
-	video_file_resource->sd_card_status = -1;
+	/* initialize object */
+	//video_file_resource->sd_card_status = -1;
+	video_file_resource->sd_card_status = SD_UNMOUNT;
 	memset(video_file_resource->video_file_name, 0, sizeof(video_file_resource->video_file_name));
 	pthread_mutex_init(&(video_file_resource->file_lock), NULL);
 	pthread_cond_init(&(video_file_resource->file_cond), NULL);
 
+	/* initialize video encoder */
 	video_file_resource->t7_video_encode = init_video_encoder(src_width, src_height, dst_width, dst_height, \
 			bit_rate, frame_rate, encoder_type);
 
@@ -116,6 +121,7 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, u
 		goto init_error_exit;
 	}
 
+	/* initialize frame queue for encoded video */
 	video_file_resource->video_file_queue = init_video_queue();
 
 	if(video_file_resource->video_file_queue == (Video_Queue *)(-1))
@@ -123,23 +129,28 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, u
 		goto init_error_exit;
 	}
 
+	/* create timer to notify saving encoded video file after 5 seconds of warnning occurence */
 	video_file_resource->file_store_timer = (user_timer*)malloc(sizeof(user_timer));
 	if(!video_file_resource->file_store_timer)
 	{
 		goto init_error_exit;
 	}
 
+	/* initialize timer */
 	init_user_timer(video_file_resource->file_store_timer, GET_TICKS_TEST, notify_save_file, (unsigned long)video_file_resource);
 
-	video_file_resource->file_status = initFileListDir("/mnt/sdcard/mmcblk1p1/", 0, bit_rate, 10);
+	/* initialize SD card and directories for video file storage */
+	video_file_resource->file_status = initFileListDir(SD_MOUNT_DIRECTORY, 0, bit_rate, 10);
 
 	if(video_file_resource->file_status == (file_status_t*)(-1))
 	{
-		video_file_resource->sd_card_status = -1;
+		//video_file_resource->sd_card_status = -1;
+		video_file_resource->sd_card_status = SD_UNMOUNT;
 	}
 	else
 	{
-		video_file_resource->sd_card_status = 0;
+		//video_file_resource->sd_card_status = 0;
+		video_file_resource->sd_card_status = SD_MOUNT;
 	}
 
 	return video_file_resource;
