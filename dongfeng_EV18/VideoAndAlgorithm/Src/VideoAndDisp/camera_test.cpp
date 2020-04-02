@@ -29,6 +29,7 @@ extern "C" {
 #include <signal.h>
 #include "../VideoStore/user_timer.h"
 #include "../VideoStore/warn_video_store.h"
+#include "../iniparser/usr_conf.h"
 }
 
 #include "t7_camera_v4l2.h"
@@ -53,8 +54,10 @@ int main(int argc, char **argv)
 	signal(SIGKILL, signal_handler);  //kill signal for kill
 	signal(SIGSEGV, signal_handler);  // signal for segment fault
 */
-
+    /* initialize timer frame */
 	TimerInit();
+    /* initialize configuration file */
+	init_conf_file(INI_CONF_FILE_PATH);
 
 #ifdef SAVE_WARN_VIDEO_FILE
 	dsm_video_record = init_video_store(1280, 720, 1280, 720, 5, 30, VENC_CODEC_H264);

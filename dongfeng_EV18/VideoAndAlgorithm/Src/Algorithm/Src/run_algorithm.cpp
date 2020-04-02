@@ -18,6 +18,7 @@ extern "C" {
 #include "../../VideoStore/user_timer.h"
 #include "../../VideoStore/warn_video_store.h"
 #include "../../VideoStore/files_manager.h"
+#include "../../iniparser/usr_conf.h"
 }
 
 static pthread_mutex_t dfws_image_buf_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -30,6 +31,7 @@ static unsigned char fxp_alarm = 0;
 static pthread_mutex_t fxp_alarm_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static user_timer warn_interval_timers[7];
+static user_timer sync_systime_timer;
 
 extern Video_File_Resource *dsm_video_record;
 
@@ -185,9 +187,29 @@ int warn_delay_process(unsigned long data)
 	return 0;
 }
 
+static int sync_systime_with_gps(unsigned long data)
+{
+	SerialInputVar *serial_input_var = (SerialInputVar*)data;
+	struct tm *local;
+	time_t sec_t;
+	char str_date_time[32];
+
+	if(serial_input_var->msec_after_1970)
+	{
+		set_datetime_according_ms(serial_input_var->msec_after_1970);
+		sec_t = serial_input_var->msec_after_1970 / 1000;
+		local = localtime(&sec_t);
+		strftime(str_date_time, 30, "%Y-%m-%d %H:%M:%S", local);   //24小时制
+		change_inifile(INI_CONF_FILE_PATH, "sys_time:date_time", str_date_time);
+	}
+
+	return 0;
+}
+
 
 #define  WARN_INTERVAL_10S  10000000
 #define  WARN_RECORD_DELAY_5S  5000000
+#define  SYNC_SYS_TIME_PERIOD  10*1000000
 
 
 void dfms_warn_mapping(unsigned char off_wheel_alarm, unsigned char dfms_alarm, SerialOutputVar *serial_output_var, \
@@ -357,8 +379,8 @@ void* run_DFMS_algorithm(void *argc)
 	unsigned char send_buf[32];
 	int send_buf_len = 0;
 
-	char file_name[32] = "";
-	int i = 0;
+	char file_name[64] = "";
+	unsigned int i = 0;
 
 	while(true)
 	{
@@ -388,7 +410,7 @@ void* run_DFMS_algorithm(void *argc)
 
 //		if(dfms_alarm > 1)
 //		{
-//	        sprintf(file_name, "origin_image_%d_%02x.jpg", i++, dfms_alarm);
+//	        sprintf(file_name, "/mnt/sdcard/mmcblk1p1/came_image_%d_%02x.jpg", i++, dfms_alarm);
 //	        cv::imwrite(file_name, colorImage);
 //		}
 
@@ -582,6 +604,22 @@ void* parse_serial_commu(void* argv)
 //			}
 //			printf("\n");
 
+			/* if gps signal is valid, then sync system time */
+			if(!serial_input_var.gps_locate_state)
+			{
+				/* if timing timer is not active, then active it */
+				if(is_timer_detach(&sync_systime_timer))
+				{
+					init_user_timer(&sync_systime_timer, GET_TICKS_TEST+SYNC_SYS_TIME_PERIOD, \
+							sync_systime_with_gps, (unsigned long)(&serial_input_var));
+					add_user_timer(&sync_systime_timer);
+				}
+			}
+			else /* stop sync system time */
+			{
+				detach_user_timer(&sync_systime_timer);
+			}
+
 			if(shmfifo_left_size(pSendComFifo) >= spec_send_length)
 			{
 				//parse_recv_pack_send(recv_buf, rel_recv_length, send_buf, &spec_send_length);
@@ -618,6 +656,8 @@ int run_algorithm()
     {
     	init_user_timer(warn_interval_timers+i, GET_TICKS_TEST, warn_delay_process, i);
     }
+
+    init_user_timer((user_timer*)&sync_systime_timer, GET_TICKS_TEST, warn_delay_process, i);
 
     pthread_t dfms_task, monitor_tast, parse_serial_commu_task;
 

@@ -14,9 +14,13 @@ Debug/camera_test.d: Src/VideoAndDisp/camera_test.cpp \
  Src/VideoAndDisp/../VideoStore/basic_queue.h \
  Src/VideoAndDisp/../VideoStore/user_timer.h \
  Src/VideoAndDisp/../VideoStore/files_manager.h \
+ Src/VideoAndDisp/../iniparser/usr_conf.h \
+ Src/VideoAndDisp/../iniparser/iniparser.h \
+ Src/VideoAndDisp/../iniparser/dictionary.h \
  Src/VideoAndDisp/t7_camera_v4l2.h Src/VideoAndDisp/video_layer_test.h \
  Src/VideoAndDisp/gl_display.h \
- Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp
+ Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp \
+ Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h
 
 Src/VideoAndDisp/sunxi_camera.h:
 
@@ -48,6 +52,12 @@ Src/VideoAndDisp/../VideoStore/user_timer.h:
 
 Src/VideoAndDisp/../VideoStore/files_manager.h:
 
+Src/VideoAndDisp/../iniparser/usr_conf.h:
+
+Src/VideoAndDisp/../iniparser/iniparser.h:
+
+Src/VideoAndDisp/../iniparser/dictionary.h:
+
 Src/VideoAndDisp/t7_camera_v4l2.h:
 
 Src/VideoAndDisp/video_layer_test.h:
@@ -55,3 +65,5 @@ Src/VideoAndDisp/video_layer_test.h:
 Src/VideoAndDisp/gl_display.h:
 
 Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp:
+
+Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h:

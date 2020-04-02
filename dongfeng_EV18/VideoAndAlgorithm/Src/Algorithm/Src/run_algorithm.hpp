@@ -12,6 +12,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
+extern "C" {
+#include "../../VideoStore/rtc_operations.h"
+}
+
 extern void copy_dfms_image(unsigned char* src_image);
 
 extern void copy_monitor_image(unsigned char* src_image);

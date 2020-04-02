@@ -19,7 +19,8 @@ Debug/t7_camera_v4l2.d: Src/VideoAndDisp/t7_camera_v4l2.cpp \
  Src/VideoAndDisp/../VideoStore/bug.h \
  Src/VideoAndDisp/../VideoStore/user_timer.h \
  Src/VideoAndDisp/../VideoStore/files_manager.h Src/VideoAndDisp/G2dApi.h \
- Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp
+ Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp \
+ Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h
 
 Src/VideoAndDisp/t7_camera_v4l2.h:
 
@@ -72,3 +73,5 @@ Src/VideoAndDisp/../VideoStore/files_manager.h:
 Src/VideoAndDisp/G2dApi.h:
 
 Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp:
+
+Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h:

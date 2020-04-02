@@ -104,6 +104,19 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_ID_OF_DFMS_SWITCH  0x18FFF8D9
 #define MESSAGE_ID_OF_DFMS_SWITCH_INDEX  68
 
+#define MESSAGE_ID_OF_TBOX_STATE  0x18FF01FB
+#define MESSAGE_ID_OF_TBOX_STATE_INDEX  80
+
+#define MESSAGE_ID_OF_GPS_POS  0x18FEF3FB
+#define MESSAGE_ID_OF_GPS_POS_INDEX  92
+
+#define MESSAGE_ID_OF_GPS_MSEC  0x18FEE6FB
+#define MESSAGE_ID_OF_GPS_MSEC_INDEX  104
+
+#define MESSAGE_ID_OF_VEH_ANG  0x18FEE8FB
+#define MESSAGE_ID_OF_VEH_ANG_INDEX  116
+
+
 
 /*
  * configuration variables message ID of CAN communication
@@ -165,6 +178,14 @@ typedef struct {
 	unsigned char brake_switch;
 	unsigned char driver_door;
 	unsigned char DFMS_switch;
+
+    unsigned char gps_locate_state;
+    unsigned char valid_satelite_num;
+    unsigned int latitude;
+    unsigned int longtitude;
+    unsigned long long msec_after_1970;
+    unsigned short veh_angle;
+    unsigned short altitude;
 } SerialInputVar;
 
 

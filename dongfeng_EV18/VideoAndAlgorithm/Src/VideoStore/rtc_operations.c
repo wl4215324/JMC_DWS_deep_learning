@@ -7,8 +7,102 @@
 
 
 #include "rtc_operations.h"
+#include <sys/ioctl.h>
+#include <linux/rtc.h>
+#include <time.h>
 
 int rtcSetTime(const struct tm *tm_time);
+
+/********************************************************************
+ * Function:
+ * Describtion:
+ *
+ ********************************************************************/
+int set_datetime_according_ms(unsigned long long ms_after_1970)
+{
+	unsigned long sec_after_1970 = ms_after_1970 / 1000;
+
+	if(sec_after_1970 <= 0)
+	{
+		return 0;
+	}
+
+	struct timeval tv;
+
+	tv.tv_sec = sec_after_1970;
+	tv.tv_usec = 0;
+
+	/* set systime */
+	if(settimeofday(&tv, NULL) < 0)
+	{
+		printf("Set system date and time error.\n");
+		return -1;
+	}
+
+	struct tm *local = localtime(&sec_after_1970);
+//	printf("datetime->tm_year=%d \n",local->tm_year+1900);
+//	printf("datetime->tm_mon=%d \n",local->tm_mon);
+//	printf("datetime->tm_mday=%d \n",local->tm_mday);
+//	printf("datetime->tm_hour=%d \n",local->tm_hour);
+//	printf("datetime->tm_min=%d \n",local->tm_min);
+//	printf("datetime->tm_sec=%d \n",local->tm_sec);
+
+	/* set rtc hardware time */
+	rtcSetTime(local);
+	return 0;
+}
+
+
+int set_datetime_according_str(const char *date_time_str)
+{
+	if(!date_time_str)
+	{
+		return -1;
+	}
+
+	struct tm local_date_time;
+	time_t  sec_t = 0;
+	struct timeval time_val;
+
+	if(!strptime(date_time_str, "%Y-%m-%d %H:%M:%S", &local_date_time))
+	{
+		return -1;
+	}
+
+	sec_t = mktime(&local_date_time);
+	time_val.tv_sec = sec_t;
+	time_val.tv_usec = 0;
+
+	/* set systime */
+	if(settimeofday(&time_val, NULL) < 0)
+	{
+		printf("Set system date and time error.\n");
+		return -1;
+	}
+
+	/* set rtc hardware time */
+	rtcSetTime(&local_date_time);
+	return 0;
+}
+
+/********************************************************************
+ * Function:
+ * Describtion:
+ *
+ ********************************************************************/
+int get_datetime_according_fmt(char *str_date_time)
+{
+	if(!str_date_time)
+	{
+		return -1;
+	}
+
+	time_t sec_t = time(NULL);
+	struct tm *local = localtime(&sec_t);
+	strftime(str_date_time, 30, "%Y-%m-%d %H:%M:%S", local);   //24小时制
+	return 0;
+}
+
 
 int setDateTime(struct tm* ptm)
 {
@@ -19,6 +113,7 @@ int setDateTime(struct tm* ptm)
 	tv.tv_sec = timep;
 	tv.tv_usec = 0;
 
+	/* set systime */
 	if(settimeofday(&tv, NULL) < 0)
 	{
 		printf("Set system date and time error.\n");
@@ -35,6 +130,7 @@ int setDateTime(struct tm* ptm)
 	printf("datetime->tm_min=%d \n",local->tm_min);
 	printf("datetime->tm_sec=%d \n",local->tm_sec);
 
+	/* set rtc hardware time */
 	rtcSetTime(local);
 	return 0;
 }
@@ -67,7 +163,7 @@ time_t getDateTime(struct tm **local_time)
 }
 
 
-#define  RTC_SET_TIME  10
+//#define  RTC_SET_TIME  10
 int rtcSetTime(const struct tm *tm_time)
 {
     int rtc_handle = -1;
@@ -111,7 +207,7 @@ int rtcSetTime(const struct tm *tm_time)
 }
 
 
-#define  RTC_RD_TIME  11
+//#define  RTC_RD_TIME  11
 int rtcGetTime(struct tm *tm_time)
 {
     int rtc_handle;

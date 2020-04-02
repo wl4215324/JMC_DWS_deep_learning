@@ -499,7 +499,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_DRIVER_DOOR)
 	{
 		serial_input_var.driver_door = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DRIVER_DOOR_INDEX+4, 9, 1);
-//		DEBUG_INFO(driver_door: %d\n, serial_input_var.driver_door);
+        //DEBUG_INFO(driver_door: %d\n, serial_input_var.driver_door);
 	}
 	else
 	{
@@ -512,12 +512,74 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			MESSAGE_ID_OF_DFMS_SWITCH)
 	{
 		serial_input_var.DFMS_switch = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_DFMS_SWITCH_INDEX+4, 2, 2);
-//		DEBUG_INFO(DFMS_switch: %d\n, serial_input_var.DFMS_switch);
+        //DEBUG_INFO(DFMS_switch: %d\n, serial_input_var.DFMS_switch);
 	}
 	else
 	{
 		return -1;
 	}
+
+	/* get tbox locating status */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX), *(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+2), *(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+3)) == \
+			MESSAGE_ID_OF_TBOX_STATE)
+	{
+		serial_input_var.gps_locate_state = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+4, 0, 3);
+		serial_input_var.valid_satelite_num = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+4, 56, 8);
+        DEBUG_INFO(gps_locate_state: %d\n, serial_input_var.gps_locate_state);
+        DEBUG_INFO(valid_satelite_num: %d\n, serial_input_var.valid_satelite_num);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get gps position */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX), *(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+2), *(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+3)) == \
+			MESSAGE_ID_OF_GPS_POS)
+	{
+		serial_input_var.latitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 0, 32);
+		serial_input_var.longtitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 32, 32);
+        DEBUG_INFO(latitude: %d\n, serial_input_var.latitude);
+        DEBUG_INFO(longtitude: %d\n, serial_input_var.longtitude);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get gps msec */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX), *(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+2), *(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+3)) == \
+			MESSAGE_ID_OF_GPS_MSEC)
+	{
+		/* high 32 bits for ms */
+		serial_input_var.msec_after_1970 = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+4, 32, 32);
+		serial_input_var.msec_after_1970 <<= 32;
+		serial_input_var.msec_after_1970 |= get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+4, 0, 32);
+        DEBUG_INFO(msec_after_1970: %lld\n, serial_input_var.msec_after_1970);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get gps msec */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX), *(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+3)) == \
+			MESSAGE_ID_OF_VEH_ANG)
+	{
+		serial_input_var.veh_angle = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+4, 0, 16);
+		serial_input_var.altitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+4, 48, 16);
+        DEBUG_INFO(veh_angle: %d\n, serial_input_var.veh_angle);
+        DEBUG_INFO(altitude: %d\n, serial_input_var.altitude);
+	}
+	else
+	{
+		return -1;
+	}
+
 
 	return 0;
 }
