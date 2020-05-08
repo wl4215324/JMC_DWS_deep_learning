@@ -67,6 +67,7 @@ typedef enum {
 	SDCARD_NOT_MOUNT = -1,
 	FILE_DIR_NOT_CREATE = 0,
 	FILE_DIR_NORMAL = 1,
+	FILE_TO_BE_SAVED,
 } File_Dir_Status;
 
 
@@ -74,8 +75,8 @@ typedef struct file_status
 {
     unsigned int cur_file_idx;    //current file index
     unsigned int cur_max_filenum;  //max file count
-    unsigned int cur_dir_file_num; // availavle files count
-    unsigned int file_size_MB;
+    unsigned int cur_dir_file_num; //availavle files count
+    unsigned int file_size_MB;  //file size
     char cur_filesname[CM_MAX_RECORDFILE_NUM][CM_MAX_FILE_LEN];
     char cur_filedir [CM_MAX_FILE_LEN];
     File_Dir_Status file_dir_status;
@@ -85,6 +86,10 @@ typedef struct file_status
 file_status_t *initFileListDir(char *dirname, unsigned char camera_index, \
 		unsigned char bit_rate_Mb, unsigned short duration_s);
 
-int genfilename(char *name, file_status_t *file_manager);
+int init_file_manager(char *dirname, file_status_t *file_manager, unsigned char camera_idx, \
+		              unsigned char bit_rate_Mb, unsigned short duration_s);
+
+int genfilename(char *name, file_status_t *file_manager, unsigned char camera_idx, \
+        unsigned char bit_rate_Mb, unsigned short duration_s);
 
 #endif /* FILES_MANAGER_H_ */

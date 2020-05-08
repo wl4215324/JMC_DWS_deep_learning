@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 extern "C" {
-#include "../../VideoStore/rtc_operations.h"
+#include "../../../../ShmCommon/rtc_operations.h"
 }
 
 extern void copy_dfms_image(unsigned char* src_image);

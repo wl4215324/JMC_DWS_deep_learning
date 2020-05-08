@@ -527,9 +527,9 @@ void T7Venc::init_overlay_info(VencOverlayInfoS *pOverlayInfo)
 
 void init_jpeg_rate_ctrl(jpeg_func_t *jpeg_func)
 {
-    jpeg_func->jpeg_biteRate = 12*1024*1024;
-    jpeg_func->jpeg_frameRate = 30;
-    jpeg_func->bitRateRange.bitRateMax = 14*1024*1024;
+    jpeg_func->jpeg_biteRate = 15*1024*1024;
+    jpeg_func->jpeg_frameRate = 25;
+    jpeg_func->bitRateRange.bitRateMax = 20*1024*1024;
     jpeg_func->bitRateRange.bitRateMin = 10*1024*1024;
 }
 
@@ -673,18 +673,21 @@ int T7Venc::initJpegFunc(jpeg_func_t *jpeg_func, encode_param_t *encode_param)
 {
     memset(jpeg_func, 0, sizeof(jpeg_func_t));
 
-    jpeg_func->quality = 95;
+    jpeg_func->quality = 100;
 #if 0// ln change
     if(encode_param->encode_frame_num > 1)
         jpeg_func->jpeg_mode = 1;
     else
 #endif
-        jpeg_func->jpeg_mode = 0;
+        jpeg_func->jpeg_mode = 1;
 
     if(0 == jpeg_func->jpeg_mode)
         init_jpeg_exif(&jpeg_func->exifinfo);
     else if(1 == jpeg_func->jpeg_mode)
+    {
+    	init_jpeg_exif(&jpeg_func->exifinfo);
         init_jpeg_rate_ctrl(jpeg_func);
+    }
     else
     {
         loge("encoder do not support the jpeg_mode:%d\n", jpeg_func->jpeg_mode);

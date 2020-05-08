@@ -30,6 +30,8 @@ extern "C" {
 #include "../VideoStore/user_timer.h"
 #include "../VideoStore/warn_video_store.h"
 #include "../iniparser/usr_conf.h"
+#include "../CurlPost/curl_post.h"
+#include "water_mark_interface.h"
 }
 
 #include "t7_camera_v4l2.h"
@@ -59,13 +61,24 @@ int main(int argc, char **argv)
     /* initialize configuration file */
 	init_conf_file(INI_CONF_FILE_PATH);
 
+#ifdef ADD_WATERMARK
+	initWaterMark(720);
+#endif
+
+//	char *temp = NULL;
+//	get_token("admin", "rootroot", &temp);
+//	printf("token: %s\n", temp);
+//	post_proof(temp, "ev18_dms_test_123", "yawn","2020-04-20 18:27:00", "116.46406,39.898109", "yawn", "/extp/yawn.jpg");
+
+
 #ifdef SAVE_WARN_VIDEO_FILE
-	dsm_video_record = init_video_store(1280, 720, 1280, 720, 5, 30, VENC_CODEC_H264);
+	//initialize encoder for dsm
+	dsm_video_record = init_video_store(1280, 720, 1280, 720, 4, 25, VENC_CODEC_H264);
 
 	if(dsm_video_record == (Video_File_Resource*)(-1))
 	{
 		printf("dsm_video_record initial error!\n");
-		return 0;
+		return -1;
 	}
 #endif
 
@@ -76,18 +89,22 @@ int main(int argc, char **argv)
     pthread_t video_and_disp, dfms_task, monitor_tast;
     pthread_t dsm_video_record_task;
 
-//    int result = pthread_create(&video_and_disp, &attr, video_layer_test, NULL);
-//    pthread_attr_destroy(&attr);
+//  int result = pthread_create(&video_and_disp, &attr, video_layer_test, NULL);
+//  pthread_attr_destroy(&attr);
 
-    int result = pthread_create(&video_and_disp, &attr, capture_video, NULL);
+    int result = 0;
+    result = pthread_create(&video_and_disp, &attr, capture_video, NULL);
 
 #ifdef SAVE_WARN_VIDEO_FILE
-    result = pthread_create(&dsm_video_record_task, &attr, save_warn_video, (void*)dsm_video_record);
+    sleep(1);
+    if(dsm_video_record != (Video_File_Resource*)(-1))
+    	result = pthread_create(&dsm_video_record_task, &attr, save_warn_video, (void*)dsm_video_record);
 #endif
 
     pthread_attr_destroy(&attr);
 
     /* run algorithms for dws and off-wheel */
+
     if(!init_algorithm())
     {
     	run_algorithm( );

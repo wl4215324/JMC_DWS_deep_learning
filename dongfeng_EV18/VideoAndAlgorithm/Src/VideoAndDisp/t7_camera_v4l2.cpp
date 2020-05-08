@@ -13,10 +13,12 @@
 
 extern "C" {
 #include <stdbool.h>
+#include "serial_pack_parse.h"
 #include "../VideoStore/files_manager.h"
 #include "../VideoStore/video_encode.h"
 #include "../VideoStore/warn_video_store.h"
 #include "G2dApi.h"
+#include "water_mark_interface.h"
 }
 
 
@@ -25,6 +27,8 @@ extern "C" {
 unsigned char picture_is_ready = 0;
 pthread_mutex_t picture_lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t picture_cond =  PTHREAD_COND_INITIALIZER;
+
+extern WaterMarkUsrInterface *t7_watermark;
 
 static int nPlanes = 0;
 static int mCameraFd = -1;
@@ -982,11 +986,12 @@ void* capture_video(void* para)
 		printf("allocAlloc for g2d image memory error!\n");
 	}
 
-	int g2d_handle = g2dInit();
+	int g2d_handle = g2dInit();  //initialize g2d
 #endif
 
 #if 0
-	T7_Video_Encode* video_encoder = init_video_encoder(1280, 720, 1280, 720, 3, 25, VENC_CODEC_H264);
+	//T7_Video_Encode* video_encoder = init_video_encoder(1280, 720, 720, 576, 4, 25, VENC_CODEC_JPEG);
+	T7_Video_Encode* video_encoder = init_video_encoder(1280, 720, 720, 576, 4, 25, VENC_CODEC_H264);
 
 	if(video_encoder == (T7_Video_Encode*)(-1))
 	{
@@ -997,6 +1002,7 @@ void* capture_video(void* para)
 	{
 		printf("init_video_encoder success! \n");
 	}
+
 
 	Video_Queue *video_encoded_queue = init_video_queue();
 
@@ -1022,8 +1028,10 @@ void* capture_video(void* para)
 	{
 		printf("initFileListDir success !\n");
 	}
-#endif
 
+    unsigned char save_video_file = 0;
+    FILE *fd_video = NULL;
+#endif
 
 	char h264_video_name[256] = "";
 	fd_set fds;
@@ -1037,11 +1045,9 @@ void* capture_video(void* para)
     unsigned int v4l2_buf_addr_phy_Y_monitor;
     unsigned int v4l2_buf_addr_vir_Y;
 
-#if 0
-    genfilename(h264_video_name, file_manager);
-    FILE *fd_video = fopen(h264_video_name, "w");
-    fwrite(video_encoder->sps_pps_data.pBuffer, video_encoder->sps_pps_data.nLength, 1, fd_video);
-    unsigned char save_video_file = 0;
+#ifdef ADD_WATERMARK
+    char water_mark_str[128] = "";
+    char pos_str[32] = "";
 #endif
 
 	while(true)
@@ -1084,7 +1090,6 @@ void* capture_video(void* para)
 				if (mCameraType == CAMERA_TYPE_CSI)
 				{
                     #ifdef ROTATE90_DISP
-					//save_data_as_file("./img_1.yuv", (unsigned char*)mMapMem.mem[buf->index], 1280*720*1.5);
 					g2dRotate(g2d_handle, G2D_ROTATE90, (unsigned char*)(buf->m.planes[0].m.mem_offset), \
 							  1280, 720, (unsigned char*)(g2d_image_mem_ops.phy), 720, 1280);
 					flushCache(MEM_TYPE_DMA, &g2d_image_mem_ops, NULL);
@@ -1097,39 +1102,53 @@ void* capture_video(void* para)
 				}
 				#endif
 
-				dsm_camera_display(v4l2_buf_addr_phy_Y_dsm);
-/*
-				if(dsm_video_record->sd_card_status == 0)
+				dsm_camera_display(v4l2_buf_addr_phy_Y_dsm);  //display dsm camera video
+
+				#ifdef ADD_WATERMARK
+				get_gps_format_str(serial_input_var.gps_locate_state, serial_input_var.longtitude, \
+						           serial_input_var.latitude, ':', pos_str);
+				sprintf(water_mark_str, "0,0,timestamp,0,30,GPS %s,0,60,%d KM/H", pos_str, serial_input_var.vehicle_speed);
+				addWaterMark((unsigned char*)mMapMem.mem[buf->index], 1280, 720, water_mark_str, t7_watermark);
+				#endif
+
+#ifdef SAVE_WARN_VIDEO_FILE
+				if((dsm_video_record->sd_card_status == SD_MOUNT) && \
+				   (dsm_video_record->file_status != (file_status_t *)(-1)) && \
+				   (dsm_video_record->file_status->file_dir_status == FILE_DIR_NORMAL))  //if sd card is normally mounted
 				{
+
+					//encoding dsm video
 					encode_video_frame_according_to_vir_addr(dsm_video_record->t7_video_encode, \
 					(unsigned char*)mMapMem.mem[buf->index], ((unsigned char*)mMapMem.mem[buf->index])+1280*720);
-
 					push_data_into_video_queue(dsm_video_record->video_file_queue, \
 							dsm_video_record->t7_video_encode->outputBuffer.pData0, \
 							dsm_video_record->t7_video_encode->outputBuffer.nSize0);
 				}
-*/
+				else if(dsm_video_record->sd_card_status == SD_UNMOUNT) //if sd card is not mounted, do nothing
+				{
+					;
+				}
+#endif
 
-//				if(encode_cnt++ < 250)
-//				{
-//					encode_one_frame_h264((unsigned char*)mMapMem.mem[buf->index], \
-//							((unsigned char*)mMapMem.mem[buf->index])+1280*720);
-//					encode_video_frame_according_to_vir_addr(video_encoder, (unsigned char*)mMapMem.mem[buf->index], \
-//														((unsigned char*)mMapMem.mem[buf->index])+1280*720);
-//
-//					push_data_into_video_queue(video_encoded_queue, video_encoder->outputBuffer.pData0, \
-//							video_encoder->outputBuffer.nSize0);
-//				}
-//				else
-//				{
-					//free_h264_encode();
-					//destroy_video_encoder(&video_encoder);
+#if 0
+				if(encode_cnt++ < 250)
+				{
+					encode_video_frame_according_to_vir_addr(video_encoder, (unsigned char*)mMapMem.mem[buf->index], \
+														((unsigned char*)mMapMem.mem[buf->index])+1280*720);
+					push_data_into_video_queue(video_encoded_queue, video_encoder->outputBuffer.pData0, \
+							video_encoder->outputBuffer.nSize0);
+				}
+				else
+				{
+					destroy_video_encoder(&video_encoder);
 
-//					if(!save_video_file)
-//					{
-//						save_video_file = 1;
-//						save_video_frames_as_file(video_encoded_queue, fd_video);
-//					}
+					if(!save_video_file)
+					{
+						save_video_file = 1;
+						save_video_frames_as_file(video_encoded_queue, fd_video);
+					}
+
+
 //
 //					save_video_frames_as_file(video_encoded_queue, fd_video);
 //
@@ -1137,8 +1156,8 @@ void* capture_video(void* para)
 //				    fd_video = fopen(h264_video_name, "w");
 //				    fwrite(video_encoder->sps_pps_data.pBuffer, video_encoder->sps_pps_data.nLength, 1, fd_video);
 //					encode_cnt = 0;
-//				}
-
+				}
+#endif
 				copy_dfms_image((unsigned char*)mMapMem.mem[buf->index]); //virtual addr
 
 				ret = ioctl(dsm_camera_fd, VIDIOC_QBUF, buf);
@@ -1177,7 +1196,7 @@ void* capture_video(void* para)
 				}
 				#endif
 
-				monitor_camera_display(v4l2_buf_addr_phy_Y_monitor);
+				monitor_camera_display(v4l2_buf_addr_phy_Y_monitor); //display monitor camera video
 				copy_monitor_image((unsigned char*)monitor_camera_MapMem.mem[buf->index]);
 
 				ret = ioctl(monitor_camera_fd, VIDIOC_QBUF, buf);

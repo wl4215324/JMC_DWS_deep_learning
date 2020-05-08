@@ -302,4 +302,7 @@ extern int parse_recv_pack_send(unsigned char* recv_buf, int recv_buf_len,\
 
 extern unsigned short calc_check_sum(unsigned char* data_buf, int data_len);
 
+extern int get_gps_format_str(unsigned char locate_state, int longtitude,  int latitude,\
+		                      char delims,char *gps_str);
+
 #endif /* SERIAL_PARSE_PACK_PARSE_H_ */

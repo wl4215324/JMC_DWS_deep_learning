@@ -6,6 +6,7 @@
  */
 
 #include "serial_pack_parse.h"
+#include "rtc_operations.h"
 //#include "bootloader.h"
 
 /*
@@ -444,8 +445,37 @@ error_return:
 }
 
 
+static int set_datetime_by_ms(unsigned long long ms_after_1970)
+{
+	unsigned long sec_after_1970 = ms_after_1970 / 1000;
+
+	if(sec_after_1970 <= 0)
+	{
+		return 0;
+	}
+
+	struct timeval tv;
+
+	tv.tv_sec = sec_after_1970;
+	tv.tv_usec = 0;
+
+	/* set systime */
+	if(settimeofday(&tv, NULL) < 0)
+	{
+		printf("Set system date and time error.\n");
+		return -1;
+	}
+
+	struct tm *local = localtime(&sec_after_1970);
+
+	/* set rtc hardware time */
+	rtcSetTime(local);
+	return 0;
+}
+
 int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len)
 {
+	static unsigned char i = 0;
 	//static unsigned char vehicle_model = 0;  //0: unknown, 1: high configure, 2: middle configure
 
 	/* get variable vehicle_speed from receiving data */
@@ -539,8 +569,12 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			*(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+2), *(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+3)) == \
 			MESSAGE_ID_OF_GPS_POS)
 	{
-		serial_input_var.latitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 0, 32);
-		serial_input_var.longtitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 32, 32);
+		if(!(serial_input_var.gps_locate_state & 0x01)) //bit0: 0 valid, 1 invalid
+		{
+			serial_input_var.latitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 0, 32);
+			serial_input_var.longtitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 32, 32);
+		}
+
         DEBUG_INFO(latitude: %d\n, serial_input_var.latitude);
         DEBUG_INFO(longtitude: %d\n, serial_input_var.longtitude);
 	}
@@ -557,8 +591,18 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 		/* high 32 bits for ms */
 		serial_input_var.msec_after_1970 = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+4, 32, 32);
 		serial_input_var.msec_after_1970 <<= 32;
+		// low 32 bits for ms
 		serial_input_var.msec_after_1970 |= get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+4, 0, 32);
-        DEBUG_INFO(msec_after_1970: %lld\n, serial_input_var.msec_after_1970);
+		DEBUG_INFO(msec_after_1970: %llu\n, serial_input_var.msec_after_1970);
+
+		if(1 == i++%10  && serial_input_var.msec_after_1970)
+		{
+			unsigned int sec_t = time(NULL);
+			if(sec_t < serial_input_var.msec_after_1970/1000)
+			{
+				set_datetime_according_ms(serial_input_var.msec_after_1970);
+			}
+		}
 	}
 	else
 	{
@@ -581,6 +625,73 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 	}
 
 
+	return 0;
+}
+
+/*
+ * get position string format as "120.12345,34.12345"
+ */
+int get_gps_format_str(unsigned char locate_state, int longtitude,  int latitude,\
+		           char delims, char *gps_str)
+{
+	int i = 0;
+	int len = 0;
+	char *p = NULL;
+
+	if(!gps_str)
+		return -1;
+
+	if(locate_state&0x01)  //bit0: 0 valid, 1 invalid
+	{
+		return -1;
+	}
+
+	//bit2 for longtitude
+	if(locate_state&0x04) //bit2: 0 east, 1 west
+	{
+		if(longtitude > 0)
+			longtitude *= -1;
+	}
+	else
+	{
+		if(longtitude < 0)
+			return -1;
+	}
+
+	sprintf(gps_str, "%06d", longtitude);
+	len = strlen(gps_str);
+
+	for(i=0; i<5; i++)
+	{
+		*(gps_str+len-i) =  *(gps_str+len-i-1);
+	}
+
+	*(gps_str+len-i) = '.';
+	*(gps_str+len+1) = delims;
+	len += 2;
+	p = gps_str + len;
+
+	//bit1 for latitude
+	if(locate_state&0x04) //bit1: 0 north, 1 south
+	{
+		if(latitude > 0)
+			latitude *= -1;
+	}
+	else  //north
+	{
+		if(latitude < 0)
+			return -1;
+	}
+
+	sprintf(p, "%06d", latitude);
+	len = strlen(p);
+
+	for(i=0; i<5; i++)
+	{
+		*(p+len-i) =  *(p+len-i-1);
+	}
+
+	*(p+len-i) = '.';
 	return 0;
 }
 

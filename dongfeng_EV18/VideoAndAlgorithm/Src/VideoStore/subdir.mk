@@ -6,7 +6,6 @@
 C_SRCS += \
 ./file_operation.c \
 ./files_manager.c \
-./rtc_operations.c \
 ./timer.c \
 ./user_timer.c \
 ./basic_queue.c \
@@ -20,7 +19,6 @@ CPP_SRCS +=
 OBJS += \
 ./Debug/file_operation.o \
 ./Debug/files_manager.o \
-./Debug/rtc_operations.o \
 ./Debug/timer.o \
 ./Debug/user_timer.o \
 ./Debug/basic_queue.o \
@@ -32,7 +30,6 @@ OBJS += \
 C_DEPS += \
 ./Debug/file_operation.d \
 ./Debug/files_manager.d \
-./Debug/rtc_operations.d \
 ./Debug/timer.d \
 ./Debug/user_timer.d \
 ./Debug/basic_queue.d \

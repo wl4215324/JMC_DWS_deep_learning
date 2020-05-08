@@ -26,7 +26,7 @@
 
 #define  SD_MOUNT_DIRECTORY  "/mnt/sdcard/mmcblk1p1/"
 
-//#define  SAVE_WARN_VIDEO_FILE
+#define  SAVE_WARN_VIDEO_FILE
 
 typedef enum {
 	SD_UNMOUNT = -1,
@@ -36,15 +36,19 @@ typedef enum {
 } SD_Card_Status;
 
 typedef struct {
-	T7_Video_Encode *t7_video_encode;
-	Video_Queue *video_file_queue;
-	user_timer   *file_store_timer;
-	file_status_t *file_status;
-	char sd_card_status;
-	char video_file_name[128];
+	T7_Video_Encode *t7_video_encode;  //video encoder for 10s video
+	T7_Video_Encode *t7_jpeg_encode;  //video encoder for warnning jpg image
+	unsigned char *alert_proof_image; //yuv420p data buffer for warning image
+	unsigned int alert_proof_size;  //yuv420p data length for one frame
+	Video_Queue *video_file_queue;  //circly queue for 10s video
+	user_timer   *file_store_timer; //5s timer will be launched when warnning is triggered
+	file_status_t *file_status;  //file manager for
+	char sd_card_status;  //sd card is mounted or not
+	char video_file_name[128]; //full pathname for one new warnning
+	char warn_sys_time[32]; //date time for warnning come out
+	char warn_position[32]; //longitude and latitude for warnning come out
 	pthread_mutex_t file_lock;
 	pthread_cond_t file_cond;
-
 } Video_File_Resource;
 
 

@@ -209,7 +209,7 @@ static int sync_systime_with_gps(unsigned long data)
 
 #define  WARN_INTERVAL_10S  10000000
 #define  WARN_RECORD_DELAY_5S  5000000
-#define  SYNC_SYS_TIME_PERIOD  10*1000000
+#define  SYNC_SYS_TIME_PERIOD  60*1000000
 
 
 void dfms_warn_mapping(unsigned char off_wheel_alarm, unsigned char dfms_alarm, SerialOutputVar *serial_output_var, \
@@ -394,13 +394,14 @@ void* run_DFMS_algorithm(void *argc)
 		warning_logic_state_machine(DFMS_health_state, CAN_signal_flags, &DFMS_State);
 		//DEBUG_INFO(DFMS_State is : %0d\n, DFMS_State);
 
-		if(DFMS_State == ACTIVE)
+		if(DFMS_State == ACTIVE)  //in active mode, run dms algorithm
 		{
 			dfms_alarm = algo->detectFrame(colorImage, 1, demo_mode);
 			DEBUG_INFO(algorithm out value: %02X\n, dfms_alarm);
 		}
 		else if((DFMS_State == CLOSE) || (DFMS_State == FAULT) || (DFMS_State == STANDBY))
 		{
+			//if in passive, don't run dsm algorithm and assign 0 to result
 			dfms_alarm = 0;
 		}
 
@@ -423,26 +424,55 @@ void* run_DFMS_algorithm(void *argc)
 		dfms_warn_mapping(temp_fxp_alarm, dfms_alarm, &serial_output_var, DFMS_State);
 		pthread_mutex_unlock(&serial_output_var_mutex);
 
-#ifdef SAVE_WARN_VIDEO_FILE
-	/* if dws warning happend */
-	if((serial_output_var.DFMS_warn_bits) & 0x5E)
-	{
-		if(is_timer_detach(dsm_video_record->file_store_timer))
+		if(i++ >= 500)
 		{
-			if((dsm_video_record->file_status->file_dir_status == FILE_DIR_NORMAL) && \
-				genfilename(dsm_video_record->video_file_name, dsm_video_record->file_status) == 0)
+			i = 0;
+			serial_output_var.DFMS_warn_bits = 0x5E;
+		}
+		else
+		{
+			serial_output_var.DFMS_warn_bits = 0;
+		}
+
+#ifdef SAVE_WARN_VIDEO_FILE
+		/* if dws warning happend */
+		if((serial_output_var.DFMS_warn_bits) & 0x5E)
+		{
+	        get_datetime_according_fmt(dsm_video_record->warn_sys_time);
+			get_gps_format_str(serial_input_var.gps_locate_state, serial_input_var.longtitude, \
+					serial_input_var.latitude, ',', dsm_video_record->warn_position);
+
+			if((dsm_video_record->file_status != (file_status_t *)(-1)) && \
+			   (dsm_video_record->sd_card_status == SD_MOUNT))  //sd card is mounted normally
 			{
-				dsm_video_record->sd_card_status = 0;
-				init_user_timer(dsm_video_record->file_store_timer, GET_TICKS_TEST+WARN_RECORD_DELAY_5S, notify_save_file, \
-						(unsigned long)dsm_video_record);
-				add_user_timer(dsm_video_record->file_store_timer);
+				if(is_timer_detach(dsm_video_record->file_store_timer))  //if timer is idle
+				{
+					if((dsm_video_record->file_status->file_dir_status == FILE_DIR_NORMAL) && \
+						genfilename(dsm_video_record->video_file_name, dsm_video_record->file_status, 0, 4, 10) == 0)
+					{
+						init_user_timer(dsm_video_record->file_store_timer, GET_TICKS_TEST+WARN_RECORD_DELAY_5S, notify_save_file, \
+								(unsigned long)dsm_video_record);
+						add_user_timer(dsm_video_record->file_store_timer);
+						dsm_video_record->alert_proof_size = 1280*720*1.5;
+						memcpy(dsm_video_record->alert_proof_image, dfws_image_buf, dsm_video_record->alert_proof_size);
+					}
+				}
 			}
-			else
+			else if(dsm_video_record->sd_card_status == SD_UNMOUNT)
 			{
-				dsm_video_record->sd_card_status = -1;
+				if(dsm_video_record->file_status != (file_status_t*)(-1)) //object file_status already created
+				{
+					if(init_file_manager(SD_MOUNT_DIRECTORY, dsm_video_record->file_status, 0, 4, 10) == 0)
+					{
+						dsm_video_record->sd_card_status = SD_MOUNT;
+					}
+				}
+				else //if object file_status not created yet
+				{
+					dsm_video_record->file_status = initFileListDir(SD_MOUNT_DIRECTORY, 0, 4, 10);
+				}
 			}
 		}
-	}
 #endif
 
 		if((last_dfms_alarm != dfms_alarm) || (last_fxp_alarm != temp_fxp_alarm) || (dfms_alarm == 0x40))

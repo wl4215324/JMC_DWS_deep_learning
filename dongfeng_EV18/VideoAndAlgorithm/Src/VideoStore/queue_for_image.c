@@ -152,7 +152,7 @@ void push_data_into_video_queue(Video_Queue *video_queue, unsigned char *push_da
 			}
 			else
 			{
-				/* if frame  queue is full, take out one frame from frame queue and data queue */
+				/* if frame queue is full, take out one frame from frame queue and data queue */
 				if((video_queue->rear_idx+1) % video_queue->frame_count_of_queue == \
 						video_queue->front_idx)
 				{
@@ -281,7 +281,6 @@ int save_video_frames_as_file(Video_Queue *video_queue, FILE *fd_video)
 			fwrite(pull_buf, ret_len, 1, fd_video);
 		}
 
-        fsync(fileno(fd_video));
         fsync(fileno(fd_video));
 		fclose(fd_video);
 		pthread_mutex_unlock(&(video_queue->queue_lock));

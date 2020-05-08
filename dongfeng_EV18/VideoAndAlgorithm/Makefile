@@ -5,6 +5,7 @@ RM := rm -rf
 -include ./Src/Algorithm/Src/subdir.mk
 -include ./Src/VideoStore/subdir.mk
 -include ./Src/iniparser/subdir.mk
+-include ./Src/CurlPost/subdir.mk
 
 FAST = -ffast-math  -march=armv7-a -mfpu=vfpv4-d16 -mfloat-abi=hard -mcpu=cortex-a7 -fopenmp
 

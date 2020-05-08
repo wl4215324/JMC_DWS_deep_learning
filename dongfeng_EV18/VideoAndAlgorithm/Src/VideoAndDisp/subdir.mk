@@ -6,7 +6,9 @@
 C_SRCS = \
 ./DmaIon.c \
 ./sdklog.c \
-./sunxiMemInterface.c
+./sunxiMemInterface.c \
+./water_mark.c \
+./water_mark_interface.c
 
 CPP_SRCS = \
 ./camera_test.cpp \
@@ -25,13 +27,17 @@ OBJS = \
 ./Debug/video_layer_test.o \
 ./Debug/DmaIon.o \
 ./Debug/sdklog.o \
-./Debug/sunxiMemInterface.o
+./Debug/sunxiMemInterface.o \
+./Debug/water_mark.o \
+./Debug/water_mark_interface.o
 
 
 C_DEPS += \
 ./Debug/DmaIon.d \
 ./Debug/sdklog.d \
-./Debug/sunxiMemInterface.d
+./Debug/sunxiMemInterface.d \
+./Debug/water_mark.o \
+./Debug/water_mark_interface.o
 
 CPP_DEPS += \
 ./Debug/camera_test.d \

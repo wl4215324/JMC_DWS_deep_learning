@@ -63,9 +63,9 @@ void init_jpeg_exif(EXIFInfo *exifinfo)
 
 void init_jpeg_rate_ctrl(jpeg_func_t *jpeg_func)
 {
-    jpeg_func->jpeg_biteRate = 12*1024*1024;
-    jpeg_func->jpeg_frameRate = 30;
-    jpeg_func->bitRateRange.bitRateMax = 14*1024*1024;
+    jpeg_func->jpeg_biteRate = 14*1024*1024;
+    jpeg_func->jpeg_frameRate = 25;
+    jpeg_func->bitRateRange.bitRateMax = 20*1024*1024;
     jpeg_func->bitRateRange.bitRateMin = 10*1024*1024;
 }
 
@@ -300,7 +300,7 @@ int initJpegFunc(jpeg_func_t *jpeg_func, encode_param_t *encode_param)
         jpeg_func->jpeg_mode = 1;
     else
 #endif
-        jpeg_func->jpeg_mode = 0;
+        jpeg_func->jpeg_mode = 1;
 
     if(0 == jpeg_func->jpeg_mode)
         init_jpeg_exif(&jpeg_func->exifinfo);
@@ -313,8 +313,7 @@ int initJpegFunc(jpeg_func_t *jpeg_func, encode_param_t *encode_param)
     }
 
      //init VencOverlayConfig
-    init_overlay_info(&jpeg_func->sOverlayInfo);
-
+    //init_overlay_info(&jpeg_func->sOverlayInfo);
     return 0;
 }
 
@@ -492,15 +491,15 @@ int initH264Func(h264_func_t *h264_func, encode_param_t *encode_param)
     memset(h264_func, 0, sizeof(h264_func_t));
 
     //init h264Param
-    h264_func->h264Param.bEntropyCodingCABAC = 1;
+    h264_func->h264Param.bEntropyCodingCABAC = 1;  // 0:CAVLC 1:CABAC
     h264_func->h264Param.nBitrate = encode_param->bit_rate;
     h264_func->h264Param.nFramerate = encode_param->frame_rate;
     h264_func->h264Param.nCodingMode = VENC_FRAME_CODING;
     h264_func->h264Param.nMaxKeyInterval = encode_param->maxKeyFrame;
-    h264_func->h264Param.sProfileLevel.nProfile = VENC_H264ProfileHigh;
-    h264_func->h264Param.sProfileLevel.nLevel = VENC_H264Level51;
+    h264_func->h264Param.sProfileLevel.nProfile = VENC_H264ProfileMain; //VENC_H264ProfileHigh;
+    h264_func->h264Param.sProfileLevel.nLevel = VENC_H264Level31; //VENC_H264Level51;
     h264_func->h264Param.sQPRange.nMinqp = 10;
-    h264_func->h264Param.sQPRange.nMaxqp = 50;
+    h264_func->h264Param.sQPRange.nMaxqp = 40;
     h264_func->h264Param.bLongRefEnable = 1;
     h264_func->h264Param.nLongRefPoc = 0;
 

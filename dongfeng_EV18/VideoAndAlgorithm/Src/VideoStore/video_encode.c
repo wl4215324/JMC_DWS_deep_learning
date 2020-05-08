@@ -7,6 +7,7 @@
 
 #include "video_encode.h"
 #include "video_encode_attribute.h"
+#include "bug.h"
 
 
 T7_Video_Encode* init_video_encoder(uint32_t src_width, uint32_t src_height, uint32_t dst_width, uint32_t dst_height, \
@@ -31,11 +32,13 @@ T7_Video_Encode* init_video_encoder(uint32_t src_width, uint32_t src_height, uin
 	t7_video_encode->encode_param.src_height = src_height;
 	t7_video_encode->encode_param.dst_width = dst_width;
 	t7_video_encode->encode_param.dst_height = dst_height;
-	t7_video_encode->encode_param.bit_rate = bit_rate;
+	t7_video_encode->encode_param.bit_rate = bit_rate*1024*1024;
 	t7_video_encode->encode_param.frame_rate = frame_rate;
+	t7_video_encode->encode_param.maxKeyFrame = 30; //30 for h264 or h265
 
 	if(set_params_into_encoder(t7_video_encode->VideoEnc, &(t7_video_encode->encode_param)) < 0)  //failed to set params for encoder
 	{
+		DEBUG_INFO(set_params_into_encoder error!);
 		perror("set_params_into_encoder error: ");
 		goto init_error_exit;
 	}

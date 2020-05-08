@@ -5,7 +5,8 @@ $(SHM_COMM_DIR)/serial_pack_parse.c \
 $(SHM_COMM_DIR)/bootloader.c \
 $(SHM_COMM_DIR)/file_operate.c \
 $(SHM_COMM_DIR)/serial_pack_parse.c \
-$(SHM_COMM_DIR)/sha_1.c
+$(SHM_COMM_DIR)/sha_1.c \
+$(SHM_COMM_DIR)/rtc_operations.c
 
 OBJS := \
 $(SHM_COMM_DIR)/producer_consumer_shmfifo.o \
@@ -13,7 +14,8 @@ $(SHM_COMM_DIR)/serial_pack_parse.o \
 $(SHM_COMM_DIR)/bootloader.o \
 $(SHM_COMM_DIR)/file_operate.o \
 $(SHM_COMM_DIR)/serial_pack_parse.o \
-$(SHM_COMM_DIR)/sha_1.o
+$(SHM_COMM_DIR)/sha_1.o \
+$(SHM_COMM_DIR)/rtc_operations.o
 
 C_DEPS := \
 $(SHM_COMM_DIR)/producer_consumer_shmfifo.d \
@@ -21,7 +23,8 @@ $(SHM_COMM_DIR)/serial_pack_parse.d \
 $(SHM_COMM_DIR)/bootloader.d \
 $(SHM_COMM_DIR)/file_operate.d \
 $(SHM_COMM_DIR)/serial_pack_parse.d \
-$(SHM_COMM_DIR)/sha_1.d
+$(SHM_COMM_DIR)/sha_1.d \
+$(SHM_COMM_DIR)/rtc_operations.d
 
 #CFLAGS := -Wall -std=c++11 -O2 -shared -fPIC
 
