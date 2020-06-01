@@ -116,7 +116,14 @@ static inline unsigned int get_bits_of_bytes(unsigned char* bytes, unsigned char
 #define MESSAGE_ID_OF_VEH_ANG  0x18FEE8FB
 #define MESSAGE_ID_OF_VEH_ANG_INDEX  116
 
+#define  MESSAGE_ID_OF_VINCODE_SEG_1  0x0C0728D0
+#define  MESSAGE_ID_OF_VINCODE_SEG_1_INDEX  128
 
+#define  MESSAGE_ID_OF_VINCODE_SEG_2  0x0C0828D0
+#define  MESSAGE_ID_OF_VINCODE_SEG_2_INDEX  140
+
+#define  MESSAGE_ID_OF_VINCODE_SEG_3  0x0C0928D0
+#define  MESSAGE_ID_OF_VINCODE_SEG_3_INDEX  152
 
 /*
  * configuration variables message ID of CAN communication
@@ -186,6 +193,7 @@ typedef struct {
     unsigned long long msec_after_1970;
     unsigned short veh_angle;
     unsigned short altitude;
+    char vin_code[32];
 } SerialInputVar;
 
 

@@ -155,7 +155,7 @@ int dsm_camera_display(unsigned int phy_addr)
     conf.dst_x = 0;
     conf.dst_y = 0;
     conf.dst_w = 360;  //720
-    conf.dst_h = 482;  //480
+    conf.dst_h = 480;  //480
     conf.phy_addr = phy_addr;
     //printf("frm->phy_addr %x\n", conf.phy_addr);
 #ifdef ROTATE90_DISP

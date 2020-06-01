@@ -5,8 +5,10 @@
  *      Author: tony
  */
 
+#include <pthread.h>
 #include "usr_conf.h"
 #include "../../../ShmCommon/rtc_operations.h"
+#include "../../../ShmCommon/applicfg.h"
 #include "../CurlPost/curl_post.h"
 
 char *ini_file_default_conten = "#\n"
@@ -29,6 +31,9 @@ char *ini_file_default_conten = "#\n"
 
 
 extern UrlParams *url_params;
+
+static pthread_mutex_t  ini_file_rwlock;
+
 /*
  * create a default ini file
  */
@@ -68,6 +73,7 @@ int init_conf_file(char *ini_conf_file)
 		return -1;
 	}
 
+create_ini_file:
 	/* if file ini exist, nothing to be done, else create a new default file */
 	if(create_default_ini_file(ini_conf_file) < 0)
 	{
@@ -75,11 +81,23 @@ int init_conf_file(char *ini_conf_file)
 		strcpy(ini_conf_file, INI_CONF_FILE_PATH);
 	}
 
-	sprintf(key_str, "%s:%s", SYS_TTIME_SEC, DATE_TIME_KEY);
-	read_inifile(ini_conf_file, key_str, temp_buf);  //get system time
+	pthread_mutex_init(&ini_file_rwlock, NULL);
+	//sprintf(key_str, "%s:%s", SYS_TTIME_SEC, DATE_TIME_KEY);
+	memset(temp_buf, '\0', sizeof(temp_buf));
+	DEBUG_INFO(ini_conf_file: %s \n, ini_conf_file);
+	read_inifile(ini_conf_file,  SYS_TTIME_SEC":"DATE_TIME_KEY, temp_buf);  //get system time
 	printf("sys_date_time %s \n", temp_buf);
 
-	if(strlen(temp_buf))
+	if(!strlen(temp_buf))
+	{
+		DEBUG_INFO(\n);
+		printf("ini file name:%s\n", ini_conf_file);
+		remove(ini_conf_file);
+		sleep(1);
+		sync();
+		goto create_ini_file;
+	}
+	else
 	{
 		struct tm local_date_time;
 		time_t  sec_t = 0;
@@ -137,64 +155,116 @@ int init_conf_file(char *ini_conf_file)
     return 0;
 }
 
+
 /*
  * function describtion: update value of specified key
  */
 int read_inifile(const char *ini_file_name, const char *key, char * ret_str)
 {
 	char *temp = NULL;
+	int ret_val = -1;
+    dictionary * dict = NULL;
+
+    pthread_mutex_lock(&ini_file_rwlock);
     //Parse an ini file and return an allocated dictionary object
 	if(ret_str)
 	{
-	    dictionary * dict = NULL;
-
 	    if(!(dict = iniparser_load(ini_file_name)))
 	    {
-	    	return -1;
+	    	goto read_inifile_exit;
 	    }
 
-	    temp = iniparser_getstring(dict, key, "null");
+	    temp = iniparser_getstring(dict, key, NULL);
 
 	    if(temp)
 	    {
 	    	strcpy(ret_str, temp);
+	    	ret_val = 0;
 	    }
+	}
 
-	    iniparser_freedict(dict);
-	    return 0;
-	}
-	else
-	{
-		return -1;
-	}
+read_inifile_exit:
+    if(dict)
+    	iniparser_freedict(dict);
+    pthread_mutex_unlock(&ini_file_rwlock);
+    return ret_val;
 }
+
+
 
 /*
  * function describtion: update value of specified key
  */
 int change_inifile(const char *ini_file_name, const char * key, const char * val)
 {
-    int re = 0;
+    int ret_val = -1;
     dictionary * dict = NULL;
 
+    pthread_mutex_lock(&ini_file_rwlock);
     if(!(dict = iniparser_load(ini_file_name)))
     {
-    	return -1;
+    	ret_val =  -1;
+    	goto fun_exit;
     }
 
     if(iniparser_set(dict, key, val))
-    	return -1;
+    {
+    	ret_val = -1;
+    	goto fun_exit;
+    }
+
 #if 1
     FILE * f = fopen(ini_file_name, "w");
     iniparser_dump_ini(dict, f);
     fsync(fileno(f));
     fclose(f);
+    ret_val = 0;
 #endif
 
-    iniparser_freedict(dict);
-    return 0;
+fun_exit:
+    if(dict)
+    	iniparser_freedict(dict);
+    pthread_mutex_unlock(&ini_file_rwlock);
+    return ret_val;
 }
 
 
 
+/*lock_set函数*/
+void lock_set(int fd, int type)
+{
+    struct flock lock;
+    lock.l_whence = SEEK_SET; //赋值lock结构体
+    lock.l_start = 0;
+    lock.l_len = 0;
 
+    while (1)
+    {
+        lock.l_type = type;
+        /*根据不同的type值给文件上锁或解锁*/
+        if ((fcntl(fd, F_SETLK, &lock)) == 0)
+        {
+            if (lock.l_type == F_RDLCK)
+                printf("read lock set by %d\n", getpid());
+            else if (lock.l_type == F_WRLCK)
+                printf("write lock set by %d\n", getpid());
+            else if (lock.l_type == F_UNLCK)
+                printf("release lock by %d\n", getpid());
+            return;
+        }
+
+        /*判断文件是否可以上锁*/
+        fcntl(fd, F_GETLK, &lock);
+        /*判断文件不能上锁的原因*/
+        if (lock.l_type != F_UNLCK)
+        {
+            /*该文件已有写入锁*/
+            if (lock.l_type == F_RDLCK)
+                printf("read lock already set by %d\n", lock.l_pid);
+            /*该文件已有读取锁*/
+            else if (lock.l_type == F_WRLCK)
+                printf("write lock already set by %d\n", lock.l_pid);
+            getchar();
+        }
+    }
+}

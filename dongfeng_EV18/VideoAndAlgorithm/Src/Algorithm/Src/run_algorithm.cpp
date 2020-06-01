@@ -12,13 +12,16 @@
 
 extern "C" {
 #include <pthread.h>
+#include <string.h>
 #include "serial_pack_parse.h"
 #include "producer_consumer_shmfifo.h"
 #include "warning_logic.h"
 #include "../../VideoStore/user_timer.h"
 #include "../../VideoStore/warn_video_store.h"
 #include "../../VideoStore/files_manager.h"
+#include "../../VideoAndDisp/water_mark_interface.h"
 #include "../../iniparser/usr_conf.h"
+#include "../../CurlPost/curl_post.h"
 }
 
 static pthread_mutex_t dfws_image_buf_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -34,6 +37,12 @@ static user_timer warn_interval_timers[7];
 static user_timer sync_systime_timer;
 
 extern Video_File_Resource *dsm_video_record;
+extern Video_File_Resource *monitor_video_record;
+extern SingleWaterMark watermark_array[MAX_WATERMARK_NUM];
+extern SingleWaterMark monitor_watermark_array[MAX_WATERMARK_NUM];
+extern WaterMarkUsrInterface *t7_watermark;
+
+extern UrlParams *url_params;
 
 void copy_dfms_image(unsigned char* src_image)
 {
@@ -187,22 +196,29 @@ int warn_delay_process(unsigned long data)
 	return 0;
 }
 
+
 static int sync_systime_with_gps(unsigned long data)
 {
 	SerialInputVar *serial_input_var = (SerialInputVar*)data;
 	struct tm *local;
-	time_t sec_t;
+	unsigned long long sec_t;
 	char str_date_time[32];
+	unsigned int now_sec = time(NULL);
+	sec_t = serial_input_var->msec_after_1970 / 1000;
 
-	if(serial_input_var->msec_after_1970)
+	if(sec_t >=  now_sec)  //if gps time is normally
 	{
 		set_datetime_according_ms(serial_input_var->msec_after_1970);
-		sec_t = serial_input_var->msec_after_1970 / 1000;
-		local = localtime(&sec_t);
-		strftime(str_date_time, 30, "%Y-%m-%d %H:%M:%S", local);   //24小时制
-		change_inifile(INI_CONF_FILE_PATH, "sys_time:date_time", str_date_time);
+	}
+	else
+	{
+		sec_t = now_sec;
+		set_datetime_according_ms(sec_t*1000);
 	}
 
+	local = localtime((time_t*)&sec_t);
+	strftime(str_date_time, 30, "%Y-%m-%d %H:%M:%S", local);   //24小时制
+	change_inifile(INI_CONF_FILE_PATH, SYS_TTIME_SEC":"DATE_TIME_KEY, str_date_time);
 	return 0;
 }
 
@@ -272,7 +288,6 @@ void dfms_warn_mapping(unsigned char off_wheel_alarm, unsigned char dfms_alarm, 
 #else
 		serial_output_var->DFMS_warn.phoning = 1;
 #endif
-
 		break;
 
 	case SMOKE_ALARM: //抽烟报警
@@ -349,8 +364,8 @@ void* run_DFMS_algorithm(void *argc)
 	algo->algoParam.eyeLevel = 2;
 	algo->algoParam.nopLevel = 10;
 	*/
-	algo->algoParam.smokeClassifyLevel = 2;
-	algo->algoParam.callClassifyLevel = 2;  //origin 2
+	algo->algoParam.smokeClassifyLevel = 3;
+	algo->algoParam.callClassifyLevel = 3;  //origin 2
 	algo->algoParam.attenLevel = 2;
 	algo->algoParam.yawnLevel = 2;
 	algo->algoParam.eyeLevel = 2;
@@ -358,15 +373,15 @@ void* run_DFMS_algorithm(void *argc)
 
 	//报警队列报警阈值
 	// the other determinant of alarm required time
-	algo->algoParam.smokeClassifyDeqConf = 0.6;
-	algo->algoParam.callClassifyDeqConf = 0.6;
+	algo->algoParam.smokeClassifyDeqConf = 0.7;
+	algo->algoParam.callClassifyDeqConf = 0.7;
 	algo->algoParam.attenDeqConf = 0.6;
-	algo->algoParam.yawnDeqConf = 0.6;
+	algo->algoParam.yawnDeqConf = 0.5;
 	algo->algoParam.eyeDeqConf = 0.6;  //origin 0.6
 
 	algo->setAlgoParam(algo->algoParam);
 	//algo->init(Y8, 720, 1280, algo->algoParam);
-	Mat yuv420_image = Mat(1280, 720, CV_8UC1);
+	Mat yuv420_image = Mat(1280*3/2, 720, CV_8UC1);
 	Mat colorImage;
 
 	unsigned char dfms_alarm = 0;
@@ -381,14 +396,19 @@ void* run_DFMS_algorithm(void *argc)
 
 	char file_name[64] = "";
 	unsigned int i = 0;
+	char jpg_watermark[128] = "";
+	char temp_warn_type[16] = "";
 
 	while(true)
 	{
 		pthread_mutex_lock(&dfws_image_buf_lock);
-		YUV420spRotate90(yuv420_image.data, dfws_image_buf, 1280, 720);
+		//YUV420spRotate90(yuv420_image.data, dfws_image_buf, 1280, 720);
+		//yuv420_image.data = dfws_image_buf;
+		memcpy(yuv420_image.data, dfws_image_buf, sizeof(dfws_image_buf));
 		pthread_mutex_unlock(&dfws_image_buf_lock);
 
-		cvtColor(yuv420_image, colorImage, CV_GRAY2BGR);
+		//cvtColor(yuv420_image, colorImage, CV_GRAY2BGR);
+		cvtColor(yuv420_image, colorImage, CV_YUV2RGB_I420);
 		input_variables_judge(serial_input_var, &CAN_signal_flags);
 		//DEBUG_INFO(CAN_signal_flags: %02x\n, CAN_signal_flags.signal_state);
 		warning_logic_state_machine(DFMS_health_state, CAN_signal_flags, &DFMS_State);
@@ -396,8 +416,8 @@ void* run_DFMS_algorithm(void *argc)
 
 		if(DFMS_State == ACTIVE)  //in active mode, run dms algorithm
 		{
-			dfms_alarm = algo->detectFrame(colorImage, 1, demo_mode);
-			DEBUG_INFO(algorithm out value: %02X\n, dfms_alarm);
+			dfms_alarm = algo->detectFrame(colorImage, 1, demo_mode);  //run algorithm
+			//DEBUG_INFO(algorithm out value: %02X\n, dfms_alarm);
 		}
 		else if((DFMS_State == CLOSE) || (DFMS_State == FAULT) || (DFMS_State == STANDBY))
 		{
@@ -411,7 +431,7 @@ void* run_DFMS_algorithm(void *argc)
 
 //		if(dfms_alarm > 1)
 //		{
-//	        sprintf(file_name, "/mnt/sdcard/mmcblk1p1/came_image_%d_%02x.jpg", i++, dfms_alarm);
+//	        sprintf(file_name, "/mnt/sdcard/mmcblk1p1/came_image_%d_%02x.jpg", i, dfms_alarm);
 //	        cv::imwrite(file_name, colorImage);
 //		}
 
@@ -424,20 +444,49 @@ void* run_DFMS_algorithm(void *argc)
 		dfms_warn_mapping(temp_fxp_alarm, dfms_alarm, &serial_output_var, DFMS_State);
 		pthread_mutex_unlock(&serial_output_var_mutex);
 
-		if(i++ >= 500)
-		{
-			i = 0;
-			serial_output_var.DFMS_warn_bits = 0x5E;
-		}
-		else
-		{
-			serial_output_var.DFMS_warn_bits = 0;
-		}
+
+//		if(i++ >= 500)
+//		{
+//			i = 0;
+//			serial_output_var.DFMS_warn_bits = 0x5E;
+//		}
+//		else
+//		{
+//			serial_output_var.DFMS_warn_bits = 0;
+//		}
 
 #ifdef SAVE_WARN_VIDEO_FILE
-		/* if dws warning happend */
-		if((serial_output_var.DFMS_warn_bits) & 0x5E)
+		if((serial_output_var.DFMS_warn_bits) & 0x5E) //if dws warning happend
 		{
+			if(serial_output_var.DFMS_warn.close_eye)
+			{
+				strcpy(temp_warn_type, "CLOSE EYE");
+			}
+			else if(serial_output_var.DFMS_warn.distraction)
+			{
+				strcpy(temp_warn_type, "DISTRACTION");
+			}
+			else if(serial_output_var.DFMS_warn.phoning)
+			{
+				strcpy(temp_warn_type, "PHONING");
+			}
+			else if(serial_output_var.DFMS_warn.smoking)
+			{
+				strcpy(temp_warn_type, "SMOKING");
+			}
+			else if(serial_output_var.DFMS_warn.yawn)
+			{
+				strcpy(temp_warn_type, "YAWN");
+			}
+
+            #ifdef ADD_WATERMARK
+			strcpy((watermark_array+WARN_TYPE_IDX)->content, temp_warn_type);
+			sprintf(jpg_watermark, "%d,%d,%s", (watermark_array+WARN_TYPE_IDX)->mPositionX, \
+					(watermark_array+WARN_TYPE_IDX)->mPositionY, (watermark_array+WARN_TYPE_IDX)->content);
+			addWaterMark(yuv420_image.data, 720, 1280, jpg_watermark, t7_watermark);  //fill warn field of watermark
+			usleep(100000);
+            #endif
+
 	        get_datetime_according_fmt(dsm_video_record->warn_sys_time);
 			get_gps_format_str(serial_input_var.gps_locate_state, serial_input_var.longtitude, \
 					serial_input_var.latitude, ',', dsm_video_record->warn_position);
@@ -445,16 +494,17 @@ void* run_DFMS_algorithm(void *argc)
 			if((dsm_video_record->file_status != (file_status_t *)(-1)) && \
 			   (dsm_video_record->sd_card_status == SD_MOUNT))  //sd card is mounted normally
 			{
-				if(is_timer_detach(dsm_video_record->file_store_timer))  //if timer is idle
+				if(is_timer_detach(dsm_video_record->file_store_timer))  //if timer is idle, then start 4S timer
 				{
 					if((dsm_video_record->file_status->file_dir_status == FILE_DIR_NORMAL) && \
 						genfilename(dsm_video_record->video_file_name, dsm_video_record->file_status, 0, 4, 10) == 0)
 					{
+						strcpy(dsm_video_record->warn_type, temp_warn_type);
 						init_user_timer(dsm_video_record->file_store_timer, GET_TICKS_TEST+WARN_RECORD_DELAY_5S, notify_save_file, \
 								(unsigned long)dsm_video_record);
 						add_user_timer(dsm_video_record->file_store_timer);
 						dsm_video_record->alert_proof_size = 1280*720*1.5;
-						memcpy(dsm_video_record->alert_proof_image, dfws_image_buf, dsm_video_record->alert_proof_size);
+						memcpy(dsm_video_record->alert_proof_image, yuv420_image.data, dsm_video_record->alert_proof_size);
 					}
 				}
 			}
@@ -472,6 +522,13 @@ void* run_DFMS_algorithm(void *argc)
 					dsm_video_record->file_status = initFileListDir(SD_MOUNT_DIRECTORY, 0, 4, 10);
 				}
 			}
+		}
+		else
+		{
+			memset(temp_warn_type, '\0', sizeof(temp_warn_type));
+            #ifdef ADD_WATERMARK
+			strcpy((watermark_array+WARN_TYPE_IDX)->content, " ");
+            #endif
 		}
 #endif
 
@@ -495,6 +552,7 @@ void* run_DFMS_algorithm(void *argc)
 
 		last_dfms_alarm = dfms_alarm;
 		last_fxp_alarm = fxp_alarm;
+
 		usleep(100000);
 	}
 
@@ -518,21 +576,22 @@ void* run_off_wheel_algorithm(void* argc)
 	float speedFxp =100;
 	int demoModeFxp = 0;
 
-	Mat yuv420_image = Mat(720, 1280, CV_8UC1);
+	Mat yuv420_image = Mat(720*3/2, 1280, CV_8UC1);
 	Mat colorImage;
 
 	char file_name[64];
 	unsigned int i = 0;
+	char jpg_watermark[128] = "";
 
 	while(true)
 	{
 		pthread_mutex_lock(&monitor_image_buf_lock);
-		memcpy(yuv420_image.data, monitor_image_buf, 1280*720);
+		memcpy(yuv420_image.data, monitor_image_buf, sizeof(monitor_image_buf));
 		pthread_mutex_unlock(&monitor_image_buf_lock);
 
 		if(DFMS_State == ACTIVE)
 		{
-			cvtColor(yuv420_image, colorImage, CV_GRAY2BGR);
+			cvtColor(yuv420_image, colorImage, CV_YUV2RGB_I420);
 			framFxpROI = colorImage(Rect(750, 400, 300,300)).clone();
 			temp_fxp_alarm = fxp.detectFXP(framFxpROI,  speedFxp, fxp.algoParamFxp, demoModeFxp);
 
@@ -567,6 +626,62 @@ void* run_off_wheel_algorithm(void* argc)
 		fxp_alarm = temp_fxp_alarm;
 		pthread_mutex_unlock(&fxp_alarm_lock);
 		usleep(100000);
+
+#ifdef SAVE_WARN_VIDEO_FILE
+		if((serial_output_var.DFMS_warn_bits) & 0x01) //if off-wheel warning happend
+		{
+			strcpy(monitor_video_record->warn_type, "OFF WHEEL");
+
+			#ifdef ADD_WATERMARK
+			strcpy((monitor_watermark_array+WARN_TYPE_IDX)->content, monitor_video_record->warn_type);
+			sprintf(jpg_watermark, "%d,%d,%s", (monitor_watermark_array+WARN_TYPE_IDX)->mPositionX, \
+					(monitor_watermark_array+WARN_TYPE_IDX)->mPositionY, (monitor_watermark_array+WARN_TYPE_IDX)->content);
+			addWaterMark(yuv420_image.data, 1280, 720, jpg_watermark, t7_watermark);  //fill warn field of watermark
+			usleep(200000);
+			#endif
+
+			get_datetime_according_fmt(monitor_video_record->warn_sys_time);
+			get_gps_format_str(serial_input_var.gps_locate_state, serial_input_var.longtitude, \
+					serial_input_var.latitude, ',', monitor_video_record->warn_position);
+
+			if((monitor_video_record->file_status != (file_status_t *)(-1)) && \
+			   (monitor_video_record->sd_card_status == SD_MOUNT))  //sd card is mounted normally
+			{
+				if(is_timer_detach(monitor_video_record->file_store_timer))  //if timer is idle, then start 4S timer
+				{
+					if((monitor_video_record->file_status->file_dir_status == FILE_DIR_NORMAL) && \
+						genfilename(monitor_video_record->video_file_name, monitor_video_record->file_status, 1, 4, 10) == 0)
+					{
+						init_user_timer(monitor_video_record->file_store_timer, GET_TICKS_TEST+WARN_RECORD_DELAY_5S, notify_save_file, \
+								(unsigned long)monitor_video_record);
+						add_user_timer(monitor_video_record->file_store_timer);
+						monitor_video_record->alert_proof_size = 1280*720*1.5;
+						memcpy(monitor_video_record->alert_proof_image, yuv420_image.data, monitor_video_record->alert_proof_size);
+					}
+				}
+			}
+			else if(monitor_video_record->sd_card_status == SD_UNMOUNT)
+			{
+				if(monitor_video_record->file_status != (file_status_t*)(-1)) //object file_status already created
+				{
+					if(init_file_manager(SD_MOUNT_DIRECTORY, monitor_video_record->file_status, 1, 4, 10) == 0)
+					{
+						monitor_video_record->sd_card_status = SD_MOUNT;
+					}
+				}
+				else //if object file_status not created yet
+				{
+					monitor_video_record->file_status = initFileListDir(SD_MOUNT_DIRECTORY, 1, 4, 10);
+				}
+			}
+		}
+		else
+		{
+            #ifdef ADD_WATERMARK
+			strcpy((monitor_watermark_array+WARN_TYPE_IDX)->content, " ");
+            #endif
+		}
+#endif //SAVE_WARN_VIDEO_FILE
 	}
 
 	return NULL;
@@ -609,7 +724,7 @@ void* parse_serial_commu(void* argv)
 	unsigned char send_buf[128];
 
 	int i = 0;
-	int rel_recv_length = 0, spec_recv_length = 130;
+	int rel_recv_length = 0, spec_recv_length = 166;
 	int rel_send_length = 0, spec_send_length = 0;
 
 	while(true)
@@ -640,7 +755,7 @@ void* parse_serial_commu(void* argv)
 				/* if timing timer is not active, then active it */
 				if(is_timer_detach(&sync_systime_timer))
 				{
-					init_user_timer(&sync_systime_timer, GET_TICKS_TEST+SYNC_SYS_TIME_PERIOD, \
+					init_user_timer(&sync_systime_timer, (GET_TICKS_TEST+SYNC_SYS_TIME_PERIOD), \
 							sync_systime_with_gps, (unsigned long)(&serial_input_var));
 					add_user_timer(&sync_systime_timer);
 				}
@@ -665,9 +780,19 @@ void* parse_serial_commu(void* argv)
 //
 //				printf("\n");
 			}
+
+			// if vin code in file ini is not equal to the value from MCU
+			if(strlen(serial_input_var.vin_code) >= 17 && \
+			   strncmp(serial_input_var.vin_code, url_params->vin_code, 17) != 0)
+			{
+				//update vin code
+				strcpy(url_params->vin_code, serial_input_var.vin_code);
+				//update vin code in file ini
+				change_inifile(INI_CONF_FILE_PATH, PROOF_SERVER_SEC":"VEH_VIN_CODE_KEY, url_params->vin_code);
+			}
 		}
 
-		usleep(200000);
+		usleep(220000);
 	}
 
 	return NULL;
@@ -694,7 +819,7 @@ int run_algorithm()
     result = pthread_create(&parse_serial_commu_task, &attr, parse_serial_commu, NULL);
 
     result = pthread_create(&dfms_task, &attr, run_DFMS_algorithm, NULL);
-    sleep(1);
+
     result = pthread_create(&monitor_tast, &attr, run_off_wheel_algorithm, NULL);
 
     pthread_attr_destroy(&attr);

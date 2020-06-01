@@ -9,8 +9,11 @@
 #include "curl_post.h"
 #include "./include/curl/curl.h"
 #include <string.h>
+#include <stdbool.h>
+#include <pthread.h>
 
 UrlParams *url_params = NULL;
+pthread_mutex_t upload_proof_lock = PTHREAD_MUTEX_INITIALIZER;
 
 int reveived_callback( char *buffer, size_t size, size_t nmemb, char *userdata)
 {
@@ -77,6 +80,8 @@ int get_token(char *username, char *password, char**ret_token)
     curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);  //fill in request body
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, reveived_callback); //对返回的数据进行操作的函数地址
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, *ret_token); //这是write_data的第四个参数值
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
 	res = curl_easy_perform(curl);
 
 	if (res != CURLE_OK)
@@ -203,6 +208,7 @@ int post_proof(char *token, char *vin_code, char *violation_info, char *date_tim
     curl_easy_setopt(curl, CURLOPT_HTTPPOST, formpost);  //fill in request body
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, post_proof_callback); //对返回的数据进行操作的函数地址
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, temp); //这是write_data的第四个参数值
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, false);
 	res = curl_easy_perform(curl);
 
 	printf("post_proof: curl_easy_perform");
@@ -250,6 +256,7 @@ int upload_warn_proof(char *username, char *password, char *vin_code, char *viol
 	int ret = -1;
 	char *token = NULL;
 
+	pthread_mutex_lock(&upload_proof_lock);
 	if(!get_token(username, password, &token)) //get token successfully
 	{
 		if(!post_proof(token, vin_code, violation_info, date_time, \
@@ -270,6 +277,7 @@ int upload_warn_proof(char *username, char *password, char *vin_code, char *viol
 	if(token)
 		free(token);
 
+	pthread_mutex_unlock(&upload_proof_lock);
 	return ret;
 }
 

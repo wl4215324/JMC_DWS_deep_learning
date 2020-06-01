@@ -73,6 +73,7 @@ int set_datetime_according_str(const char *date_time_str)
 	time_val.tv_sec = sec_t;
 	time_val.tv_usec = 0;
 
+	printf("settimeofday sec:%ld\n", time_val.tv_sec);
 	/* set systime */
 	if(settimeofday(&time_val, NULL) < 0)
 	{
@@ -80,8 +81,14 @@ int set_datetime_according_str(const char *date_time_str)
 		return -1;
 	}
 
+	gettimeofday(&time_val, NULL);
+	printf("gettimeofday sec:%ld\n", time_val.tv_sec);
+
 	/* set rtc hardware time */
 	rtcSetTime(&local_date_time);
+
+	gettimeofday(&time_val, NULL);
+	printf("gettimeofday sec:%ld\n", time_val.tv_sec);
 	return 0;
 }
 

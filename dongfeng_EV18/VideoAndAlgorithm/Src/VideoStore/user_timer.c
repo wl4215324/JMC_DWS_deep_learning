@@ -25,7 +25,7 @@ static void timer_schedule(tvec_base *base);
 
 void timer_schedule_test(union sigval v)
 {
-	DEBUG_INFO(timer_schedule_test \n);
+	//DEBUG_INFO(timer_schedule_test \n);
 	timer_schedule(&my_tvec_base);
 }
 
@@ -76,6 +76,7 @@ void init_user_timer(user_timer *timer, unsigned long long expires, \
 {
 	INIT_LIST_HEAD(&timer->entry);
 	timer->expires = expires;
+	DEBUG_INFO(timer->expires: %llu, timer->expires);
 	timer->function = func;
 	timer->data = data;
 	timer->vec_index = 0;
@@ -87,7 +88,8 @@ static void get_next_timer_interrupt(tvec_base *base)
 	int i = 0;
 	user_timer *loop, *tmp;
 	struct list_head *head;
-	unsigned long long expires = ~0ULL;
+	unsigned long long expires = UL_MAX; //~0ULL
+
 
 	pthread_mutex_lock(&base->tvec_base_lock);
 
@@ -204,7 +206,6 @@ static int _add_user_timer(tvec_base *base, user_timer *timer)
 
 	list_add_tail(&timer->entry, base->list_vec+i);
 
-
 finish_add_timer:
 	pthread_mutex_unlock(&base->tvec_base_lock);
 	get_next_timer_interrupt(base);
@@ -229,6 +230,7 @@ static void timer_schedule(tvec_base *base)
 
 	pthread_mutex_lock(&base->tvec_base_lock);
 	jiffies = GET_TICKS_TEST;
+//	DEBUG_INFO(jiffies: %llu\n, jiffies);
 
 	if(time_after_eq(jiffies, base->next_expires))
 	{
@@ -238,7 +240,7 @@ static void timer_schedule(tvec_base *base)
 		}
 
 		loop = list_entry(base->next_timer_entry.next, user_timer, entry);
-		DEBUG_LINE();
+		//DEBUG_INFO();
 		loop->function(loop->data);
 		time_out_index = loop->vec_index;
 		list_del(&loop->entry);

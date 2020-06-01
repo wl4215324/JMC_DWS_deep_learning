@@ -17,10 +17,12 @@ Debug/camera_test.d: Src/VideoAndDisp/camera_test.cpp \
  Src/VideoAndDisp/../iniparser/usr_conf.h \
  Src/VideoAndDisp/../iniparser/iniparser.h \
  Src/VideoAndDisp/../iniparser/dictionary.h \
+ Src/VideoAndDisp/../CurlPost/curl_post.h \
+ Src/VideoAndDisp/water_mark_interface.h \
  Src/VideoAndDisp/t7_camera_v4l2.h Src/VideoAndDisp/video_layer_test.h \
  Src/VideoAndDisp/gl_display.h \
  Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp \
- Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h
+ Src/VideoAndDisp/../Algorithm/Src/../../../../ShmCommon/rtc_operations.h
 
 Src/VideoAndDisp/sunxi_camera.h:
 
@@ -58,6 +60,10 @@ Src/VideoAndDisp/../iniparser/iniparser.h:
 
 Src/VideoAndDisp/../iniparser/dictionary.h:
 
+Src/VideoAndDisp/../CurlPost/curl_post.h:
+
+Src/VideoAndDisp/water_mark_interface.h:
+
 Src/VideoAndDisp/t7_camera_v4l2.h:
 
 Src/VideoAndDisp/video_layer_test.h:
@@ -66,4 +72,4 @@ Src/VideoAndDisp/gl_display.h:
 
 Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp:
 
-Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h:
+Src/VideoAndDisp/../Algorithm/Src/../../../../ShmCommon/rtc_operations.h:

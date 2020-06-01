@@ -6,7 +6,8 @@ Debug/warn_video_store.d: Src/VideoStore/warn_video_store.c \
  Src/VideoStore/queue_for_image.h Src/VideoStore/basic_queue.h \
  Src/VideoStore/timer.h Src/VideoStore/jiffies.h Src/VideoStore/list.h \
  Src/VideoStore/bug.h Src/VideoStore/user_timer.h \
- Src/VideoStore/files_manager.h Src/VideoStore/file_operation.h
+ Src/VideoStore/files_manager.h Src/VideoStore/file_operation.h \
+ Src/VideoStore/../CurlPost/curl_post.h
 
 Src/VideoStore/warn_video_store.h:
 
@@ -35,3 +36,5 @@ Src/VideoStore/user_timer.h:
 Src/VideoStore/files_manager.h:
 
 Src/VideoStore/file_operation.h:
+
+Src/VideoStore/../CurlPost/curl_post.h:

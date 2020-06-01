@@ -96,14 +96,14 @@ int main(int argc, char* argv[])
 				serial_commu_recv_state = 0;
 				gettimeofday(&tp, NULL);
 
-				DEBUG_INFO(recv_length is: %d spec_recv_len: %d data : ,recv_length, spec_recv_len);
-
-				for(i=0; i<recv_length; i++ )
-				{
-					printf("%02X", recv_buf[i]);
-				}
-
-			    printf("\n");
+//				DEBUG_INFO(recv_length is: %d spec_recv_len: %d data : ,recv_length, spec_recv_len);
+//
+//				for(i=0; i<recv_length; i++ )
+//				{
+//					printf("%02X", recv_buf[i]);
+//				}
+//
+//			    printf("\n");
 
 			    if(D2_MESSAGE == *(recv_buf + MESSAGE_TYPE_ID))  // type D2 message processing
 				{

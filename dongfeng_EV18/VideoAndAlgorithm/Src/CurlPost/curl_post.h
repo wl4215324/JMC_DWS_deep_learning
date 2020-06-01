@@ -11,8 +11,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define  TOKEN_URL  "http://test-api-dms.burnish.cn:8080/auth/api-token-auth/"
-#define  PROOF_URL  "http://test-api-dms.burnish.cn:8080/monitor/upload-alert/"
+#define  TOKEN_URL  "https://test-api-dms.burnish.cn/auth/api-token-auth/"
+#define  PROOF_URL  "https://test-api-dms.burnish.cn/monitor/upload-alert/"
 #define  USER_NAME  "admin"
 #define  PASSWORD   "rootroot"
 #define  VIN_CODE   "dsm_0123456789"

@@ -88,16 +88,18 @@ void *save_warn_video(void *argv)
 				strcpy(file_name, "/warn.jpg");
 				//save jpg
 				fp = fopen(video_file_resource->video_file_name, "w");
-				encode_video_frame_according_to_vir_addr(dsm_video_record->t7_jpeg_encode, \
+				encode_video_frame_according_to_vir_addr(video_file_resource->t7_jpeg_encode, \
 						video_file_resource->alert_proof_image, video_file_resource->alert_proof_image+1280*720);
-				fwrite(dsm_video_record->t7_jpeg_encode->outputBuffer.pData0, \
-					   dsm_video_record->t7_jpeg_encode->outputBuffer.nSize0, 1, fp);
+				fwrite(video_file_resource->t7_jpeg_encode->outputBuffer.pData0, \
+						video_file_resource->t7_jpeg_encode->outputBuffer.nSize0, 1, fp);
 				fsync(fileno(fp));
 				fclose(fp);
 
+
+
 				upload_warn_proof(url_params->usr_name, url_params->password, url_params->vin_code, \
-						"yawn", video_file_resource->warn_sys_time, video_file_resource->warn_position, \
-						"test", video_file_resource->video_file_name);
+						video_file_resource->warn_type, video_file_resource->warn_sys_time, \
+						video_file_resource->warn_position, "test", video_file_resource->video_file_name);
 //				get_token("admin", "rootroot", &token);
 //				printf("token: %s\n", token);
 			}
@@ -120,8 +122,8 @@ void *save_warn_video(void *argv)
 		}
 
 		video_file_resource->file_status->file_dir_status = FILE_DIR_NORMAL;
+		memset(video_file_resource->warn_type, '\0', sizeof(video_file_resource->warn_type));
 		pthread_mutex_unlock(&(video_file_resource->file_lock));
-		DEBUG_INFO(exit \n);
 	}
 
 	return NULL;
@@ -133,7 +135,7 @@ void *save_warn_video(void *argv)
  */
 Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, \
 		uint32_t dst_width, uint32_t dst_height, uint8_t bit_rate, uint8_t frame_rate, \
-		VENC_CODEC_TYPE encoder_type)
+		uint8_t camera_idx, VENC_CODEC_TYPE encoder_type)
 {
 	Video_File_Resource *video_file_resource = NULL;
 
@@ -172,6 +174,7 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, \
 	memset(video_file_resource->video_file_name, 0, sizeof(video_file_resource->video_file_name));
 	memset(video_file_resource->warn_position, 0, sizeof(video_file_resource->warn_position));
 	memset(video_file_resource->warn_sys_time, 0, sizeof(video_file_resource->warn_sys_time));
+	memset(video_file_resource->warn_type, 0, sizeof(video_file_resource->warn_type));
 	pthread_mutex_init(&(video_file_resource->file_lock), NULL);
 	pthread_cond_init(&(video_file_resource->file_cond), NULL);
 
@@ -220,7 +223,7 @@ Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, \
 	init_user_timer(video_file_resource->file_store_timer, GET_TICKS_TEST, notify_save_file, (unsigned long)video_file_resource);
 
 	/* initialize SD card and directories for video file storage */
-	video_file_resource->file_status = initFileListDir(SD_MOUNT_DIRECTORY, 0, bit_rate, 10); //0:camera 0, 10: 10 seconds
+	video_file_resource->file_status = initFileListDir(SD_MOUNT_DIRECTORY, camera_idx, bit_rate, 10); //0:camera 0, 10: 10 seconds
 
 	if(video_file_resource->file_status == (file_status_t*)(-1))
 	{

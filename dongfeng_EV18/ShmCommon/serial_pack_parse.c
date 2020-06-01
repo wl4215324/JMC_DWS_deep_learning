@@ -20,6 +20,7 @@ SerialInputVar serial_input_var = {
 		.brake_switch = 0,
 		.driver_door = 0,
 		.DFMS_switch = 1,
+		.vin_code = "",
 };
 
 SerialOutputVar serial_output_var = {0, 0x01, 0, 0, 0, 0, 0,};
@@ -445,37 +446,38 @@ error_return:
 }
 
 
-static int set_datetime_by_ms(unsigned long long ms_after_1970)
-{
-	unsigned long sec_after_1970 = ms_after_1970 / 1000;
-
-	if(sec_after_1970 <= 0)
-	{
-		return 0;
-	}
-
-	struct timeval tv;
-
-	tv.tv_sec = sec_after_1970;
-	tv.tv_usec = 0;
-
-	/* set systime */
-	if(settimeofday(&tv, NULL) < 0)
-	{
-		printf("Set system date and time error.\n");
-		return -1;
-	}
-
-	struct tm *local = localtime(&sec_after_1970);
-
-	/* set rtc hardware time */
-	rtcSetTime(local);
-	return 0;
-}
+//static int set_datetime_by_ms(unsigned long long ms_after_1970)
+//{
+//	unsigned long sec_after_1970 = ms_after_1970 / 1000;
+//
+//	if(sec_after_1970 <= 0)
+//	{
+//		return 0;
+//	}
+//
+//	struct timeval tv;
+//
+//	tv.tv_sec = sec_after_1970;
+//	tv.tv_usec = 0;
+//
+//	/* set systime */
+//	if(settimeofday(&tv, NULL) < 0)
+//	{
+//		printf("Set system date and time error.\n");
+//		return -1;
+//	}
+//
+//	struct tm *local = localtime(&sec_after_1970);
+//
+//	/* set rtc hardware time */
+//	rtcSetTime(local);
+//	return 0;
+//}
 
 int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len)
 {
 	static unsigned char i = 0;
+	unsigned char j = 0;
 	//static unsigned char vehicle_model = 0;  //0: unknown, 1: high configure, 2: middle configure
 
 	/* get variable vehicle_speed from receiving data */
@@ -556,8 +558,8 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 	{
 		serial_input_var.gps_locate_state = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+4, 0, 3);
 		serial_input_var.valid_satelite_num = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_TBOX_STATE_INDEX+4, 56, 8);
-        DEBUG_INFO(gps_locate_state: %d\n, serial_input_var.gps_locate_state);
-        DEBUG_INFO(valid_satelite_num: %d\n, serial_input_var.valid_satelite_num);
+//        DEBUG_INFO(gps_locate_state: %d\n, serial_input_var.gps_locate_state);
+//        DEBUG_INFO(valid_satelite_num: %d\n, serial_input_var.valid_satelite_num);
 	}
 	else
 	{
@@ -575,8 +577,8 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 			serial_input_var.longtitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_POS_INDEX+4, 32, 32);
 		}
 
-        DEBUG_INFO(latitude: %d\n, serial_input_var.latitude);
-        DEBUG_INFO(longtitude: %d\n, serial_input_var.longtitude);
+//        DEBUG_INFO(latitude: %d\n, serial_input_var.latitude);
+//        DEBUG_INFO(longtitude: %d\n, serial_input_var.longtitude);
 	}
 	else
 	{
@@ -593,15 +595,45 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 		serial_input_var.msec_after_1970 <<= 32;
 		// low 32 bits for ms
 		serial_input_var.msec_after_1970 |= get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_GPS_MSEC_INDEX+4, 0, 32);
-		DEBUG_INFO(msec_after_1970: %llu\n, serial_input_var.msec_after_1970);
+//		DEBUG_INFO(msec_after_1970: %llu\n, serial_input_var.msec_after_1970);
 
-		if(1 == i++%10  && serial_input_var.msec_after_1970)
+//		if(1 == i++%30  && serial_input_var.msec_after_1970)
+//		{
+//			unsigned int sec_t = time(NULL);
+//			if(sec_t < serial_input_var.msec_after_1970/1000)
+//			{
+//				set_datetime_according_ms(serial_input_var.msec_after_1970);
+//			}
+//		}
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get vehicle angle and altitude */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX), *(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+3)) == \
+			MESSAGE_ID_OF_VEH_ANG)
+	{
+		serial_input_var.veh_angle = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+4, 0, 16);
+		serial_input_var.altitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+4, 48, 16);
+//        DEBUG_INFO(veh_angle: %d\n, serial_input_var.veh_angle);
+//        DEBUG_INFO(altitude: %d\n, serial_input_var.altitude);
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get vin code segment 1 */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_1_INDEX), *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_1_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_1_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_1_INDEX+3)) == \
+			MESSAGE_ID_OF_VINCODE_SEG_1)
+	{
+		for(j=0; j<8; j++)
 		{
-			unsigned int sec_t = time(NULL);
-			if(sec_t < serial_input_var.msec_after_1970/1000)
-			{
-				set_datetime_according_ms(serial_input_var.msec_after_1970);
-			}
+			serial_input_var.vin_code[9+j] = *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_1_INDEX+4+8-j);
 		}
 	}
 	else
@@ -609,15 +641,27 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 		return -1;
 	}
 
-	/* get gps msec */
-	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX), *(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+1),\
-			*(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+3)) == \
-			MESSAGE_ID_OF_VEH_ANG)
+	/* get vin code segment 2 */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_2_INDEX), *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_2_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_2_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_2_INDEX+3)) == \
+			MESSAGE_ID_OF_VINCODE_SEG_2)
 	{
-		serial_input_var.veh_angle = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+4, 0, 16);
-		serial_input_var.altitude = get_bits_of_bytes(recv_buf+MESSAGE_ID_OF_VEH_ANG_INDEX+4, 48, 16);
-        DEBUG_INFO(veh_angle: %d\n, serial_input_var.veh_angle);
-        DEBUG_INFO(altitude: %d\n, serial_input_var.altitude);
+		for(j=0; j<8; j++)
+		{
+			serial_input_var.vin_code[1+j] = *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_2_INDEX+4+8-j);
+		}
+	}
+	else
+	{
+		return -1;
+	}
+
+	/* get vin code segment 3 */
+	if(MAKE_DWORD(*(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_3_INDEX), *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_3_INDEX+1),\
+			*(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_3_INDEX+2), *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_3_INDEX+3)) == \
+			MESSAGE_ID_OF_VINCODE_SEG_3)
+	{
+		serial_input_var.vin_code[0] = *(recv_buf+MESSAGE_ID_OF_VINCODE_SEG_3_INDEX+4);
 	}
 	else
 	{
@@ -627,6 +671,7 @@ int parse_serial_input_var(unsigned char *recv_buf, unsigned short recv_data_len
 
 	return 0;
 }
+
 
 /*
  * get position string format as "120.12345,34.12345"

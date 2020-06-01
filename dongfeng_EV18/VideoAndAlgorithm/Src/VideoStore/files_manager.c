@@ -15,7 +15,7 @@ char g_PicPath[MAX_SUPPORT_CAM][PIC_NAME_LEN] = { };   //mod lss
 char g_NamePic[MAX_SUPPORT_CAM][CM_MAX_PICTURE_NUM][PIC_NAME_LEN] = { };
 
 char *pVideoPath[MAX_SUPPORT_CAM] = {
-	"warn_video",
+	"dsm_video",
 	"monitor_video",
 	"leftVideo2",
 	"rightVideo3",
@@ -96,7 +96,7 @@ int init_file_manager(char *dirname, file_status_t *file_manager, unsigned char 
 		sprintf(tmpbuf, "%s:%s", PROOF_FILE_SEC, MONITOR_CUR_FILE_INDEX);
 	}
 
-	read_inifile(INI_CONF_FILE_PATH, tmpbuf, rmbuf);  //get vin code
+	read_inifile(INI_CONF_FILE_PATH, tmpbuf, rmbuf);  //get file index
 	file_manager->cur_file_idx = atoi(rmbuf);
 	file_manager->cur_max_filenum = 0;
 	file_manager->cur_dir_file_num = 0;
@@ -499,7 +499,7 @@ int genfilename(char *name, file_status_t *file_manager, unsigned char camera_id
 	//unsigned long afile_size = ((mDuration * bit_rate) >> 23) + (13 * mDuration) / 60;  //视频文件大小MB
 	//int afile_blksize = (mDuration / 60) * gAFileOccupySizePerMinMb;  //即将录下文件的大小，根据记录时间计算
 
-	unsigned long long as = 0;
+	signed long long as = 0;
 	rmidx = file_manager->cur_file_idx;
 	reidx = 0;
 	int ret;
@@ -508,11 +508,15 @@ int genfilename(char *name, file_status_t *file_manager, unsigned char camera_id
 	do
 	{
 		as = availSize(file_manager->cur_filedir);  //获得指定路径所在磁盘剩余空间大小，单位MB
-		printf("dbg-rec as is %lluM, re is %dM \n", as, (int)(file_manager->file_size_MB + RESERVED_SIZE));
+		printf("dbg-rec as is %lldM, re is %dM \n", as, (int)(file_manager->file_size_MB + RESERVED_SIZE));
 
 		if (as > (file_manager->file_size_MB + RESERVED_SIZE)) //磁盘剩余空间大于指定录取文件大小，we have enough space
 		{
 			break;
+		}
+		else if(as < 0)
+		{
+			return -1;
 		}
 		else  //there is no enough space for new video file, old file needs to be deleted
 		{
@@ -623,6 +627,7 @@ int genfilename(char *name, file_status_t *file_manager, unsigned char camera_id
 	//config_set_camfileidx(0, p->cur_file_idx);
 	memset(rec_filename, 0, sizeof(rec_filename));
 	sprintf(rec_filename, "%d", file_manager->cur_file_idx);
+	memset(new_file_name, 0, sizeof(new_file_name));
 
 	if(0 == camera_idx)
 	{

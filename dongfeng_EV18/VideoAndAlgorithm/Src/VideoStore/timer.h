@@ -92,7 +92,9 @@ typedef struct tvec_t_base_s tvec_base_t;
 #define GET_TICKS_TEST ({ \
 	struct timeval tv; \
 	gettimeofday(&tv, NULL); \
-	(tv.tv_sec*1000000+tv.tv_usec);})
+	unsigned long long u_sec = tv.tv_sec; \
+	u_sec *= 1000000; \
+	u_sec += tv.tv_usec;})
 
 #define per_cpu(var, cpu)  (*((void)cpu, &per_cpu__##var))
 #define __get_cpu_var(var) per_cpu__##var

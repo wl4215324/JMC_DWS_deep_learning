@@ -61,8 +61,10 @@ unsigned long long availSize(const char *path)
         unsigned long long freeDisk = diskinfo.f_bfree * blocksize; //剩余空间的大小
         return (unsigned long long)(freeDisk >> 20); //MB
     }
-
-    return 0;
+    else
+    {
+    	return (unsigned long long)(-1);
+    }
 }
 
 

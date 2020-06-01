@@ -47,13 +47,15 @@ typedef struct {
 	char video_file_name[128]; //full pathname for one new warnning
 	char warn_sys_time[32]; //date time for warnning come out
 	char warn_position[32]; //longitude and latitude for warnning come out
+	char warn_type[16]; //for record warn type
 	pthread_mutex_t file_lock;
 	pthread_cond_t file_cond;
 } Video_File_Resource;
 
 
-Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, uint32_t dst_width, uint32_t dst_height, \
-		uint8_t bit_rate, uint8_t frame_rate, VENC_CODEC_TYPE encoder_type);
+Video_File_Resource *init_video_store(uint32_t src_width, uint32_t src_height, \
+		uint32_t dst_width, uint32_t dst_height, uint8_t bit_rate, uint8_t frame_rate, \
+		uint8_t camera_idx, VENC_CODEC_TYPE encoder_type);
 
 void destroy_video_store(Video_File_Resource **video_file_resource);
 

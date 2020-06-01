@@ -23,6 +23,22 @@
 
 WaterMarkUsrInterface *t7_watermark = NULL;
 
+SingleWaterMark watermark_array[MAX_WATERMARK_NUM] = {
+		{30, 30, ""},
+		{30, 60, ""},
+		{30, 90, ""},
+		{30, 120, " "},
+		{30, 150, "V 1.2.1.1"},
+};
+
+SingleWaterMark monitor_watermark_array[MAX_WATERMARK_NUM] = {
+		{30, 30, ""},
+		{30, 60, ""},
+		{30, 90, ""},
+		{30, 120, " "},
+		{30, 150, "V 1.2.1.1"},
+};
+
 static void argb2yuv420sp(unsigned char* src_p, unsigned char* alph, \
                           int width, int height, unsigned char* dest_y, \
                           unsigned char* dest_c)
@@ -345,19 +361,23 @@ int doWaterMarkMultiple(WaterMarkInData *data, void *ctrl, void *multi, char *co
     int count = 0;
     WaterMarkMultiple *wm_multi ;
     wm_multi = (WaterMarkMultiple *)multi;
-    allContent[count] = strtok(content, delims);
+    char temp_str[128] = "";
+    strcat(temp_str, content);
+    allContent[count] = strtok(temp_str, delims);
 
     while(allContent[count] != NULL)
     {
         count++;
-        allContent[count] = strtok(NULL,delims);
+        if(count >= MAX_WATERMARK_NUM*3)
+        	break;
+        allContent[count] = strtok(NULL, delims);
     }
 
     wm_multi->mWaterMarkNum = count/3;
 
     int j = 0;
     int i;
-    for( i = 0;i < count/3;i++)
+    for( i = 0; i < count/3; i++)
     {
         wm_multi->mSingleWaterMark[i].mPositionX = strtol(allContent[j++], NULL, 10);
         wm_multi->mSingleWaterMark[i].mPositionY = strtol(allContent[j++], NULL, 10);
@@ -366,12 +386,12 @@ int doWaterMarkMultiple(WaterMarkInData *data, void *ctrl, void *multi, char *co
 
     if(data->height == 540)//preview watermark
     {
-        data->posx = wm_multi->mSingleWaterMark[0].mPositionX * data->resolution_rate;
-        data->posy = wm_multi->mSingleWaterMark[0].mPositionY * data->resolution_rate;
-        data->display = time_watermark;
-        doWaterMark(data, ctrl);
+//        data->posx = wm_multi->mSingleWaterMark[0].mPositionX * data->resolution_rate;
+//        data->posy = wm_multi->mSingleWaterMark[0].mPositionY * data->resolution_rate;
+//        data->display = time_watermark;
+//        doWaterMark(data, ctrl);
 
-        for( i = 1;i < wm_multi->mWaterMarkNum; i++)
+        for( i = 0; i < wm_multi->mWaterMarkNum; i++)
         {
             data->posx = wm_multi->mSingleWaterMark[i].mPositionX * data->resolution_rate;
             data->posy = wm_multi->mSingleWaterMark[i].mPositionY * data->resolution_rate;
@@ -382,12 +402,12 @@ int doWaterMarkMultiple(WaterMarkInData *data, void *ctrl, void *multi, char *co
     else
     {
     	//record watermark
-        data->posx = wm_multi->mSingleWaterMark[0].mPositionX ;
-        data->posy = wm_multi->mSingleWaterMark[0].mPositionY ;
-        data->display = time_watermark;
-        doWaterMark(data, ctrl);
+//        data->posx = wm_multi->mSingleWaterMark[0].mPositionX ;
+//        data->posy = wm_multi->mSingleWaterMark[0].mPositionY ;
+//        data->display = time_watermark;
+//        doWaterMark(data, ctrl);
 
-        for( i = 1; i < wm_multi->mWaterMarkNum; i++)
+        for( i = 0; i < wm_multi->mWaterMarkNum; i++)
         {
             data->posx = wm_multi->mSingleWaterMark[i].mPositionX ;
             data->posy = wm_multi->mSingleWaterMark[i].mPositionY ;
@@ -472,19 +492,13 @@ int initWaterMark(unsigned int FrameHeight)
 	{
 		t7_watermark = waterMarkinit(FrameHeight);
 
-		if(t7_watermark)
-		{
-			return 0;
-		}
-		else
+		if(!t7_watermark)
 		{
 			return -1;
 		}
 	}
-	else
-	{
-		return 0;
-	}
+
+	return 0;
 }
 
 
@@ -527,9 +541,12 @@ void waterMarkDestroy(WaterMarkUsrInterface **usr_watermark)
 int addWaterMark(unsigned char *addrVirY, int width, int height, char *content, \
 		         WaterMarkUsrInterface *usr_watermark)
 {
+	char time_watermark[32];
+
 	if(usr_watermark)
 	{
 		pthread_mutex_lock(&usr_watermark->mWaterMarkLock);
+
 		if (usr_watermark->mWaterMarkEnable && (usr_watermark->mWaterMarkCtrlRec != NULL) &&\
 		   (usr_watermark->mWaterMarkMultiple != NULL))
 		{
@@ -540,8 +557,7 @@ int addWaterMark(unsigned char *addrVirY, int width, int height, char *content, 
 			//usr_watermark->mWaterMarkIndata.resolution_rate = (float) mThumbHeight / (float) mFrameHeight;
 			(usr_watermark->mWaterMarkIndata).resolution_rate = 1;
 
-			char time_watermark[32];
-			get_datetime_according_fmt(time_watermark);
+			//get_datetime_according_fmt(time_watermark);
 			doWaterMarkMultiple(&(usr_watermark->mWaterMarkIndata), usr_watermark->mWaterMarkCtrlRec, \
 					            usr_watermark->mWaterMarkMultiple, content, time_watermark);
 

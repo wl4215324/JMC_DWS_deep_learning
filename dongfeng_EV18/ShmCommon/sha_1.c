@@ -134,16 +134,12 @@ int SHA1Result( SHA1Context *context, uint8_t *Message_Digest)
 		context->Computed = 1;
 	}
 
-	puts("");
-
 	for(i = 0; i < SHA1HashSize; ++i)
 	{
 		Message_Digest[i] = context->Intermediate_Hash[i>>2] \
 		>> 8 * ( 3 - ( i & 0x03 ) );
 		printf("%2x ", Message_Digest[i]);
 	}
-
-	puts("");
 
 	return shaSuccess;
 }

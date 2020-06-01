@@ -4,6 +4,8 @@ Debug/t7_camera_v4l2.d: Src/VideoAndDisp/t7_camera_v4l2.cpp \
  Src/VideoAndDisp/t7_enc_test.h Src/VideoAndDisp/sunxiMemInterface.h \
  /home/tony/t7_reference/t7linux-auto/buildroot-201611/target/user_rootfs_misc/sdk_lib/cedarx/include/libcedarc/include/memoryAdapter.h \
  Src/VideoAndDisp/DmaIon.h Src/VideoAndDisp/ion_alloc_list.h \
+ /home/tony/eclipse-workspace/dongfeng_EV18/ShmCommon/serial_pack_parse.h \
+ /home/tony/eclipse-workspace/dongfeng_EV18/ShmCommon/applicfg.h \
  Src/VideoAndDisp/../VideoStore/files_manager.h \
  Src/VideoAndDisp/../VideoStore/video_encode.h \
  Src/VideoAndDisp/../VideoStore/vencoder.h \
@@ -19,8 +21,9 @@ Debug/t7_camera_v4l2.d: Src/VideoAndDisp/t7_camera_v4l2.cpp \
  Src/VideoAndDisp/../VideoStore/bug.h \
  Src/VideoAndDisp/../VideoStore/user_timer.h \
  Src/VideoAndDisp/../VideoStore/files_manager.h Src/VideoAndDisp/G2dApi.h \
+ Src/VideoAndDisp/water_mark_interface.h \
  Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp \
- Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h
+ Src/VideoAndDisp/../Algorithm/Src/../../../../ShmCommon/rtc_operations.h
 
 Src/VideoAndDisp/t7_camera_v4l2.h:
 
@@ -39,6 +42,10 @@ Src/VideoAndDisp/sunxiMemInterface.h:
 Src/VideoAndDisp/DmaIon.h:
 
 Src/VideoAndDisp/ion_alloc_list.h:
+
+/home/tony/eclipse-workspace/dongfeng_EV18/ShmCommon/serial_pack_parse.h:
+
+/home/tony/eclipse-workspace/dongfeng_EV18/ShmCommon/applicfg.h:
 
 Src/VideoAndDisp/../VideoStore/files_manager.h:
 
@@ -72,6 +79,8 @@ Src/VideoAndDisp/../VideoStore/files_manager.h:
 
 Src/VideoAndDisp/G2dApi.h:
 
+Src/VideoAndDisp/water_mark_interface.h:
+
 Src/VideoAndDisp/../Algorithm/Src/run_algorithm.hpp:
 
-Src/VideoAndDisp/../Algorithm/Src/../../VideoStore/rtc_operations.h:
+Src/VideoAndDisp/../Algorithm/Src/../../../../ShmCommon/rtc_operations.h:
